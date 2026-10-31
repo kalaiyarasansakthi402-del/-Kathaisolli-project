@@ -64,3 +64,5 @@ apps/api/prisma/dev.db-journal
 *.key
 *.cert
 *.crt
+
+.vercel

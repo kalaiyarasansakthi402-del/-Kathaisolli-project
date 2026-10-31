@@ -2,10 +2,9 @@
   "name": "kathaisolli",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.25.0",
+  "packageManager": "pnpm@9.15.4",
   "engines": {
-    "node": ">=22.18.0",
-    "pnpm": ">=10"
+    "node": ">=22.18.0"
   },
   "scripts": {
     "dev:api": "pnpm --filter @kathaisolli/api start:dev",
