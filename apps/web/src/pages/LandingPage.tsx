@@ -681,41 +681,52 @@ export const LandingPage: React.FC = () => {
 
           {/* Store Download Badges */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
-            {/* Google Play Badge */}
+            {/* Direct Android APK Download Badge */}
             <a
-              href="https://play.google.com"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto inline-flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-black text-white hover:bg-stone-900 shadow-xl transition-all hover:scale-105 border border-stone-800"
+              href="/downloads/kathaisolli-v1.0.0.apk"
+              download="kathaisolli-v1.0.0.apk"
+              className="w-full sm:w-auto inline-flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-[#064E3B] text-white hover:bg-[#166534] shadow-xl transition-all hover:scale-105 border border-[#A7F3D0]/30 group"
             >
-              <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-                <path d="M3.609 1.814L13.792 12 3.61 22.186c-.198-.198-.31-.47-.31-.762V2.576c0-.292.112-.564.31-.762zm11.242 11.243l2.483-2.483-11.87-6.853 9.387 9.336zm0 1.886l-9.387 9.336 11.87-6.853-2.483-2.483zm1.059-1.059l3.41-1.968c.997-.576.997-1.516 0-2.092l-3.41-1.968-2.144 2.144 2.144 2.144z" />
-              </svg>
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                <Download className="w-5 h-5 text-[#A7F3D0] group-hover:translate-y-0.5 transition-transform" />
+              </div>
               <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wider text-stone-300">
-                  GET IT ON
+                <div className="text-[10px] uppercase tracking-wider text-[#A7F3D0] font-bold">
+                  DIRECT APK DOWNLOAD
                 </div>
-                <div className="text-base font-bold leading-tight">Google Play</div>
+                <div className="text-base font-bold leading-tight">Download Android APK</div>
+                <div className="text-[10px] text-white/75 font-mono">v1.0.0 · Installable APK (81 MB)</div>
               </div>
             </a>
 
-            {/* Apple App Store Badge */}
-            <a
-              href="https://apple.com/app-store"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto inline-flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-black text-white hover:bg-stone-900 shadow-xl transition-all hover:scale-105 border border-stone-800"
-            >
-              <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.63-.77 1.06-1.85.94-2.93-.93.04-2.06.62-2.73 1.4-.59.68-1.11 1.77-.97 2.83 1.04.08 2.13-.53 2.76-1.3" />
-              </svg>
-              <div className="text-left">
-                <div className="text-[10px] uppercase tracking-wider text-stone-300">
-                  Download on the
+            {/* Apple App Store / TestFlight Badge */}
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() =>
+                  alert(
+                    'Kathaisolli iOS App is currently in TestFlight internal preview. Public App Store release coming soon! You can stream immediately on Safari or any mobile web browser.',
+                  )
+                }
+                className="w-full sm:w-auto inline-flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-black text-white hover:bg-stone-900 shadow-xl transition-all hover:scale-105 border border-stone-800 text-left"
+              >
+                <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.63-.77 1.06-1.85.94-2.93-.93.04-2.06.62-2.73 1.4-.59.68-1.11 1.77-.97 2.83 1.04.08 2.13-.53 2.76-1.3" />
+                </svg>
+                <div className="text-left">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-stone-300">
+                      APPLE TESTFLIGHT
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#D6A83F] text-black">
+                      Coming Soon
+                    </span>
+                  </div>
+                  <div className="text-base font-bold leading-tight">Join TestFlight</div>
+                  <div className="text-[10px] text-stone-400">iOS 15.0+ · iPhone & iPad</div>
                 </div>
-                <div className="text-base font-bold leading-tight">App Store</div>
-              </div>
-            </a>
+              </button>
+            </div>
           </div>
 
           {/* 4 Feature Badges with checkmarks */}

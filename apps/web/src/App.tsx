@@ -21,6 +21,8 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { LibraryPage } from './pages/LibraryPage';
+import { MyLibraryPage } from './pages/MyLibraryPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { PlaylistsPage } from './pages/PlaylistsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { CreatorApplyPage } from './pages/CreatorApplyPage';
@@ -71,16 +73,17 @@ export const App: React.FC = () => {
                   {/* Stories alias */}
                   <Route path="/stories" element={<Navigate to="/explore" replace />} />
 
-                  {/* Admin aliases */}
-                  <Route path="/admin" element={<Navigate to="/creator/apply" replace />} />
-                  <Route path="/admin/login" element={<Navigate to="/login" replace />} />
-                  <Route path="/admin/dashboard" element={<Navigate to="/creator/apply" replace />} />
+                  {/* Admin Dashboard */}
+                  <Route path="/admin" element={<AdminDashboardPage />} />
+                  <Route path="/admin/login" element={<LoginPage />} />
+                  <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
 
                   {/* User Library and Profile */}
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/library" element={<LibraryPage />} />
-                  <Route path="/favorites" element={<Navigate to="/library?tab=favorites" replace />} />
-                  <Route path="/history" element={<Navigate to="/library?tab=history" replace />} />
+                  <Route path="/my-library" element={<MyLibraryPage />} />
+                  <Route path="/favorites" element={<Navigate to="/my-library?tab=favorites" replace />} />
+                  <Route path="/history" element={<Navigate to="/my-library?tab=history" replace />} />
                   <Route path="/playlists" element={<PlaylistsPage />} />
                   <Route path="/playlists/:id" element={<PlaylistsPage />} />
                   <Route path="/notifications" element={<NotificationsPage />} />
