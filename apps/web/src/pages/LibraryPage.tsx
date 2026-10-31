@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -40,8 +40,21 @@ export const LibraryPage: React.FC = () => {
 
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [visibleCount, setVisibleCount] = useState(16);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setVisibleCount(16);
+  }, [selectedCategory, debouncedQuery]);
 
   // Selected book for details modal
   const [selectedBook, setSelectedBook] = useState<LibraryBook | null>(null);
@@ -62,8 +75,8 @@ export const LibraryPage: React.FC = () => {
       }
 
       // Search query filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+      if (debouncedQuery.trim()) {
+        const q = debouncedQuery.toLowerCase().trim();
         const matchesTitle = book.title.toLowerCase().includes(q);
         const matchesTamil = book.tamilTitle.toLowerCase().includes(q);
         const matchesAuthor = book.authorName.toLowerCase().includes(q);
@@ -74,7 +87,11 @@ export const LibraryPage: React.FC = () => {
 
       return true;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, debouncedQuery]);
+
+  const visibleBooks = useMemo(() => {
+    return filteredBooks.slice(0, visibleCount);
+  }, [filteredBooks, visibleCount]);
 
   const handlePlayBookChapter = (book: LibraryBook, chapter: LibraryChapter) => {
     playEpisode({
@@ -84,7 +101,7 @@ export const LibraryPage: React.FC = () => {
       coverImageUrl: book.coverImageUrl || '/images/hero-art.jpg',
       narratorName: book.narratorName || 'By Anzles Studio',
       durationSec: chapter.durationSeconds,
-      audioUrl: chapter.audioUrl,
+      audioUrl: chapter.audioUrl || '/audio/sample-story.mp3',
     });
   };
 
@@ -413,7 +430,7 @@ export const LibraryPage: React.FC = () => {
           {/* ============================================================== */}
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-4 sm:gap-5">
-              {filteredBooks.map((book) => {
+              {visibleBooks.map((book) => {
                 const isCurrentlyPlayingThisBook =
                   isPlaying &&
                   book.chapters.some((ch) => ch.id === currentTrack?.episodeId);
@@ -508,7 +525,7 @@ export const LibraryPage: React.FC = () => {
           ) : (
             /* List View */
             <div className="space-y-3">
-              {filteredBooks.map((book) => (
+              {visibleBooks.map((book) => (
                 <div
                   key={book.id}
                   onClick={() => setSelectedBook(book)}
@@ -563,6 +580,21 @@ export const LibraryPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Progressive Loading: Load More Stories */}
+          {visibleCount < filteredBooks.length && (
+            <div className="pt-8 text-center space-y-2">
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 16)}
+                className="px-8 py-3 rounded-2xl bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-95 font-tamil cursor-pointer"
+              >
+                மேலும் கதைகளைக் காட்டு ({filteredBooks.length - visibleBooks.length} மீதமுள்ளது)
+              </button>
+              <p className="text-xs text-stone-400 font-mono">
+                Showing {visibleBooks.length} of {filteredBooks.length} books in catalog
+              </p>
             </div>
           )}
         </div>

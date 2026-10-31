@@ -18,6 +18,8 @@ export const AudioPlayer: React.FC = () => {
   const {
     currentTrack,
     isPlaying,
+    isBuffering,
+    playbackError,
     currentTime,
     duration,
     playbackRate,
@@ -31,6 +33,7 @@ export const AudioPlayer: React.FC = () => {
     setSleepTimerMinutes,
     openFullPlayer,
     closeFullPlayer,
+    clearError,
   } = usePlayer();
 
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
@@ -45,6 +48,12 @@ export const AudioPlayer: React.FC = () => {
       {/* Mini Player (Bottom Dock) */}
       {!isFullPlayerOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#182620]/95 backdrop-blur-md border-t border-slate-200 dark:border-[#23382F] shadow-2xl transition-all">
+          {playbackError && (
+            <div className="bg-amber-600 text-white text-xs px-4 py-1.5 flex items-center justify-between font-tamil shadow-inner">
+              <span className="truncate">{playbackError}</span>
+              <button onClick={clearError} className="ml-2 font-bold px-1.5 hover:bg-black/20 rounded">✕</button>
+            </div>
+          )}
           {/* Top Progress bar */}
           <div
             className="w-full h-1 bg-slate-200 dark:bg-slate-800 cursor-pointer relative group"
@@ -104,7 +113,13 @@ export const AudioPlayer: React.FC = () => {
                 onClick={togglePlay}
                 className="w-10 h-10 rounded-full bg-[#064E3B] dark:bg-[#10B981] text-white dark:text-[#022C22] flex items-center justify-center hover:scale-105 transition-transform shadow-md"
               >
-                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                {isBuffering ? (
+                  <div className="w-4 h-4 border-2 border-white dark:border-[#022C22] border-t-transparent rounded-full animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="w-5 h-5" />
+                ) : (
+                  <Play className="w-5 h-5 ml-0.5" />
+                )}
               </button>
               <button
                 onClick={() => skipForward(10)}
@@ -210,7 +225,13 @@ export const AudioPlayer: React.FC = () => {
                 onClick={togglePlay}
                 className="w-16 h-16 rounded-full bg-[#064E3B] dark:bg-[#10B981] text-white dark:text-[#022C22] flex items-center justify-center hover:scale-105 transition-transform shadow-xl"
               >
-                {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                {isBuffering ? (
+                  <div className="w-6 h-6 border-3 border-white dark:border-[#022C22] border-t-transparent rounded-full animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="w-8 h-8" />
+                ) : (
+                  <Play className="w-8 h-8 ml-1" />
+                )}
               </button>
               <button
                 onClick={() => skipForward(10)}

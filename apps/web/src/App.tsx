@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
@@ -7,30 +7,39 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AudioPlayer } from './components/AudioPlayer';
 
-// Pages
+// Primary entry page (eager for fast initial FCP/LCP)
 import { LandingPage } from './pages/LandingPage';
-import { HomePage } from './pages/HomePage';
-import { ExplorePage } from './pages/ExplorePage';
-import { SearchPage } from './pages/SearchPage';
-import { CategoriesPage } from './pages/CategoriesPage';
-import { LanguagesPage } from './pages/LanguagesPage';
-import { StoryDetailsPage } from './pages/StoryDetailsPage';
-import { EpisodeDetailsPage } from './pages/EpisodeDetailsPage';
-import { FullPlayerPage } from './pages/FullPlayerPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { LibraryPage } from './pages/LibraryPage';
-import { MyLibraryPage } from './pages/MyLibraryPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { PlaylistsPage } from './pages/PlaylistsPage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { CreatorApplyPage } from './pages/CreatorApplyPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { HelpSupportPage } from './pages/HelpSupportPage';
-import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
-import { TermsConditionsPage } from './pages/TermsConditionsPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+
+// Lazy-loaded routes for code splitting
+const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
+const LibraryPage = lazy(() => import('./pages/LibraryPage').then((m) => ({ default: m.LibraryPage })));
+const MyLibraryPage = lazy(() => import('./pages/MyLibraryPage').then((m) => ({ default: m.MyLibraryPage })));
+const ExplorePage = lazy(() => import('./pages/ExplorePage').then((m) => ({ default: m.ExplorePage })));
+const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })));
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage').then((m) => ({ default: m.CategoriesPage })));
+const LanguagesPage = lazy(() => import('./pages/LanguagesPage').then((m) => ({ default: m.LanguagesPage })));
+const StoryDetailsPage = lazy(() => import('./pages/StoryDetailsPage').then((m) => ({ default: m.StoryDetailsPage })));
+const EpisodeDetailsPage = lazy(() => import('./pages/EpisodeDetailsPage').then((m) => ({ default: m.EpisodeDetailsPage })));
+const FullPlayerPage = lazy(() => import('./pages/FullPlayerPage').then((m) => ({ default: m.FullPlayerPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })));
+const PlaylistsPage = lazy(() => import('./pages/PlaylistsPage').then((m) => ({ default: m.PlaylistsPage })));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
+const CreatorApplyPage = lazy(() => import('./pages/CreatorApplyPage').then((m) => ({ default: m.CreatorApplyPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const HelpSupportPage = lazy(() => import('./pages/HelpSupportPage').then((m) => ({ default: m.HelpSupportPage })));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })));
+const TermsConditionsPage = lazy(() => import('./pages/TermsConditionsPage').then((m) => ({ default: m.TermsConditionsPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
+
+const RouteLoadingFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
+    <div className="w-8 h-8 border-2 border-[#064E3B] border-t-transparent rounded-full animate-spin" />
+    <p className="text-xs font-semibold text-stone-500 font-tamil">ஏற்றுகிறது...</p>
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,7 +61,8 @@ export const App: React.FC = () => {
               <Navbar />
 
               <main className="flex-1 pb-28">
-                <Routes>
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <Routes>
                   {/* Public routes */}
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/home" element={<HomePage />} />
@@ -100,7 +110,8 @@ export const App: React.FC = () => {
                   {/* 404 Catch-All */}
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>
-              </main>
+              </Suspense>
+            </main>
 
               {/* Global Mini Player docked at the bottom */}
               <AudioPlayer />
