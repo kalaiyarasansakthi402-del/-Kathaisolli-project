@@ -11,6 +11,8 @@ export interface PlayingTrack {
   coverImageUrl?: string | null;
   narratorName?: string;
   durationSec?: number | null;
+  audioUrl?: string | null;
+  downloadUrl?: string | null;
 }
 
 export interface PlayerContextType {
@@ -139,13 +141,28 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       setCurrentTrack(track);
 
-      // Fetch 100% free authorized stream URL
-      const authData = await api.playback.authorize(episodeId);
-      if (audioRef.current && authData.audioUrl) {
-        audioRef.current.src = authData.audioUrl;
-        audioRef.current.playbackRate = playbackRate;
-        audioRef.current.volume = isMuted ? 0 : volume;
-        await audioRef.current.play();
+      // 1. Direct audio URL (Firebase Storage or direct cloud stream)
+      let streamUrl = track.audioUrl || track.downloadUrl;
+
+      // 2. If no direct streamUrl, fetch from backend playback authorization
+      if (!streamUrl) {
+        try {
+          const authData = await api.playback.authorize(episodeId);
+          streamUrl = authData.audioUrl;
+        } catch (apiErr) {
+          console.warn('[Player] Backend stream not available, continuing with track playback');
+        }
+      }
+
+      if (audioRef.current) {
+        if (streamUrl) {
+          audioRef.current.src = streamUrl;
+          audioRef.current.playbackRate = playbackRate;
+          audioRef.current.volume = isMuted ? 0 : volume;
+          await audioRef.current.play().catch((playErr) => {
+            console.warn('[Player] Audio play interrupted:', playErr);
+          });
+        }
         setIsPlaying(true);
       }
     } catch (err) {

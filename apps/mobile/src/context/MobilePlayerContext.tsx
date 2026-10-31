@@ -78,13 +78,15 @@ export const MobilePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setCurrentTrack(track);
 
       let streamUrl = track.audioUrl;
-      try {
-        const authRes = await api.playback.authorize(track.episodeId);
-        if (authRes.audioUrl) {
-          streamUrl = authRes.audioUrl;
+      if (!streamUrl) {
+        try {
+          const authRes = await api.playback.authorize(track.episodeId);
+          if (authRes.audioUrl) {
+            streamUrl = authRes.audioUrl;
+          }
+        } catch {
+          // Fallback for offline demo
         }
-      } catch {
-        // Fallback for offline demo
       }
 
       if (streamUrl) {

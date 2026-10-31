@@ -16,6 +16,7 @@ export interface StoryCardProps {
   totalDurationSeconds?: number;
   firstEpisodeId?: string;
   rating?: number;
+  audioUrl?: string | null;
 }
 
 export const StoryCard: React.FC<StoryCardProps> = ({
@@ -31,6 +32,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   totalDurationSeconds = 0,
   firstEpisodeId,
   rating = 4.9,
+  audioUrl,
 }) => {
   const { playEpisode } = usePlayer();
   const image =
@@ -51,6 +53,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         coverImageUrl: image,
         narratorName: authorName || 'By Anzles Studio',
         durationSec: totalDurationSeconds || 300,
+        audioUrl,
       });
     }
   };

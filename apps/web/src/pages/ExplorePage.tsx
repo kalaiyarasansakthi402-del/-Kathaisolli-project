@@ -1,11 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, SlidersHorizontal, AlertCircle, RefreshCw, Globe, Leaf } from 'lucide-react';
+import {
+  Filter,
+  SlidersHorizontal,
+  AlertCircle,
+  RefreshCw,
+  Globe,
+  Leaf,
+  Cloud,
+  CheckCircle2,
+  FolderOpen,
+  Info,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { StoryCard } from '../components/StoryCard';
 import { EmptyState } from '../components/EmptyState';
 import { StoryGridSkeleton } from '../components/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
+import {
+  listAudioFiles,
+  type FirebaseAudioStory,
+} from '../services/firebaseStorage';
+import { isFirebaseConfigured, firebaseConfig } from '../services/firebase';
 
 const DEFAULT_STORIES = [
   {
@@ -81,36 +97,37 @@ export const ExplorePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCat = searchParams.get('category') || 'all';
   const initialLang = searchParams.get('language') || 'all';
+  const initialSource = searchParams.get('source') || 'all';
 
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCat);
   const [language, setLanguage] = useState<string>(initialLang);
+  const [sourceFilter, setSourceFilter] = useState<string>(initialSource);
 
   useEffect(() => {
     const cat = searchParams.get('category') || 'all';
     const lang = searchParams.get('language') || 'all';
+    const src = searchParams.get('source') || 'all';
     setSelectedCategory(cat);
     setLanguage(lang);
+    setSourceFilter(src);
   }, [searchParams]);
 
-  // Fetch real categories
+  // Fetch REST API categories
   const { data: categories = [] } = useQuery({
     queryKey: ['catalog', 'categories'],
     queryFn: () => api.catalog.getCategories(),
   });
 
-  // Fetch real languages
+  // Fetch REST API languages
   const { data: languages = [] } = useQuery({
     queryKey: ['catalog', 'languages'],
     queryFn: () => api.catalog.getLanguages(),
   });
 
-  // Fetch real stories matching current category and language
+  // Fetch REST API stories
   const {
     data: seriesData,
-    isLoading,
-    isError,
-    error,
-    refetch,
+    isLoading: isApiLoading,
   } = useQuery({
     queryKey: ['catalog', 'explore', selectedCategory, language],
     queryFn: () =>
@@ -121,14 +138,54 @@ export const ExplorePage: React.FC = () => {
       }),
   });
 
+  // Fetch Firebase Storage Audio Stories
+  const fbConfigured = isFirebaseConfigured();
+  const {
+    data: firebaseStories = [],
+    isLoading: isFbLoading,
+    isError: isFbError,
+    error: fbError,
+    refetch: refetchFirebase,
+  } = useQuery({
+    queryKey: ['firebase', 'stories', import.meta.env.VITE_FIREBASE_STORIES_PATH || 'stories'],
+    queryFn: () => listAudioFiles(),
+    enabled: fbConfigured,
+    retry: 1,
+  });
+
   const apiStories = seriesData?.items || [];
-  const stories = apiStories.length > 0 ? apiStories : DEFAULT_STORIES;
+  const baseStories = apiStories.length > 0 ? apiStories : DEFAULT_STORIES;
+
+  // Convert Firebase Audio Stories to standard format
+  const mappedFbStories = firebaseStories.map((item) => ({
+    id: item.id,
+    slug: item.id,
+    title: item.title,
+    authorName: 'Firebase Audio · ' + item.folder,
+    coverImageUrl: item.coverImageUrl || '/images/story-clever-crow.jpg',
+    categoryName: 'Cloud Audio',
+    language: 'தமிழ்',
+    totalEpisodes: 1,
+    totalDurationSeconds: item.durationSec || 300,
+    audioUrl: item.downloadUrl,
+    isFirebase: true,
+  }));
+
+  let displayStories: any[] = [];
+  if (sourceFilter === 'firebase') {
+    displayStories = mappedFbStories;
+  } else if (sourceFilter === 'local') {
+    displayStories = baseStories;
+  } else {
+    displayStories = [...mappedFbStories, ...baseStories];
+  }
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
     const newParams: Record<string, string> = {};
     if (cat !== 'all') newParams.category = cat;
     if (language !== 'all') newParams.language = language;
+    if (sourceFilter !== 'all') newParams.source = sourceFilter;
     setSearchParams(newParams);
   };
 
@@ -137,6 +194,16 @@ export const ExplorePage: React.FC = () => {
     const newParams: Record<string, string> = {};
     if (selectedCategory !== 'all') newParams.category = selectedCategory;
     if (lang !== 'all') newParams.language = lang;
+    if (sourceFilter !== 'all') newParams.source = sourceFilter;
+    setSearchParams(newParams);
+  };
+
+  const handleSourceChange = (src: string) => {
+    setSourceFilter(src);
+    const newParams: Record<string, string> = {};
+    if (selectedCategory !== 'all') newParams.category = selectedCategory;
+    if (language !== 'all') newParams.language = language;
+    if (src !== 'all') newParams.source = src;
     setSearchParams(newParams);
   };
 
@@ -146,7 +213,7 @@ export const ExplorePage: React.FC = () => {
       <div className="space-y-2">
         <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider">
           <Leaf className="w-3.5 h-3.5 fill-current" />
-          <span>Explore All Tamil Stories</span>
+          <span>Explore All Tamil Stories & Audio</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
           கதைகளை உலாவுங்கள்
@@ -155,6 +222,75 @@ export const ExplorePage: React.FC = () => {
           நூற்றுக்கணக்கான பாரம்பரிய மற்றும் சமகால தமிழ் ஆடியோ கதைகளை எளிதாகக் கண்டறியுங்கள்.
         </p>
       </div>
+
+      {/* Firebase Status Badge Banner */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[#064E3B] text-white flex items-center justify-center shrink-0">
+            <Cloud className="w-5 h-5 text-[#A7F3D0]" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold font-serif text-sm text-[#064E3B] dark:text-[#F8F5E9]">
+                Firebase Storage: {firebaseConfig.projectId}
+              </span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  fbConfigured
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                }`}
+              >
+                {fbConfigured ? 'Connected' : 'Config Ready'}
+              </span>
+            </div>
+            <p className="text-xs text-stone-500 dark:text-stone-300">
+              Bucket: <code className="font-mono text-xs text-[#064E3B] dark:text-[#A7F3D0]">gs://{firebaseConfig.storageBucket}</code>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => handleSourceChange('all')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
+              sourceFilter === 'all'
+                ? 'bg-[#064E3B] text-white'
+                : 'bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-stone-200 border border-[#D5CEBA] dark:border-[#124835]'
+            }`}
+          >
+            All Stories ({displayStories.length})
+          </button>
+          <button
+            onClick={() => handleSourceChange('firebase')}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all ${
+              sourceFilter === 'firebase'
+                ? 'bg-[#064E3B] text-white'
+                : 'bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-stone-200 border border-[#D5CEBA] dark:border-[#124835]'
+            }`}
+          >
+            <Cloud className="w-3.5 h-3.5" />
+            <span>Firebase Audio ({mappedFbStories.length})</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Firebase Error Notice if applicable */}
+      {isFbError && sourceFilter === 'firebase' && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start gap-3 text-amber-800 dark:text-amber-200 text-xs">
+          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold">Firebase Storage Notice:</span>
+            <p>
+              {(fbError as any)?.message ||
+                'Unable to list files from Firebase Storage. Please verify Firebase Storage Rules allow read access to your bucket.'}
+            </p>
+            <p className="text-[11px] opacity-80">
+              Ensure you have created a <code className="font-mono">stories/</code> folder in bucket <code className="font-mono">vaagai-audio-books-36a4e.appspot.com</code>.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Filter Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] shadow-sm">
@@ -202,27 +338,55 @@ export const ExplorePage: React.FC = () => {
 
         {/* Stories Count */}
         <div className="text-xs text-stone-500 dark:text-stone-300 font-bold">
-          {stories.length} கதைகள் கண்டறியப்பட்டன (Found)
+          {displayStories.length} கதைகள் கண்டறியப்பட்டன (Found)
         </div>
       </div>
 
+      {/* Loading Skeleton */}
+      {(isApiLoading || (isFbLoading && sourceFilter === 'firebase')) && (
+        <StoryGridSkeleton count={6} />
+      )}
+
+      {/* Empty State */}
+      {displayStories.length === 0 && !isApiLoading && !isFbLoading && (
+        <EmptyState
+          icon={FolderOpen}
+          title="கதைகள் எதுவும் இல்லை (No Stories Found)"
+          description={
+            sourceFilter === 'firebase'
+              ? 'Firebase Storage பக்கெட்டில் ஆடியோ கோப்புகள் எதுவும் இல்லை. vaagai-audio-books-36a4e.appspot.com பக்கெட்டில் stories/ கோப்புறையில் MP3 கோப்புகளைப் பதிவேற்றவும்.'
+              : 'தேர்ந்தெடுக்கப்பட்ட வகைப்பாட்டில் அல்லது மொழியில் கதைகள் எதுவும் கிடைக்கவில்லை.'
+          }
+          actionLabel="அனைத்துக் கதைகளையும் காண்க"
+          onAction={() => {
+            setSelectedCategory('all');
+            setLanguage('all');
+            setSourceFilter('all');
+            setSearchParams({});
+          }}
+        />
+      )}
+
       {/* Stories Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {stories.map((story: any) => (
-          <StoryCard
-            key={story.id}
-            id={story.id}
-            slug={story.slug}
-            title={story.title}
-            authorName={story.authorName || undefined}
-            coverImageUrl={story.coverImageUrl || story.coverImage}
-            categoryName={story.categoryName || story.category?.name}
-            language={typeof story.language === 'string' ? story.language : story.language?.name}
-            totalEpisodes={story.totalEpisodes || 1}
-            totalDurationSeconds={story.totalDurationSeconds}
-          />
-        ))}
-      </div>
+      {displayStories.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {displayStories.map((story: any) => (
+            <StoryCard
+              key={story.id}
+              id={story.id}
+              slug={story.slug}
+              title={story.title}
+              authorName={story.authorName || undefined}
+              coverImageUrl={story.coverImageUrl || story.coverImage}
+              categoryName={story.categoryName || story.category?.name}
+              language={typeof story.language === 'string' ? story.language : story.language?.name}
+              totalEpisodes={story.totalEpisodes || 1}
+              totalDurationSeconds={story.totalDurationSeconds}
+              audioUrl={story.audioUrl}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
