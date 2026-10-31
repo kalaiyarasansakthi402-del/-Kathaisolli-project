@@ -9,7 +9,9 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
+import { BookOpen, Mail, Lock, Eye, EyeOff, CheckSquare, Square } from 'lucide-react-native';
 
 interface LoginScreenProps {
   onSignIn?: (email: string, pass: string) => void;
@@ -24,204 +26,333 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+
+  const handleSubmit = () => {
+    if (onSignIn) {
+      onSignIn(email || 'listener@kathaisolli.com', password || 'password');
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F5E9" />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#063F30" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
-        <View style={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.brandRow}>
-              <View style={styles.logoCircle}>
-                <Text style={styles.logoEmoji}>🌿</Text>
-              </View>
-              <Text style={styles.brandText}>Kathaisolli</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
+          {/* Top Botanical Green Banner */}
+          <View style={styles.topHeader}>
+            <View style={styles.logoBadge}>
+              <BookOpen size={24} color="#D7B45A" strokeWidth={2.5} />
             </View>
-
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.tamilSubtitle}>மீண்டும் வருக</Text>
-            <Text style={styles.subtitle}>
-              Sign in to access your saved library & listening history.
-            </Text>
+            <Text style={styles.brandTitle}>Kathaisolli</Text>
+            <Text style={styles.brandSubtitle}>Stories • Knowledge • Life</Text>
           </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>EMAIL ADDRESS</Text>
+          {/* Form Container */}
+          <View style={styles.formContainer}>
+            <View style={styles.greetingContainer}>
+              <Text style={styles.welcomeTitle}>Welcome Back</Text>
+              <Text style={styles.welcomeSubtitle}>Sign in to continue your journey</Text>
+            </View>
+
+            {/* Email Input */}
+            <View style={styles.inputWrapper}>
+              <Mail size={18} color="#68756C" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="listener@kathaisolli.com"
-                placeholderTextColor="#9CA3AF"
+                placeholder="Email"
+                placeholderTextColor="#9EA8A1"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>PASSWORD</Text>
+            {/* Password Input with Visibility Toggle */}
+            <View style={styles.inputWrapper}>
+              <Lock size={18} color="#68756C" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="••••••••••••"
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry
+                placeholder="Password"
+                placeholderTextColor="#9EA8A1"
+                secureTextEntry={!showPassword}
               />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} color="#68756C" />
+                ) : (
+                  <Eye size={18} color="#68756C" />
+                )}
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              onPress={onForgotPassword}
-              style={styles.forgotContainer}
-            >
-              <Text style={styles.forgotText}>Forgot Password?</Text>
-            </TouchableOpacity>
+            {/* Remember Me & Forgot Password */}
+            <View style={styles.rowRemember}>
+              <TouchableOpacity
+                style={styles.rememberCheckbox}
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.7}
+              >
+                {rememberMe ? (
+                  <CheckSquare size={16} color="#075C45" />
+                ) : (
+                  <Square size={16} color="#9EA8A1" />
+                )}
+                <Text style={styles.rememberText}>Remember me</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.signInButton}
-              onPress={() => onSignIn?.(email, password)}
-              activeOpacity={0.8}
-            >
+              <TouchableOpacity onPress={onForgotPassword}>
+                <Text style={styles.forgotText}>Forgot password?</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Sign In Button */}
+            <TouchableOpacity style={styles.signInButton} onPress={handleSubmit} activeOpacity={0.85}>
               <Text style={styles.signInButtonText}>Sign In</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Don't have an account?{' '}
-              <Text style={styles.footerLink} onPress={onNavigateToSignUp}>
-                Sign Up
-              </Text>
-            </Text>
+            {/* Divider */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Social Logins */}
+            <View style={styles.socialRow}>
+              <TouchableOpacity
+                style={styles.socialButton}
+                activeOpacity={0.8}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.socialG}>G</Text>
+                <Text style={styles.socialText}>Continue with Google</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.socialButton}
+                activeOpacity={0.8}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.socialApple}></Text>
+                <Text style={styles.socialText}>Continue with Apple</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Navigation to Sign Up */}
+            <View style={styles.footerRow}>
+              <Text style={styles.footerPrompt}>Don't have an account? </Text>
+              <TouchableOpacity onPress={onNavigateToSignUp}>
+                <Text style={styles.signUpLink}>Sign Up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#F8F5E9',
+    backgroundColor: '#063F30',
   },
   keyboardView: {
     flex: 1,
+    backgroundColor: '#F7F4E8',
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 28,
-    justifyContent: 'space-between',
-    paddingVertical: 32,
+  scrollContent: {
+    flexGrow: 1,
+    backgroundColor: '#F7F4E8',
   },
-  header: {
-    marginTop: 12,
-  },
-  brandRow: {
-    flexDirection: 'row',
+  topHeader: {
+    backgroundColor: '#063F30',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 20,
+    paddingTop: 24,
+    paddingBottom: 36,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
   },
-  logoCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#064E3B',
+  logoBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(215, 180, 90, 0.15)',
+    borderWidth: 1.5,
+    borderColor: '#D7B45A',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 8,
   },
-  logoEmoji: {
-    fontSize: 16,
+  brandTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    fontFamily: 'serif',
   },
-  brandText: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#064E3B',
+  brandSubtitle: {
+    fontSize: 10,
+    color: '#D7B45A',
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    marginTop: 2,
+    textTransform: 'uppercase',
   },
-  title: {
+  formContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 36,
+  },
+  greetingContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  welcomeTitle: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#064E3B',
+    color: '#17251E',
+    fontFamily: 'serif',
   },
-  tamilSubtitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#166534',
-    marginTop: 2,
+  welcomeSubtitle: {
+    fontSize: 13,
+    color: '#68756C',
+    marginTop: 4,
   },
-  subtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 6,
-    lineHeight: 18,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2DBD0',
+    marginBottom: 14,
+    paddingHorizontal: 14,
+    height: 52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  form: {
-    marginVertical: 20,
-    gap: 16,
-  },
-  inputGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#4B5563',
-    letterSpacing: 1,
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    flex: 1,
     fontSize: 14,
-    color: '#111827',
+    color: '#17251E',
   },
-  forgotContainer: {
-    alignSelf: 'flex-end',
+  eyeButton: {
+    padding: 6,
+  },
+  rowRemember: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  rememberCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  rememberText: {
+    fontSize: 12,
+    color: '#68756C',
   },
   forgotText: {
-    fontSize: 11,
+    fontSize: 12,
+    color: '#075C45',
     fontWeight: '700',
-    color: '#064E3B',
   },
   signInButton: {
-    backgroundColor: '#064E3B',
-    paddingVertical: 14,
-    borderRadius: 999,
+    backgroundColor: '#075C45',
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#064E3B',
+    justifyContent: 'center',
+    marginTop: 18,
+    shadowColor: '#075C45',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 6,
-    elevation: 3,
+    elevation: 4,
   },
   signInButtonText: {
     color: '#FFFFFF',
     fontSize: 15,
-    fontWeight: '700',
-  },
-  footer: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#4B5563',
-  },
-  footerLink: {
-    color: '#064E3B',
     fontWeight: '800',
-    textDecorationLine: 'underline',
+    letterSpacing: 0.5,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 22,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2DBD0',
+  },
+  dividerText: {
+    paddingHorizontal: 12,
+    fontSize: 11,
+    color: '#9EA8A1',
+    fontWeight: '600',
+  },
+  socialRow: {
+    gap: 10,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2DBD0',
+    gap: 10,
+  },
+  socialG: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#EA4335',
+  },
+  socialApple: {
+    fontSize: 20,
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  socialText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#17251E',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  footerPrompt: {
+    fontSize: 13,
+    color: '#68756C',
+  },
+  signUpLink: {
+    fontSize: 13,
+    color: '#075C45',
+    fontWeight: '800',
   },
 });

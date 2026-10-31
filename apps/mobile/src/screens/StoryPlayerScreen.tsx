@@ -7,109 +7,217 @@ import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
+  Dimensions,
+  Platform,
 } from 'react-native';
+import {
+  ChevronDown,
+  Heart,
+  Play,
+  Pause,
+  RotateCcw,
+  RotateCw,
+  ListMusic,
+  Clock,
+  Download,
+  CheckCircle2,
+} from 'lucide-react-native';
+import { useMobilePlayer } from '../context/MobilePlayerContext';
+
+const { width } = Dimensions.get('window');
 
 interface StoryPlayerScreenProps {
   onBack?: () => void;
-  onTogglePlay?: () => void;
-  isPlaying?: boolean;
 }
 
-export const StoryPlayerScreen: React.FC<StoryPlayerScreenProps> = ({
-  onBack,
-  onTogglePlay,
-  isPlaying: externalIsPlaying,
-}) => {
-  const [internalPlaying, setInternalPlaying] = useState(false);
-  const isPlaying = externalIsPlaying !== undefined ? externalIsPlaying : internalPlaying;
+export const StoryPlayerScreen: React.FC<StoryPlayerScreenProps> = ({ onBack }) => {
+  const {
+    currentTrack,
+    isPlaying,
+    positionSec,
+    durationSec,
+    playbackRate,
+    sleepTimer,
+    togglePlay,
+    seekTo,
+    setRate,
+    setSleepTimerMinutes,
+  } = useMobilePlayer();
 
-  const togglePlay = () => {
-    if (onTogglePlay) {
-      onTogglePlay();
-    } else {
-      setInternalPlaying(!internalPlaying);
-    }
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isDownloaded, setIsDownloaded] = useState(false);
+
+  // Fallback defaults matching Screen 9 reference if no track active
+  const displayTitle = currentTrack?.seriesTitle || 'Ponniyin Selvan';
+  const displayEpisode = currentTrack?.title || 'Episode 3 - Pazhuvettarayar';
+  const totalDuration = durationSec > 0 ? durationSec : 1758; // 29:18
+  const currentPosition = durationSec > 0 ? positionSec : 756; // 12:36
+
+  const progressPercent = totalDuration > 0 ? (currentPosition / totalDuration) * 100 : 0;
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  const handleSkipBackward = () => {
+    seekTo(Math.max(0, currentPosition - 10));
+  };
+
+  const handleSkipForward = () => {
+    seekTo(Math.min(totalDuration, currentPosition + 10));
+  };
+
+  const handleCycleSpeed = () => {
+    const speeds = [1.0, 1.25, 1.5, 2.0];
+    const nextIdx = (speeds.indexOf(playbackRate) + 1) % speeds.length;
+    setRate(speeds[nextIdx]);
+  };
+
+  const handleCycleTimer = () => {
+    const timers = [null, 15, 30, 60];
+    const nextIdx = (timers.indexOf(sleepTimer) + 1) % timers.length;
+    setSleepTimerMinutes(timers[nextIdx]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F5E9" />
+      <StatusBar barStyle="light-content" backgroundColor="#063F30" />
       <View style={styles.content}>
-        {/* Header */}
+        {/* Top Header Bar */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>←</Text>
+          <TouchableOpacity onPress={onBack} style={styles.iconBtn}>
+            <ChevronDown size={28} color="#FFFFFF" />
           </TouchableOpacity>
+
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTag}>NOW PLAYING</Text>
-            <Text style={styles.headerTitle}>பஞ்சதந்திரக் கதைகள்</Text>
+            <Text style={styles.headerSeriesTitle} numberOfLines={1}>
+              {displayTitle}
+            </Text>
+            <Text style={styles.headerEpisodeTitle} numberOfLines={1}>
+              {displayEpisode}
+            </Text>
           </View>
-          <View style={styles.speedBadge}>
-            <Text style={styles.speedBadgeText}>1.0x</Text>
+
+          <TouchableOpacity
+            onPress={() => setIsFavorite(!isFavorite)}
+            style={styles.iconBtn}
+          >
+            <Heart
+              size={24}
+              color={isFavorite ? '#EF4444' : '#FFFFFF'}
+              fill={isFavorite ? '#EF4444' : 'transparent'}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Large Square Cover Artwork */}
+        <View style={styles.artworkWrapper}>
+          <View style={styles.artworkFrame}>
+            <Image
+              source={
+                currentTrack?.coverImageUrl
+                  ? { uri: currentTrack.coverImageUrl }
+                  : require('../../assets/onboarding-1.jpg')
+              }
+              style={styles.artworkImage}
+              resizeMode="cover"
+            />
+            {/* Center Floating Title Badge on Artwork */}
+            <View style={styles.artFloatingBadge}>
+              <Text style={styles.artBadgeSeries}>{displayTitle}</Text>
+              <Text style={styles.artBadgeSub}>{displayEpisode}</Text>
+            </View>
           </View>
         </View>
 
-        {/* Story Cover Artwork (The Clever Crow) */}
-        <View style={styles.artworkContainer}>
-          <View style={styles.artFrame}>
-            <Text style={styles.fallbackArtEmoji}>🦅</Text>
+        {/* Playback Progress Slider */}
+        <View style={styles.progressSection}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            style={styles.progressBarTrack}
+            onPress={(e) => {
+              const clickX = e.nativeEvent.locationX;
+              const trackWidth = width - 48;
+              const pct = Math.max(0, Math.min(1, clickX / trackWidth));
+              seekTo(Math.floor(pct * totalDuration));
+            }}
+          >
+            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+            <View style={[styles.progressThumb, { left: `${Math.max(0, progressPercent - 2)}%` }]} />
+          </TouchableOpacity>
+
+          <View style={styles.timestampRow}>
+            <Text style={styles.timestampText}>{formatTime(currentPosition)}</Text>
+            <Text style={styles.timestampText}>{formatTime(totalDuration)}</Text>
           </View>
         </View>
 
-        {/* Title & Metadata */}
-        <View style={styles.metaContainer}>
-          <Text style={styles.storyTitle}>The Clever Crow</Text>
-          <Text style={styles.tamilStoryTitle}>காக்கையின் தாகம்</Text>
-          <Text style={styles.authorText}>குரல்: கதைசொல்லி குழு · By Anzles</Text>
-        </View>
-
-        {/* Progress bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBarTrack}>
-            <View style={styles.progressBarFill} />
-          </View>
-          <View style={styles.timeRow}>
-            <Text style={styles.timeText}>02:45</Text>
-            <Text style={styles.timeText}>06:00</Text>
-          </View>
-        </View>
-
-        {/* Playback Controls */}
+        {/* Player Controls (10s Back, Play/Pause, 10s Forward) */}
         <View style={styles.controlsRow}>
-          <TouchableOpacity style={styles.secondaryControl}>
-            <Text style={styles.controlIconText}>⏪ 10</Text>
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={handleSkipBackward}
+            activeOpacity={0.7}
+          >
+            <RotateCcw size={28} color="#FFFFFF" />
+            <Text style={styles.skipNumber}>10</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.playButton}
+            style={styles.playPauseBtn}
             onPress={togglePlay}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
           >
-            <Text style={styles.playButtonText}>{isPlaying ? '⏸' : '▶'}</Text>
+            {isPlaying ? (
+              <Pause size={36} color="#063F30" fill="#063F30" />
+            ) : (
+              <Play size={36} color="#063F30" fill="#063F30" />
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.secondaryControl}>
-            <Text style={styles.controlIconText}>10 ⏩</Text>
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={handleSkipForward}
+            activeOpacity={0.7}
+          >
+            <RotateCw size={28} color="#FFFFFF" />
+            <Text style={styles.skipNumber}>10</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Bottom Utility Actions */}
-        <View style={styles.utilityRow}>
-          <TouchableOpacity style={styles.utilityButton}>
-            <Text style={styles.utilityEmoji}>⏱️</Text>
-            <Text style={styles.utilityLabel}>Timer</Text>
+        {/* Bottom Actions Row (Speed, Chapters, Sleep Timer, Download) */}
+        <View style={styles.bottomActionsRow}>
+          <TouchableOpacity style={styles.actionItem} onPress={handleCycleSpeed}>
+            <Text style={styles.speedLabel}>{playbackRate}x</Text>
+            <Text style={styles.actionText}>Speed</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.utilityButton}>
-            <Text style={styles.utilityEmoji}>🔊</Text>
-            <Text style={styles.utilityLabel}>Audio</Text>
+
+          <TouchableOpacity style={styles.actionItem} onPress={onBack}>
+            <ListMusic size={22} color="#FFFFFF" />
+            <Text style={styles.actionText}>Chapters</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.utilityButton}>
-            <Text style={styles.utilityEmoji}>⬇️</Text>
-            <Text style={styles.utilityLabel}>Offline</Text>
+
+          <TouchableOpacity style={styles.actionItem} onPress={handleCycleTimer}>
+            <Clock size={22} color={sleepTimer ? '#D7B45A' : '#FFFFFF'} />
+            <Text style={[styles.actionText, sleepTimer ? { color: '#D7B45A' } : null]}>
+              {sleepTimer ? `${sleepTimer}m` : 'Sleep Timer'}
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.utilityButton}>
-            <Text style={styles.utilityEmoji}>🔖</Text>
-            <Text style={styles.utilityLabel}>Save</Text>
+
+          <TouchableOpacity
+            style={styles.actionItem}
+            onPress={() => setIsDownloaded(!isDownloaded)}
+          >
+            {isDownloaded ? (
+              <CheckCircle2 size={22} color="#A7F3D0" />
+            ) : (
+              <Download size={22} color="#FFFFFF" />
+            )}
+            <Text style={[styles.actionText, isDownloaded ? { color: '#A7F3D0' } : null]}>
+              {isDownloaded ? 'Downloaded' : 'Download'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -120,173 +228,181 @@ export const StoryPlayerScreen: React.FC<StoryPlayerScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F5E9',
+    backgroundColor: '#063F30',
   },
   content: {
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'space-between',
-    paddingVertical: 24,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 20,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 8,
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  backButtonText: {
-    fontSize: 18,
-    color: '#064E3B',
-    fontWeight: 'bold',
+  iconBtn: {
+    padding: 6,
   },
   headerCenter: {
+    flex: 1,
     alignItems: 'center',
+    marginHorizontal: 12,
   },
-  headerTag: {
-    fontSize: 9,
+  headerSeriesTitle: {
+    fontSize: 16,
     fontWeight: '800',
-    color: '#064E3B',
-    letterSpacing: 1.5,
+    color: '#FFFFFF',
+    fontFamily: 'serif',
   },
-  headerTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4B5563',
-  },
-  speedBadge: {
-    backgroundColor: '#E8F0E2',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  speedBadgeText: {
+  headerEpisodeTitle: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#064E3B',
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 2,
   },
-  artworkContainer: {
+  artworkWrapper: {
     alignItems: 'center',
     marginVertical: 12,
   },
-  artFrame: {
-    width: 240,
-    height: 240,
+  artworkFrame: {
+    width: width * 0.76,
+    height: width * 0.76,
     borderRadius: 28,
-    backgroundColor: '#E8F0E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    shadowColor: '#064E3B',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.4,
     shadowRadius: 16,
-    elevation: 6,
+    elevation: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(215, 180, 90, 0.3)',
+    position: 'relative',
   },
-  fallbackArtEmoji: {
-    fontSize: 80,
+  artworkImage: {
+    width: '100%',
+    height: '100%',
   },
-  metaContainer: {
+  artFloatingBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
+    padding: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(6, 63, 48, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(215, 180, 90, 0.4)',
     alignItems: 'center',
-    gap: 4,
   },
-  storyTitle: {
-    fontSize: 22,
+  artBadgeSeries: {
+    fontSize: 14,
     fontWeight: '900',
-    color: '#064E3B',
-    textAlign: 'center',
+    color: '#FFFFFF',
+    fontFamily: 'serif',
   },
-  tamilStoryTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#166534',
-  },
-  authorText: {
-    fontSize: 11,
-    color: '#6B7280',
+  artBadgeSub: {
+    fontSize: 10,
+    color: '#D7B45A',
+    fontWeight: '600',
     marginTop: 2,
   },
-  progressContainer: {
-    gap: 6,
+  progressSection: {
+    marginVertical: 8,
   },
   progressBarTrack: {
-    width: '100%',
-    height: 5,
-    backgroundColor: '#D1D5DB',
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 3,
-    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'center',
   },
   progressBarFill: {
-    width: '45%',
-    height: '100%',
-    backgroundColor: '#064E3B',
+    height: 6,
+    backgroundColor: '#A7F3D0',
+    borderRadius: 3,
   },
-  timeRow: {
+  progressThumb: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#FFFFFF',
+    top: -4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  timestampRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 8,
   },
-  timeText: {
-    fontSize: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    color: '#6B7280',
+  timestampText: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.65)',
+    fontFamily: 'monospace',
+    fontWeight: '600',
   },
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 28,
+    gap: 36,
+    marginVertical: 12,
   },
-  secondaryControl: {
-    padding: 10,
-  },
-  controlIconText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#064E3B',
-  },
-  playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#064E3B',
+  skipBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#064E3B',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
+    position: 'relative',
+    width: 48,
+    height: 48,
   },
-  playButtonText: {
-    fontSize: 24,
-    color: '#FFFFFF',
-  },
-  utilityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    paddingTop: 12,
-  },
-  utilityButton: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  utilityEmoji: {
-    fontSize: 16,
-  },
-  utilityLabel: {
+  skipNumber: {
+    position: 'absolute',
     fontSize: 9,
-    color: '#6B7280',
+    fontWeight: '900',
+    color: '#FFFFFF',
+    top: 17,
+  },
+  playPauseBtn: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  bottomActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  actionItem: {
+    alignItems: 'center',
+    gap: 4,
+    minWidth: 60,
+  },
+  speedLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    height: 22,
+    textAlign: 'center',
+  },
+  actionText: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: '600',
   },
 });
