@@ -1,107 +1,141 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, BookOpen, Skull, Heart, Flame, ShieldAlert, Sparkles, Baby, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import {
+  Compass,
+  BookOpen,
+  Heart,
+  Flame,
+  Sparkles,
+  Baby,
+  ChevronRight,
+  Leaf,
+  ShieldCheck,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  history: <Compass className="h-8 w-8 text-amber-500" />,
-  mystery: <Skull className="h-8 w-8 text-purple-500" />,
-  thriller: <Skull className="h-8 w-8 text-purple-500" />,
-  romance: <Heart className="h-8 w-8 text-rose-500" />,
-  devotional: <Sparkles className="h-8 w-8 text-amber-400" />,
-  inspiration: <Flame className="h-8 w-8 text-emerald-500" />,
-  classics: <BookOpen className="h-8 w-8 text-teal-500" />,
-  children: <Baby className="h-8 w-8 text-cyan-500" />,
-  'science-fiction': <ShieldAlert className="h-8 w-8 text-blue-500" />,
-};
+const CORE_CATEGORIES = [
+  {
+    id: 'moral-stories',
+    slug: 'Moral Stories',
+    name: 'Moral Stories (நீதிக்கதைகள்)',
+    tamilName: 'பஞ்சதந்திர கதைகள் & நன்னெறி',
+    description: 'Timeless animal fables of wit, wisdom, and virtue from Vishnu Sharma and Aesop.',
+    cover: '/images/story-panchatantra.jpg',
+    count: '18 Stories',
+    icon: <BookOpen className="w-6 h-6 text-[#A7F3D0]" />,
+  },
+  {
+    id: 'culture-tradition',
+    slug: 'Culture & Tradition',
+    name: 'Culture & Tradition (பாரம்பரியம்)',
+    tamilName: 'தமிழ் கிராமிய நாடோடிக் கதைகள்',
+    description: 'Heritage legends, oral traditions, and heartwarming village folklore told by grandmothers.',
+    cover: '/images/story-tamil-folk.jpg',
+    count: '24 Stories',
+    icon: <Sparkles className="w-6 h-6 text-[#A7F3D0]" />,
+  },
+  {
+    id: 'for-kids',
+    slug: 'For Kids',
+    name: 'For Kids (குழந்தைகளுக்கு)',
+    tamilName: 'தூங்க வைக்கும் தாலாட்டுக் கதைகள்',
+    description: 'Gentle, soothing stories designed to help young dreamers fall asleep happily.',
+    cover: '/images/story-bedtime.jpg',
+    count: '32 Stories',
+    icon: <Baby className="w-6 h-6 text-[#A7F3D0]" />,
+  },
+  {
+    id: 'tamil-history',
+    slug: 'Tamil History',
+    name: 'Tamil History (சோழர் வரலாறு)',
+    tamilName: 'சேர, சோழ, பாண்டியர் வரலாற்றுப் புதினங்கள்',
+    description: 'Heroic sagas of the Chola, Pandya, and Chera dynasties, kings, and grand stone temples.',
+    cover: '/images/story-historical.jpg',
+    count: '15 Epics',
+    icon: <Compass className="w-6 h-6 text-[#A7F3D0]" />,
+  },
+  {
+    id: 'life-lessons',
+    slug: 'Life Lessons',
+    name: 'Life Lessons (வாழ்வியல் நெறி)',
+    tamilName: 'திருவள்ளுவர் தன்னம்பிக்கைக் கதைகள்',
+    description: 'Inspiring life lessons from Thiruvalluvar, ancient sages, and modern thinkers.',
+    cover: '/images/story-motivational.jpg',
+    count: '20 Stories',
+    icon: <Flame className="w-6 h-6 text-[#A7F3D0]" />,
+  },
+];
 
 export const CategoriesPage: React.FC = () => {
   const { api } = useAuth();
 
-  const {
-    data: categories = [],
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ['catalog', 'categories'],
     queryFn: () => api.catalog.getCategories(),
   });
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif">
-          கதை வகைப்பாடுகள் (Categories)
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] transition-colors">
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider">
+          <Leaf className="w-3.5 h-3.5 fill-current" />
+          <span>Curated Categories</span>
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+          கதை வகைப்பாடுகள் (Story Categories)
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          உங்களுக்குப் பிடித்த வகைப்பாட்டின் படி தமிழ் ஆடியோ கதைகளைக் கண்டறியுங்கள்
+        <p className="text-sm text-[#173D2E]/75 dark:text-stone-300 max-w-xl">
+          உங்களுக்குப் பிடித்த கதை உலகத்தை தேர்ந்தெடுத்து உடனடியாக வாசிக்கவும் அல்லது கேட்கவும் தொடங்குங்கள்.
         </p>
       </div>
 
-      {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-white dark:bg-[#14231E] border border-emerald-100/60 dark:border-emerald-900/40 animate-pulse space-y-4">
-              <div className="h-14 w-14 rounded-2xl bg-emerald-100/50 dark:bg-emerald-900/30" />
-              <div className="h-5 bg-emerald-100/50 dark:bg-emerald-900/30 rounded w-2/3" />
-              <div className="h-3 bg-emerald-50 dark:bg-emerald-950 rounded w-1/3" />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {isError && (
-        <div className="p-8 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-center space-y-4">
-          <AlertCircle className="h-10 w-10 text-rose-600 mx-auto" />
-          <h3 className="text-lg font-bold text-rose-900 dark:text-rose-200">
-            வகைப்பாடுகளை ஏற்றுவதில் பிழை
-          </h3>
-          <p className="text-xs text-rose-700 dark:text-rose-300">
-            {(error as any)?.message || 'சர்வர் இணைப்பில் பிழை ஏற்பட்டது.'}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors"
+      {/* Core Botanical Categories Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {CORE_CATEGORIES.map((cat) => (
+          <Link
+            key={cat.id}
+            to={`/explore?category=${encodeURIComponent(cat.slug)}`}
+            className="group rounded-3xl bg-white dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
           >
-            <RefreshCw className="h-4 w-4" />
-            <span>மீண்டும் முயற்சி செய்</span>
-          </button>
-        </div>
-      )}
-
-      {!isLoading && !isError && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {categories.map((cat) => (
-            <Link
-              key={cat.id || cat.slug}
-              to={`/explore?category=${cat.slug}`}
-              className="group flex flex-col p-6 rounded-2xl bg-white dark:bg-[#14231E] border border-emerald-100 dark:border-emerald-900/40 shadow-sm hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
-            >
-              <div className="h-14 w-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                {CATEGORY_ICONS[cat.slug] || <BookOpen className="h-8 w-8 text-emerald-600" />}
+            <div className="relative aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-stone-900">
+              <img
+                src={cat.cover}
+                alt={cat.name}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-[#064E3B]/90 backdrop-blur-md flex items-center justify-center border border-white/20">
+                    {cat.icon}
+                  </div>
+                  <div>
+                    <h3 className="font-bold font-serif text-lg leading-tight">{cat.name}</h3>
+                    <span className="text-xs font-tamil text-[#A7F3D0]">{cat.count}</span>
+                  </div>
+                </div>
+                <div className="p-2 rounded-full bg-white/20 backdrop-blur-md group-hover:bg-[#064E3B] transition-colors">
+                  <ChevronRight className="w-4 h-4 text-white" />
+                </div>
               </div>
+            </div>
 
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
-                {cat.name}
-              </h3>
-
-              {cat.slug && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 uppercase tracking-wider font-semibold">
-                  {cat.slug}
-                </p>
-              )}
-
-              <div className="mt-6 flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-400 pt-3 border-t border-emerald-50 dark:border-emerald-900/30">
-                <span>கதைகளைக் காண்க</span>
-                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+              <div className="text-xs font-semibold font-tamil text-[#166534] dark:text-[#A7F3D0]">
+                {cat.tamilName}
               </div>
-            </Link>
-          ))}
-        </div>
-      )}
+              <p className="text-xs text-[#173D2E]/75 dark:text-stone-300 leading-relaxed">
+                {cat.description}
+              </p>
+              <div className="pt-3 border-t border-[#E3DCBA]/60 dark:border-[#124835] flex items-center justify-between text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0]">
+                <span>Explore Stories</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };

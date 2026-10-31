@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Headphones, Mail, Lock, User, AlertCircle, Sparkles } from 'lucide-react';
+import { Leaf, Mail, Lock, User, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage: React.FC = () => {
@@ -18,8 +18,8 @@ export const RegisterPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError('கடவுச்சொல் குறைந்தது 8 எழுத்துக்கள் இருக்க வேண்டும் (At least 8 chars)');
+    if (password.length < 6) {
+      setError('கடவுச்சொல் குறைந்தது 6 எழுத்துக்கள் இருக்க வேண்டும் (Password must be at least 6 characters)');
       return;
     }
 
@@ -32,117 +32,128 @@ export const RegisterPage: React.FC = () => {
         displayName,
         role,
       });
-      navigate('/home');
+      navigate('/library');
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'பதிவு செய்வதில் பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும்.');
+      setError(
+        err?.response?.data?.message ||
+          'பதிவு செய்வதில் பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும் (Registration failed)',
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-[#14231E] p-8 sm:p-10 rounded-3xl border border-emerald-100 dark:border-emerald-900/40 shadow-xl">
+    <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-[#F8F5E9] dark:bg-[#033B2B] transition-colors">
+      <div className="max-w-md w-full space-y-7 bg-white dark:bg-[#083325] p-8 sm:p-10 rounded-[32px] border-2 border-[#E3DCBA] dark:border-[#124835] shadow-2xl relative overflow-hidden">
+        {/* Subtle decorative leaf watermark */}
+        <div className="absolute -top-10 -right-10 text-[#064E3B]/5 dark:text-emerald-400/5 pointer-events-none">
+          <Leaf className="w-48 h-48" />
+        </div>
+
         {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto h-12 w-12 rounded-2xl bg-emerald-700 flex items-center justify-center text-white shadow-md">
-            <Headphones className="h-6 w-6" />
+        <div className="text-center space-y-2 relative z-10">
+          <div className="mx-auto h-14 w-14 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-lg border-2 border-[#D6A83F]/50">
+            <Leaf className="h-7 w-7 text-[#A7F3D0] fill-current" />
           </div>
-          <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif">
-            பதிவு செய்க (Create Account)
+          <h2 className="text-2xl sm:text-3xl font-black text-[#064E3B] dark:text-[#F8F5E9] font-serif">
+            Create Account
           </h2>
-          <div className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
-            <Sparkles className="h-3 w-3" />
-            <span>100% இலவச கணக்கு • சந்தா இல்லை</span>
+          <p className="text-xs font-tamil text-[#166534] dark:text-[#A7F3D0] font-medium">
+            கதைசொல்லி — புதிய வாசகர் கணக்கு
+          </p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0E2] dark:bg-[#033B2B] text-xs text-[#064E3B] dark:text-[#A7F3D0] font-bold">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>100% Free Account · Zero Paywalls</span>
           </div>
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center gap-2 text-rose-700 dark:text-rose-300 text-xs">
+          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center gap-2.5 text-rose-700 dark:text-rose-300 text-xs relative z-10">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
           <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              முழு பெயர் (Display Name)
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
+              Full Name (முழு பெயர்)
             </label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#166534]/60 dark:text-emerald-300/60" />
               <input
                 type="text"
                 required
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="எ.கா. கதிர்வேலன்"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#101A16] text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="எ.கா. கதிர்வேலன் (Kathirvelan)"
+                className="w-full pl-11 pr-4 py-3 rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9]/60 dark:bg-[#033B2B]/60 text-sm text-[#173D2E] dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#064E3B] transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              மின்னஞ்சல் முகவரி (Email Address)
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
+              Email Address (மின்னஞ்சல்)
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#166534]/60 dark:text-emerald-300/60" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#101A16] text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-11 pr-4 py-3 rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9]/60 dark:bg-[#033B2B]/60 text-sm text-[#173D2E] dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#064E3B] transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              கடவுச்சொல் (Password - min 8 chars)
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
+              Password (கடவுச்சொல்)
             </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#166534]/60 dark:text-emerald-300/60" />
               <input
                 type="password"
                 required
-                minLength={8}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#101A16] text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                placeholder="••••••••••••"
+                className="w-full pl-11 pr-4 py-3 rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9]/60 dark:bg-[#033B2B]/60 text-sm text-[#173D2E] dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#064E3B] transition-all"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
-              பயனர் வகை (Account Type)
+          {/* Account Role Selector */}
+          <div className="pt-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
+              I want to (விருப்பம்)
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setRole('LISTENER')}
-                className={`py-2 px-3 text-xs font-bold rounded-xl border transition-colors ${
+                className={`py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all ${
                   role === 'LISTENER'
-                    ? 'bg-emerald-700 text-white border-emerald-700'
-                    : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300'
+                    ? 'border-[#064E3B] bg-[#E8F0E2] text-[#064E3B] dark:bg-[#033B2B] dark:text-[#A7F3D0]'
+                    : 'border-[#D5CEBA] dark:border-[#124835] text-stone-500 hover:bg-stone-50 dark:hover:bg-[#042419]'
                 }`}
               >
-                நேயர் (Listener)
+                Listen Stories (நேயர்)
               </button>
               <button
                 type="button"
                 onClick={() => setRole('CREATOR')}
-                className={`py-2 px-3 text-xs font-bold rounded-xl border transition-colors ${
+                className={`py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all ${
                   role === 'CREATOR'
-                    ? 'bg-emerald-700 text-white border-emerald-700'
-                    : 'bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300'
+                    ? 'border-[#064E3B] bg-[#E8F0E2] text-[#064E3B] dark:bg-[#033B2B] dark:text-[#A7F3D0]'
+                    : 'border-[#D5CEBA] dark:border-[#124835] text-stone-500 hover:bg-stone-50 dark:hover:bg-[#042419]'
                 }`}
               >
-                படைப்பாளர் (Creator)
+                Write / Narrate (படைப்பாளி)
               </button>
             </div>
           </div>
@@ -150,17 +161,21 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm shadow-md transition-colors disabled:opacity-50"
+            className="w-full py-3.5 px-4 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-sm shadow-xl shadow-emerald-950/20 transition-all hover:scale-[1.01] disabled:opacity-50 mt-2"
           >
-            {loading ? 'பதிவு செய்யப்படுகிறது...' : 'இலவச கணக்கு தொடங்கு (Sign Up Free)'}
+            {loading ? 'பதிவு செய்யப்படுகிறது...' : 'Create Free Account'}
           </button>
         </form>
 
-        <div className="pt-4 border-t border-emerald-50 dark:border-emerald-900/30 text-center">
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">
-            ஏற்கனவே கணக்கு உள்ளதா?{' '}
-            <Link to="/login" className="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
-              உள்நுழையவும்
+        {/* Existing account link */}
+        <div className="text-center pt-2 relative z-10 border-t border-[#E3DCBA] dark:border-[#124835]">
+          <p className="text-xs text-stone-600 dark:text-stone-300">
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+            >
+              Sign In
             </Link>
           </p>
         </div>

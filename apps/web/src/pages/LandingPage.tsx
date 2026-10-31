@@ -1,197 +1,742 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Headphones, Sparkles, ShieldCheck, HeartHandshake, Mic, Play, ChevronRight, Star } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { StoryCard } from '../components/StoryCard';
-import { StoryGridSkeleton } from '../components/LoadingSkeleton';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  BookOpen,
+  Headphones,
+  Sparkles,
+  Heart,
+  ChevronRight,
+  Play,
+  Pause,
+  CheckCircle2,
+  Smartphone,
+  ShieldCheck,
+  Star,
+  Compass,
+  ArrowRight,
+  Leaf,
+  Volume2,
+  Lock,
+  Mail,
+  User,
+  Radio,
+  Clock,
+  Download,
+  Share2,
+} from 'lucide-react';
+import { usePlayer } from '../context/PlayerContext';
 
 export const LandingPage: React.FC = () => {
-  const { api } = useAuth();
+  const navigate = useNavigate();
+  const { playEpisode, isPlaying, currentTrack, togglePlay } = usePlayer();
 
-  const { data: homeData, isLoading } = useQuery({
-    queryKey: ['catalog', 'home'],
-    queryFn: () => api.catalog.getHome(),
-  });
+  // Local demo audio state for Clever Crow
+  const isCleverCrowActive = currentTrack?.title === 'காக்கையின் தாகம் (The Clever Crow)';
 
-  const featuredStories = (homeData?.featured || homeData?.featuredSeries || []).slice(0, 4);
-  const latestStories = (homeData?.latest || homeData?.trendingSeries || []).slice(0, 4);
-  const displayStories = featuredStories.length > 0 ? featuredStories : latestStories;
+  const handlePlayCleverCrow = () => {
+    if (isCleverCrowActive) {
+      togglePlay();
+    } else {
+      playEpisode({
+        episodeId: 'ep-clever-crow',
+        title: 'காக்கையின் தாகம் (The Clever Crow)',
+        seriesTitle: 'பஞ்சதந்திரக் கதைகள் (Panchatantra)',
+        coverImageUrl: '/images/story-clever-crow.jpg',
+        narratorName: 'கதைசொல்லி குழு (Kathaisolli Studio)',
+        durationSec: 360,
+      });
+    }
+  };
+
+  const handlePlayStory = (story: {
+    id: string;
+    title: string;
+    seriesTitle: string;
+    cover: string;
+    durationSec: number;
+  }) => {
+    playEpisode({
+      episodeId: story.id,
+      title: story.title,
+      seriesTitle: story.seriesTitle,
+      coverImageUrl: story.cover,
+      narratorName: 'By Anzles Studio',
+      durationSec: story.durationSec,
+    });
+  };
+
+  const popularStories = [
+    {
+      id: 'panchatantra-stories',
+      title: 'Panchatantra Stories',
+      tamilTitle: 'பஞ்சதந்திர கதைகள்',
+      category: 'Moral Stories',
+      categoryTamil: 'நீதிக்கதைகள்',
+      cover: '/images/story-panchatantra.jpg',
+      rating: '4.9',
+      count: '18 Stories',
+      durationSec: 420,
+      description: 'Timeless animal fables of wit, wisdom, and friendship taught through enchanting jungle lore.',
+    },
+    {
+      id: 'tamil-folk-tales',
+      title: 'Tamil Folk Tales',
+      tamilTitle: 'தமிழ் நாடோடிக் கதைகள்',
+      category: 'Culture & Tradition',
+      categoryTamil: 'பாரம்பரியம்',
+      cover: '/images/story-tamil-folk.jpg',
+      rating: '4.8',
+      count: '24 Stories',
+      durationSec: 510,
+      description: 'Rich cultural legends, oral traditions, and heartwarming village fables passed down for generations.',
+    },
+    {
+      id: 'bedtime-stories',
+      title: 'Bedtime Stories',
+      tamilTitle: 'தாலாட்டுக் கதைகள்',
+      category: 'For Kids',
+      categoryTamil: 'குழந்தைகளுக்கு',
+      cover: '/images/story-bedtime.jpg',
+      rating: '5.0',
+      count: '32 Stories',
+      durationSec: 380,
+      description: 'Soothing bedtime tales designed with calm soothing narration to guide little ones to sweet dreams.',
+    },
+    {
+      id: 'historical-stories',
+      title: 'Historical Stories',
+      tamilTitle: 'வரலாற்று கதைகள்',
+      category: 'Tamil History',
+      categoryTamil: 'சோழர் வரலாறு',
+      cover: '/images/story-historical.jpg',
+      rating: '4.9',
+      count: '15 Epics',
+      durationSec: 680,
+      description: 'The monumental rise of the Cholas, Pandyas, and Cheras — kings, valor, and majestic temples.',
+    },
+    {
+      id: 'motivational-stories',
+      title: 'Motivational Stories',
+      tamilTitle: 'தன்னம்பிக்கை கதைகள்',
+      category: 'Life Lessons',
+      categoryTamil: 'வாழ்வியல் நெறி',
+      cover: '/images/story-motivational.jpg',
+      rating: '4.9',
+      count: '20 Stories',
+      durationSec: 450,
+      description: 'Inspiring life lessons from Thiruvalluvar, ancient sages, and modern conquerors to fuel your spirit.',
+    },
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-950 via-[#0A261D] to-[#101A16] text-white pt-16 pb-24 md:pt-24 md:pb-32 px-4 sm:px-6 lg:px-8">
-        {/* Subtle decorative circles */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] transition-colors duration-200">
+      {/* ============================================================== */}
+      {/* 1. HERO SECTION (Botanical Green, Storybook Hero Art) */}
+      {/* ============================================================== */}
+      <section className="relative overflow-hidden pt-8 pb-16 lg:pt-14 lg:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          {/* Left Column: Heading, Subtitle & CTA */}
+          <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E8F0E2] dark:bg-[#083325] border border-[#064E3B]/20 text-[#064E3B] dark:text-[#A7F3D0] text-xs font-bold tracking-wide uppercase shadow-sm">
+              <Leaf className="w-4 h-4 fill-current text-[#064E3B] dark:text-emerald-400" />
+              <span>By Anzles · 100% Free Platform</span>
+            </div>
 
-        <div className="relative max-w-5xl mx-auto text-center space-y-8">
-          {/* Free Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-800/60 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm font-medium backdrop-blur-md">
-            <Sparkles className="h-4 w-4 text-emerald-400" />
-            <span>100% இலவசம் • No Subscriptions • No Hidden Paywalls</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black font-serif tracking-tight text-[#064E3B] dark:text-[#F8F5E9] leading-[1.15]">
+              Explore Stories <br />
+              <span className="text-[#166534] dark:text-[#A7F3D0]">in Tamil</span>
+            </h1>
+
+            <p className="text-base sm:text-lg text-[#173D2E]/80 dark:text-stone-300 max-w-xl mx-auto lg:mx-0 leading-relaxed font-sans">
+              Discover a magical world of timeless Tamil folktales, captivating bedtime fables, and inspiring cultural sagas. Immerse your family in reading or listening to original stories anytime, anywhere — completely free.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+              <Link
+                to="/explore"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-base shadow-xl shadow-emerald-950/20 hover:scale-[1.02] transition-all"
+              >
+                <span>Get Started</span>
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+              <Link
+                to="/categories"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full bg-[#E8F0E2] dark:bg-[#083325] hover:bg-[#D5E3CD] dark:hover:bg-[#0D4432] text-[#064E3B] dark:text-[#A7F3D0] font-bold text-base border border-[#064E3B]/20 transition-all"
+              >
+                <Compass className="w-5 h-5 text-[#064E3B] dark:text-[#A7F3D0]" />
+                <span>Explore Catalog</span>
+              </Link>
+            </div>
+
+            {/* Quick Guarantees */}
+            <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-[#173D2E]/70 dark:text-stone-300 font-medium">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#064E3B] dark:text-emerald-400" />
+                <span>Zero Subscription Fees</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#064E3B] dark:text-emerald-400" />
+                <span>Original Storybook Art</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-[#064E3B] dark:text-emerald-400" />
+                <span>Professional Tamil Audio</span>
+              </div>
+            </div>
           </div>
 
-          {/* Master Heading */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight font-serif text-emerald-50 leading-tight">
-            ஒவ்வொரு கதைக்கும் <br className="hidden sm:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-mint-200 to-emerald-400">
-              ஒரு குரல்.
-            </span>
-          </h1>
+          {/* Right Column: Hero Storybook Artwork (Generated to match reference) */}
+          <div className="lg:col-span-6 flex justify-center">
+            <div className="relative group max-w-md lg:max-w-none w-full">
+              {/* Botanical glow backing */}
+              <div className="absolute -inset-2 bg-gradient-to-tr from-[#064E3B]/20 to-[#D6A83F]/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all" />
 
-          {/* Subtitle */}
-          <p className="max-w-2xl mx-auto text-base sm:text-xl text-emerald-100/80 font-light leading-relaxed">
-            பொன்னியின் செல்வன் முதல் நவீன திகில் மற்றும் தன்னம்பிக்கை கதைகள் வரை, உங்களை மயக்கும் உயர்தர தமிழ் ஆடியோ கதைகளின் உன்னத தளம்.
-          </p>
+              <div className="relative rounded-3xl overflow-hidden border-4 border-white/90 dark:border-[#124835] shadow-2xl shadow-emerald-950/20 bg-white dark:bg-[#083325]">
+                <img
+                  src="/images/hero-art.jpg"
+                  alt="Boy reading glowing magical Tamil storybook under tree with castle"
+                  className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700 aspect-square sm:aspect-auto"
+                />
 
-          {/* Action CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              to="/home"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold px-8 py-4 text-base sm:text-lg shadow-lg shadow-emerald-500/25 transition-all duration-200 hover:scale-105"
-            >
-              <Play className="h-5 w-5 fill-current" />
-              <span>கேட்கத் தொடங்குங்கள் (Start Listening)</span>
-            </Link>
-
-            <Link
-              to="/explore"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-semibold px-8 py-4 text-base sm:text-lg backdrop-blur-md transition-all duration-200"
-            >
-              <span>கதைகளைத் தேடுங்கள் (Explore Catalog)</span>
-              <ChevronRight className="h-5 w-5" />
-            </Link>
-          </div>
-
-          {/* Quick Metrics */}
-          <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-emerald-800/40 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl font-extrabold text-emerald-300">100%</div>
-              <div className="text-xs text-emerald-200/70 mt-1">என்றும் இலவசம் (Always Free)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl font-extrabold text-emerald-300">10,000+</div>
-              <div className="text-xs text-emerald-200/70 mt-1">கேட்கும் மணித்துளிகள்</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl font-extrabold text-emerald-300">4.9 ★</div>
-              <div className="text-xs text-emerald-200/70 mt-1">நேயர்கள் மதிப்பீடு</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl sm:text-3xl font-extrabold text-emerald-300">HQ Audio</div>
-              <div className="text-xs text-emerald-200/70 mt-1">தெளிவான தமிழ் குரல்</div>
+                {/* Floating pill badge */}
+                <div className="absolute bottom-4 left-4 right-4 p-3.5 rounded-2xl bg-white/95 dark:bg-[#083325]/95 backdrop-blur-md border border-[#E3DCBA] dark:border-[#124835] flex items-center justify-between shadow-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#064E3B] text-white flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-[#A7F3D0]" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold font-serif text-[#064E3B] dark:text-[#A7F3D0]">
+                        மாயம் நிறைந்த தமிழ் கதைகள்
+                      </h4>
+                      <p className="text-xs text-stone-500 dark:text-stone-300">
+                        A magical world of stories awaits you
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    to="/explore"
+                    className="p-2 rounded-full bg-[#E8F0E2] dark:bg-[#033B2B] text-[#064E3B] dark:text-[#A7F3D0] hover:scale-110 transition-transform"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Featured Stories Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
-              பிரபலமான கதைகள் (Trending Stories)
-            </h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-              நேயர்களால் அதிகம் விரும்பிக் கேட்கப்பட்ட தமிழ் காவியங்கள்
+      {/* ============================================================== */}
+      {/* 2. FOUR FEATURE CARDS SECTION */}
+      {/* ============================================================== */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Card 1: Read Stories */}
+          <div className="p-7 rounded-2xl bg-[#FFFFFF] dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-md transition-shadow group flex flex-col items-start">
+            <div className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
+              <BookOpen className="w-6 h-6 text-[#A7F3D0]" />
+            </div>
+            <h3 className="text-xl font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9] mb-2">
+              Read Stories
+            </h3>
+            <p className="text-sm text-[#173D2E]/75 dark:text-stone-300 leading-relaxed font-sans">
+              Enjoy beautifully formatted stories and articles in rich Tamil script with adjustable typography and reading comfort.
             </p>
+          </div>
+
+          {/* Card 2: Listen Stories */}
+          <div className="p-7 rounded-2xl bg-[#FFFFFF] dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-md transition-shadow group flex flex-col items-start">
+            <div className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
+              <Headphones className="w-6 h-6 text-[#A7F3D0]" />
+            </div>
+            <h3 className="text-xl font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9] mb-2">
+              Listen Stories
+            </h3>
+            <p className="text-sm text-[#173D2E]/75 dark:text-stone-300 leading-relaxed font-sans">
+              Experience expressive voice narrations accompanied by gentle ambient scores that bring characters alive.
+            </p>
+          </div>
+
+          {/* Card 3: For All Ages */}
+          <div className="p-7 rounded-2xl bg-[#FFFFFF] dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-md transition-shadow group flex flex-col items-start">
+            <div className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
+              <Heart className="w-6 h-6 text-[#A7F3D0]" />
+            </div>
+            <h3 className="text-xl font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9] mb-2">
+              For All Ages
+            </h3>
+            <p className="text-sm text-[#173D2E]/75 dark:text-stone-300 leading-relaxed font-sans">
+              From bedtime fables for toddlers to deep philosophical Sangam epics for elders, stories for the whole family.
+            </p>
+          </div>
+
+          {/* Card 4: Personalized */}
+          <div className="p-7 rounded-2xl bg-[#FFFFFF] dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-md transition-shadow group flex flex-col items-start">
+            <div className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-sm">
+              <Sparkles className="w-6 h-6 text-[#A7F3D0]" />
+            </div>
+            <h3 className="text-xl font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9] mb-2">
+              Personalized
+            </h3>
+            <p className="text-sm text-[#173D2E]/75 dark:text-stone-300 leading-relaxed font-sans">
+              Smart recommendations tailored to your taste, offline favorites, custom playlists, and synchronized progress.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================== */}
+      {/* 3. POPULAR STORIES SECTION (5 Illustrated Storybook Cards) */}
+      {/* ============================================================== */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#166534] dark:text-[#A7F3D0] mb-1">
+              <Leaf className="w-3.5 h-3.5 fill-current" />
+              <span>கதை வரிசை (Curated Catalog)</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+              Popular Stories
+            </h2>
           </div>
           <Link
             to="/explore"
-            className="hidden sm:inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:text-[#166534] hover:underline"
           >
-            அனைத்தும் பார்க்க <ChevronRight className="h-4 w-4" />
+            <span>View All Stories</span>
+            <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
-        {isLoading ? (
-          <StoryGridSkeleton count={4} />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayStories.map((story) => (
-              <StoryCard
-                key={story.id}
-                id={story.id}
-                slug={story.slug}
-                title={story.title}
-                authorName={story.authorName || undefined}
-                coverImage={story.coverImage}
-                categoryName={story.category?.name}
-              />
-            ))}
-          </div>
-        )}
+        {/* 5 Story Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {popularStories.map((story) => (
+            <div
+              key={story.id}
+              className="bg-white dark:bg-[#083325] rounded-2xl border border-[#E3DCBA] dark:border-[#124835] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group"
+            >
+              {/* Cover Image */}
+              <div className="relative aspect-square overflow-hidden bg-stone-100 dark:bg-stone-900">
+                <img
+                  src={story.cover}
+                  alt={story.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                {/* Play Button Overlay */}
+                <button
+                  onClick={() =>
+                    handlePlayStory({
+                      id: story.id,
+                      title: story.tamilTitle,
+                      seriesTitle: story.title,
+                      cover: story.cover,
+                      durationSec: story.durationSec,
+                    })
+                  }
+                  title="Listen to Story"
+                  className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-lg group-hover:scale-110 hover:bg-[#166534] transition-all"
+                >
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                </button>
+                {/* Rating Badge */}
+                <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-amber-300 text-xs font-bold flex items-center gap-1">
+                  <Star className="w-3 h-3 fill-current" />
+                  <span>{story.rating}</span>
+                </div>
+              </div>
+
+              {/* Story Details */}
+              <div className="p-4 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#166534] dark:text-[#A7F3D0] mb-1">
+                    {story.category}
+                  </div>
+                  <h3 className="font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9] text-base line-clamp-1 group-hover:text-[#166534] transition-colors">
+                    {story.title}
+                  </h3>
+                  <div className="text-xs font-semibold font-tamil text-stone-600 dark:text-stone-300 mb-2">
+                    {story.tamilTitle}
+                  </div>
+                  <p className="text-xs text-[#173D2E]/75 dark:text-stone-300 line-clamp-2 leading-relaxed">
+                    {story.description}
+                  </p>
+                </div>
+
+                <div className="pt-4 mt-3 border-t border-[#E3DCBA]/60 dark:border-[#124835] flex items-center justify-between text-xs font-medium text-stone-500 dark:text-stone-400">
+                  <span>{story.count}</span>
+                  <Link
+                    to={`/explore?category=${encodeURIComponent(story.category)}`}
+                    className="text-[#064E3B] dark:text-[#A7F3D0] font-bold hover:underline"
+                  >
+                    Open →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
-      {/* Why Kathaisolli (Features) */}
-      <section className="py-16 bg-emerald-50/50 dark:bg-emerald-950/20 border-y border-emerald-100 dark:border-emerald-900/30 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
-              ஏன் கதைசொல்லி? (Why Kathaisolli?)
+      {/* ============================================================== */}
+      {/* 4. SMARTPHONE APP MOCKUP SHOWCASE (4 Mobile Screens) */}
+      {/* ============================================================== */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-[#064E3B] dark:text-[#A7F3D0] text-xs font-bold uppercase tracking-wider">
+            <Smartphone className="w-4 h-4" />
+            <span>Mobile App Experience</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+            Kathaisolli on Your Phone
+          </h2>
+          <p className="text-base text-[#173D2E]/80 dark:text-stone-300">
+            Enjoy an intuitive, elegant mobile experience designed for storytelling on Android & iOS.
+          </p>
+        </div>
+
+        {/* 4 Realistic Smartphone Frames */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* PHONE 1: Welcome Screen */}
+          <div className="bg-[#1A2621] p-3 rounded-[40px] shadow-2xl border-4 border-[#334D40] max-w-xs mx-auto w-full">
+            <div className="bg-[#F8F5E9] text-[#173D2E] rounded-[32px] overflow-hidden h-[540px] flex flex-col justify-between p-5 relative border border-stone-300">
+              {/* Dynamic Island / Notch */}
+              <div className="w-24 h-4 bg-black rounded-full mx-auto mb-4" />
+
+              {/* Center Content */}
+              <div className="my-auto text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-[#064E3B] text-white flex items-center justify-center mx-auto shadow-md">
+                  <Leaf className="w-9 h-9 text-[#A7F3D0] fill-current" />
+                </div>
+                <div>
+                  <h4 className="text-2xl font-black font-serif text-[#064E3B]">Kathaisolli</h4>
+                  <p className="text-xs font-tamil font-semibold text-[#166534]">கதைசொல்லி</p>
+                </div>
+                <div className="px-2">
+                  <p className="text-sm font-serif font-bold text-[#173D2E]">
+                    Stories for a Brighter Tomorrow
+                  </p>
+                  <p className="text-[11px] text-stone-600 mt-1">
+                    Discover the magical warmth of Tamil stories, folktales & wisdom anywhere.
+                  </p>
+                </div>
+              </div>
+
+              {/* Bottom Buttons */}
+              <div className="space-y-2 pt-4">
+                <Link
+                  to="/explore"
+                  className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534]"
+                >
+                  Explore Stories
+                </Link>
+                <Link
+                  to="/login"
+                  className="block w-full py-2.5 rounded-full border border-[#064E3B] text-[#064E3B] font-bold text-xs text-center hover:bg-[#E8F0E2]"
+                >
+                  Log In
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* PHONE 2: Login Screen */}
+          <div className="bg-[#1A2621] p-3 rounded-[40px] shadow-2xl border-4 border-[#334D40] max-w-xs mx-auto w-full">
+            <div className="bg-[#F8F5E9] text-[#173D2E] rounded-[32px] overflow-hidden h-[540px] flex flex-col justify-between p-5 relative border border-stone-300">
+              {/* Dynamic Island */}
+              <div className="w-24 h-4 bg-black rounded-full mx-auto mb-3" />
+
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-full bg-[#064E3B] flex items-center justify-center text-white">
+                    <Leaf className="w-4 h-4 text-[#A7F3D0] fill-current" />
+                  </div>
+                  <span className="font-bold font-serif text-sm text-[#064E3B]">Kathaisolli</span>
+                </div>
+
+                <h4 className="text-xl font-black font-serif text-[#064E3B] mb-1">Welcome Back</h4>
+                <p className="text-[11px] text-stone-600 mb-5">
+                  Sign in to access your saved library & listening history.
+                </p>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-stone-600 mb-1">
+                      Email Address
+                    </label>
+                    <div className="flex items-center bg-white rounded-xl px-3 py-2 border border-stone-300 text-xs">
+                      <Mail className="w-3.5 h-3.5 text-stone-400 mr-2" />
+                      <span className="text-stone-500">listener@kathaisolli.com</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-stone-600 mb-1">
+                      Password
+                    </label>
+                    <div className="flex items-center bg-white rounded-xl px-3 py-2 border border-stone-300 text-xs">
+                      <Lock className="w-3.5 h-3.5 text-stone-400 mr-2" />
+                      <span className="text-stone-400">••••••••••••</span>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-[#064E3B] hover:underline cursor-pointer">
+                      Forgot Password?
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-4">
+                <Link
+                  to="/login"
+                  className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534]"
+                >
+                  Sign In
+                </Link>
+                <p className="text-center text-[10px] text-stone-600">
+                  Don't have an account?{' '}
+                  <Link to="/register" className="font-bold text-[#064E3B] underline">
+                    Sign Up
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* PHONE 3: Sign Up Screen */}
+          <div className="bg-[#1A2621] p-3 rounded-[40px] shadow-2xl border-4 border-[#334D40] max-w-xs mx-auto w-full">
+            <div className="bg-[#F8F5E9] text-[#173D2E] rounded-[32px] overflow-hidden h-[540px] flex flex-col justify-between p-5 relative border border-stone-300">
+              {/* Dynamic Island */}
+              <div className="w-24 h-4 bg-black rounded-full mx-auto mb-3" />
+
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-full bg-[#064E3B] flex items-center justify-center text-white">
+                    <Leaf className="w-4 h-4 text-[#A7F3D0] fill-current" />
+                  </div>
+                  <span className="font-bold font-serif text-sm text-[#064E3B]">Kathaisolli</span>
+                </div>
+
+                <h4 className="text-xl font-black font-serif text-[#064E3B] mb-1">
+                  Create Account
+                </h4>
+                <p className="text-[11px] text-stone-600 mb-4">
+                  Join thousands of Tamil audio story lovers. 100% Free.
+                </p>
+
+                <div className="space-y-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-stone-600 mb-0.5">
+                      Full Name
+                    </label>
+                    <div className="flex items-center bg-white rounded-xl px-3 py-1.5 border border-stone-300 text-xs">
+                      <User className="w-3.5 h-3.5 text-stone-400 mr-2" />
+                      <span className="text-stone-500">Anzles Kumar</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-stone-600 mb-0.5">
+                      Email Address
+                    </label>
+                    <div className="flex items-center bg-white rounded-xl px-3 py-1.5 border border-stone-300 text-xs">
+                      <Mail className="w-3.5 h-3.5 text-stone-400 mr-2" />
+                      <span className="text-stone-500">anzles@gmail.com</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase text-stone-600 mb-0.5">
+                      Password
+                    </label>
+                    <div className="flex items-center bg-white rounded-xl px-3 py-1.5 border border-stone-300 text-xs">
+                      <Lock className="w-3.5 h-3.5 text-stone-400 mr-2" />
+                      <span className="text-stone-400">••••••••••••</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-3">
+                <Link
+                  to="/register"
+                  className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534]"
+                >
+                  Create Free Account
+                </Link>
+                <p className="text-center text-[10px] text-stone-600">
+                  Already registered?{' '}
+                  <Link to="/login" className="font-bold text-[#064E3B] underline">
+                    Log In
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* PHONE 4: Story Player Screen ("The Clever Crow") */}
+          <div className="bg-[#1A2621] p-3 rounded-[40px] shadow-2xl border-4 border-[#334D40] max-w-xs mx-auto w-full">
+            <div className="bg-[#F8F5E9] text-[#173D2E] rounded-[32px] overflow-hidden h-[540px] flex flex-col justify-between p-5 relative border border-stone-300">
+              {/* Dynamic Island */}
+              <div className="w-24 h-4 bg-black rounded-full mx-auto mb-2" />
+
+              {/* Story Player Header */}
+              <div className="flex items-center justify-between text-xs font-semibold text-stone-500 mb-2">
+                <span>Now Playing</span>
+                <span className="text-[#064E3B] font-bold">1.0x</span>
+              </div>
+
+              {/* Story Artwork (Clever Crow) */}
+              <div className="rounded-2xl overflow-hidden aspect-square border-2 border-white shadow-md relative group">
+                <img
+                  src="/images/story-clever-crow.jpg"
+                  alt="The Clever Crow"
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={handlePlayCleverCrow}
+                  className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-xl">
+                    {isCleverCrowActive && isPlaying ? (
+                      <Pause className="w-6 h-6 fill-current" />
+                    ) : (
+                      <Play className="w-6 h-6 fill-current ml-0.5" />
+                    )}
+                  </div>
+                </button>
+              </div>
+
+              {/* Title & Metadata */}
+              <div className="text-center my-2">
+                <h4 className="font-black font-serif text-base text-[#064E3B]">The Clever Crow</h4>
+                <p className="text-xs font-tamil font-semibold text-[#166534]">
+                  காக்கையின் தாகம் · Panchatantra
+                </p>
+              </div>
+
+              {/* Audio Progress Bar */}
+              <div className="space-y-1">
+                <div className="w-full bg-stone-300 h-1.5 rounded-full overflow-hidden">
+                  <div className="bg-[#064E3B] h-full w-[45%] rounded-full" />
+                </div>
+                <div className="flex justify-between text-[10px] text-stone-500 font-mono">
+                  <span>02:45</span>
+                  <span>06:00</span>
+                </div>
+              </div>
+
+              {/* Audio Controls */}
+              <div className="flex items-center justify-center gap-4 py-1">
+                <button
+                  onClick={handlePlayCleverCrow}
+                  className="w-12 h-12 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+                >
+                  {isCleverCrowActive && isPlaying ? (
+                    <Pause className="w-5 h-5 fill-current" />
+                  ) : (
+                    <Play className="w-5 h-5 fill-current ml-0.5" />
+                  )}
+                </button>
+              </div>
+
+              {/* Bottom Quick Controls */}
+              <div className="flex items-center justify-around pt-2 border-t border-stone-200 text-stone-500">
+                <Clock className="w-4 h-4 hover:text-[#064E3B] cursor-pointer" />
+                <Volume2 className="w-4 h-4 hover:text-[#064E3B] cursor-pointer" />
+                <Download className="w-4 h-4 hover:text-[#064E3B] cursor-pointer" />
+                <Share2 className="w-4 h-4 hover:text-[#064E3B] cursor-pointer" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================== */}
+      {/* 5. DOWNLOAD SECTION (Google Play, App Store, 4 Feature Badges) */}
+      {/* ============================================================== */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="bg-gradient-to-br from-[#E8F0E2] via-[#F3EFE0] to-[#E8F0E2] dark:from-[#083325] dark:via-[#042419] dark:to-[#083325] rounded-3xl p-8 sm:p-12 lg:p-16 border-2 border-[#D5CEBA] dark:border-[#124835] shadow-xl text-center space-y-8 relative overflow-hidden">
+          {/* Decorative Leaf Motifs */}
+          <div className="absolute top-4 left-4 text-[#064E3B]/10 dark:text-emerald-400/10 pointer-events-none">
+            <Leaf className="w-24 h-24" />
+          </div>
+          <div className="absolute bottom-4 right-4 text-[#064E3B]/10 dark:text-emerald-400/10 pointer-events-none rotate-180">
+            <Leaf className="w-24 h-24" />
+          </div>
+
+          <div className="max-w-2xl mx-auto space-y-4 relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#064E3B] text-white text-xs font-bold uppercase tracking-wider">
+              <Download className="w-4 h-4" />
+              <span>Available for Android & iOS</span>
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+              Download Kathaisolli
             </h2>
-            <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 mt-2">
-              தமிழுக்கும் தமிழ் நேயர்களுக்கும் பிரத்யேகமாக உருவாக்கப்பட்ட சுதந்திரமான தளம்.
+            <p className="text-base sm:text-lg text-[#173D2E]/80 dark:text-stone-300 leading-relaxed">
+              Carry the treasure chest of Tamil stories in your pocket. Listen without internet, sync across all your phones, and never miss a tale.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#14231E] border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-3">
-              <div className="h-12 w-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
-                <ShieldCheck className="h-6 w-6" />
+          {/* Store Download Badges */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
+            {/* Google Play Badge */}
+            <a
+              href="https://play.google.com"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto inline-flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-black text-white hover:bg-stone-900 shadow-xl transition-all hover:scale-105 border border-stone-800"
+            >
+              <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
+                <path d="M3.609 1.814L13.792 12 3.61 22.186c-.198-.198-.31-.47-.31-.762V2.576c0-.292.112-.564.31-.762zm11.242 11.243l2.483-2.483-11.87-6.853 9.387 9.336zm0 1.886l-9.387 9.336 11.87-6.853-2.483-2.483zm1.059-1.059l3.41-1.968c.997-.576.997-1.516 0-2.092l-3.41-1.968-2.144 2.144 2.144 2.144z" />
+              </svg>
+              <div className="text-left">
+                <div className="text-[10px] uppercase tracking-wider text-stone-300">
+                  GET IT ON
+                </div>
+                <div className="text-base font-bold leading-tight">Google Play</div>
               </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                முற்றிலும் இலவசம் (100% Free Forever)
-              </h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                எந்தவித சந்தாக்கட்டணமும் இல்லை. முதல் அத்தியாயம் முதல் இறுதி வரை அனைத்துக் கதைகளையும் வரம்பின்றி இலவசமாகக் கேட்கலாம்.
-              </p>
-            </div>
+            </a>
 
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#14231E] border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-3">
-              <div className="h-12 w-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
-                <Mic className="h-6 w-6" />
+            {/* Apple App Store Badge */}
+            <a
+              href="https://apple.com/app-store"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto inline-flex items-center gap-3.5 px-6 py-3.5 rounded-2xl bg-black text-white hover:bg-stone-900 shadow-xl transition-all hover:scale-105 border border-stone-800"
+            >
+              <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.63-.77 1.06-1.85.94-2.93-.93.04-2.06.62-2.73 1.4-.59.68-1.11 1.77-.97 2.83 1.04.08 2.13-.53 2.76-1.3" />
+              </svg>
+              <div className="text-left">
+                <div className="text-[10px] uppercase tracking-wider text-stone-300">
+                  Download on the
+                </div>
+                <div className="text-base font-bold leading-tight">App Store</div>
               </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                உயர்தர தமிழ் குரல் (Studio Quality Narration)
-              </h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                ஒவ்வொரு கதாபாத்திரத்தையும் கண்முன்னே நிறுத்தும் மெய்சிலிர்க்க வைக்கும் தமிழ் குரல் மற்றும் பின்னணி இசை வடிவமைப்பு.
-              </p>
-            </div>
+            </a>
+          </div>
 
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#14231E] border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-3">
-              <div className="h-12 w-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-700 dark:text-emerald-300">
-                <HeartHandshake className="h-6 w-6" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                படைப்பாளர்களுக்கான அரங்கம் (Creator Community)
-              </h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                தமிழ் எழுத்தாளர்களும் கதைசொல்லிகளும் தங்கள் திறமையை உலகெங்கும் வாழும் தமிழ் மக்களுக்குக் கொண்டு சேர்க்கும் களம்.
-              </p>
+          {/* 4 Feature Badges with checkmarks */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 max-w-4xl mx-auto border-t border-[#064E3B]/15 dark:border-[#124835] relative z-10">
+            <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0]">
+              <CheckCircle2 className="w-4 h-4 fill-[#064E3B] text-white dark:fill-emerald-400 dark:text-[#083325]" />
+              <span>Offline Access</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0]">
+              <CheckCircle2 className="w-4 h-4 fill-[#064E3B] text-white dark:fill-emerald-400 dark:text-[#083325]" />
+              <span>Audio Stories</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0]">
+              <CheckCircle2 className="w-4 h-4 fill-[#064E3B] text-white dark:fill-emerald-400 dark:text-[#083325]" />
+              <span>Save Favorites</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0]">
+              <CheckCircle2 className="w-4 h-4 fill-[#064E3B] text-white dark:fill-emerald-400 dark:text-[#083325]" />
+              <span>Sync Across Devices</span>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Bottom CTA Banner */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto text-center space-y-6">
-        <h2 className="text-3xl sm:text-5xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif">
-          இப்போதே உங்கள் தமிழ் ஆடியோ பயணத்தைத் தொடங்குங்கள்
-        </h2>
-        <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-          கதைசொல்லி கணக்கு முற்றிலும் இலவசம். விளம்பர தொந்தரவின்றி சிறந்த கதைகளைக் கேட்டு மகிழுங்கள்.
-        </p>
-        <div className="pt-2">
-          <Link
-            to="/register"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-8 py-4 text-base shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:scale-105"
-          >
-            <span>இலவச கணக்கு தொடங்கு (Sign Up Free)</span>
-            <ChevronRight className="h-5 w-5" />
-          </Link>
         </div>
       </section>
     </div>

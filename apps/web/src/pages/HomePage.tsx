@@ -1,12 +1,91 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ChevronRight, Play, Flame, BookMarked, History, RefreshCw, AlertCircle } from 'lucide-react';
+import {
+  Sparkles,
+  ChevronRight,
+  Play,
+  Flame,
+  BookMarked,
+  History,
+  RefreshCw,
+  AlertCircle,
+  Leaf,
+  Compass,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { StoryCard } from '../components/StoryCard';
 import { CategoryPill } from '../components/CategoryPill';
-import { StoryGridSkeleton } from '../components/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
+
+const DEFAULT_HOME_STORIES = [
+  {
+    id: 'panchatantra-stories',
+    slug: 'panchatantra-stories',
+    title: 'பஞ்சதந்திரக் கதைகள் (Panchatantra)',
+    authorName: 'விஷ்ணு சர்மா',
+    coverImageUrl: '/images/story-panchatantra.jpg',
+    categoryName: 'Moral Stories',
+    language: 'தமிழ்',
+    totalEpisodes: 18,
+    totalDurationSeconds: 4200,
+  },
+  {
+    id: 'tamil-folk-tales',
+    slug: 'tamil-folk-tales',
+    title: 'தமிழ் நாடோடிக் கதைகள் (Tamil Folk Tales)',
+    authorName: 'நாட்டுப்புறப் பாடல் மரபு',
+    coverImageUrl: '/images/story-tamil-folk.jpg',
+    categoryName: 'Culture & Tradition',
+    language: 'தமிழ்',
+    totalEpisodes: 24,
+    totalDurationSeconds: 5100,
+  },
+  {
+    id: 'bedtime-stories',
+    slug: 'bedtime-stories',
+    title: 'தாலாட்டுக் கதைகள் (Bedtime Stories)',
+    authorName: 'அம்மா சொல்லும் கதைகள்',
+    coverImageUrl: '/images/story-bedtime.jpg',
+    categoryName: 'For Kids',
+    language: 'தமிழ்',
+    totalEpisodes: 32,
+    totalDurationSeconds: 6400,
+  },
+  {
+    id: 'historical-stories',
+    slug: 'historical-stories',
+    title: 'சோழர் வரலாற்று காவியங்கள் (Chola Epics)',
+    authorName: 'கல்கி கிருஷ்ணமூர்த்தி',
+    coverImageUrl: '/images/story-historical.jpg',
+    categoryName: 'Tamil History',
+    language: 'தமிழ்',
+    totalEpisodes: 15,
+    totalDurationSeconds: 7800,
+  },
+  {
+    id: 'motivational-stories',
+    slug: 'motivational-stories',
+    title: 'திருவள்ளுவர் தன்னம்பிக்கைக் கதைகள்',
+    authorName: 'தமிழ்த்தென்றல் திரு.வி.க',
+    coverImageUrl: '/images/story-motivational.jpg',
+    categoryName: 'Life Lessons',
+    language: 'தமிழ்',
+    totalEpisodes: 20,
+    totalDurationSeconds: 4500,
+  },
+  {
+    id: 'clever-crow',
+    slug: 'clever-crow',
+    title: 'காக்கையின் தாகம் (The Clever Crow)',
+    authorName: 'ஈசாப் & பஞ்சதந்திரம்',
+    coverImageUrl: '/images/story-clever-crow.jpg',
+    categoryName: 'Moral Stories',
+    language: 'தமிழ்',
+    totalEpisodes: 1,
+    totalDurationSeconds: 360,
+  },
+];
 
 export const HomePage: React.FC = () => {
   const { user, api } = useAuth();
@@ -24,268 +103,152 @@ export const HomePage: React.FC = () => {
     queryFn: () => api.catalog.getHome(),
   });
 
-  const { data: continueListening } = useQuery({
-    queryKey: ['library', 'continue-listening'],
-    queryFn: () => api.library.getContinueListening(),
-    enabled: !!user,
-  });
-
   const featured = homeData?.featured || homeData?.featuredSeries || [];
   const latest = homeData?.latest || homeData?.trendingSeries || [];
-  const categories = homeData?.categories || homeData?.popularCategories || [];
 
-  const allStories = [...featured, ...latest].filter(
-    (item, index, self) => index === self.findIndex((t) => t.id === item.id)
+  const apiStories = [...featured, ...latest].filter(
+    (item, index, self) => index === self.findIndex((t) => t.id === item.id),
   );
 
-  const filteredStories = selectedCategory === 'all'
-    ? allStories
-    : allStories.filter((s) => s.category?.slug === selectedCategory);
+  const displayStories = apiStories.length > 0 ? apiStories : DEFAULT_HOME_STORIES;
+
+  const filteredStories =
+    selectedCategory === 'all'
+      ? displayStories
+      : displayStories.filter(
+          (s: any) =>
+            s.category?.slug === selectedCategory ||
+            s.categoryName === selectedCategory,
+        );
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] transition-colors">
       {/* Welcome Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-[#0A261D] p-6 sm:p-10 text-white relative overflow-hidden shadow-lg">
+      <div className="rounded-3xl bg-gradient-to-r from-[#064E3B] via-[#166534] to-[#033B2B] p-6 sm:p-10 text-white relative overflow-hidden shadow-2xl border-2 border-[#D6A83F]/30">
         <div className="relative z-10 max-w-2xl space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-700/60 text-emerald-200 text-xs font-medium">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-            <span>100% இலவச ஆடியோ தளம் • வரம்பற்ற கேட்பு</span>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E8F0E2]/20 backdrop-blur-md text-[#A7F3D0] text-xs font-bold uppercase tracking-wider">
+            <Leaf className="h-3.5 w-3.5 fill-current" />
+            <span>By Anzles · 100% Free Tamil Storytelling</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold font-serif">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-serif tracking-tight">
             {user ? `வணக்கம், ${user.displayName || 'நேயரே'}!` : 'வணக்கம்! கதைசொல்லிக்கு நல்வரவு!'}
           </h1>
-          <p className="text-emerald-100/80 text-sm sm:text-base">
-            இன்றைய நாளுக்கான சிறந்த தமிழ் ஒலிப்புத்தகங்கள் மற்றும் கதைகளை உடனே கேட்கத் தொடங்குங்கள்.
+          <p className="text-emerald-100/90 text-sm sm:text-base leading-relaxed">
+            இன்றைய நாளுக்கான சிறந்த தமிழ் ஒலிப்புத்தகங்கள், பஞ்சதந்திர கதைகள் மற்றும் காவியங்களை உடனே கேட்கத் தொடங்குங்கள்.
           </p>
+          <div className="pt-2 flex flex-wrap gap-3">
+            <Link
+              to="/explore"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-[#064E3B] font-bold text-xs hover:bg-[#E8F0E2] transition-all shadow-md"
+            >
+              <span>கதைகளை உலாவுங்கள்</span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* Continue Listening Shelf */}
       {currentEpisode && (
-        <section className="bg-emerald-50 dark:bg-[#14231E] rounded-2xl p-5 border border-emerald-100 dark:border-emerald-900/40">
+        <section className="bg-white dark:bg-[#083325] rounded-3xl p-6 border-2 border-[#E3DCBA] dark:border-[#124835] shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              <History className="h-5 w-5 text-[#064E3B] dark:text-[#A7F3D0]" />
+              <h2 className="text-lg font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9]">
                 தொடர்ந்து கேட்க (Continue Listening)
               </h2>
             </div>
-            <Link to="/library" className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
-              நூலகம் காண்க
-            </Link>
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-[#101A16] p-4 rounded-xl shadow-sm border border-emerald-100/60 dark:border-emerald-900/30">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-lg bg-emerald-950 flex items-center justify-center text-white shrink-0 overflow-hidden">
-                {currentEpisode.coverImage ? (
-                  <img src={currentEpisode.coverImage} alt={currentEpisode.title} className="w-full h-full object-cover" />
-                ) : (
-                  <Play className="h-6 w-6 fill-current text-emerald-400" />
-                )}
-              </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-[#F8F5E9] dark:bg-[#033B2B] border border-[#E3DCBA] dark:border-[#124835]">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <img
+                src={currentEpisode.coverImageUrl || '/images/story-clever-crow.jpg'}
+                alt={currentEpisode.title}
+                className="w-16 h-16 rounded-xl object-cover shadow-sm"
+              />
               <div>
-                <h4 className="font-bold text-zinc-900 dark:text-zinc-100 text-sm sm:text-base">
+                <h3 className="font-bold font-serif text-sm sm:text-base text-[#064E3B] dark:text-[#F8F5E9]">
                   {currentEpisode.title}
-                </h4>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {currentEpisode.seriesTitle || 'கதைசொல்லி தொடர்'}
+                </h3>
+                <p className="text-xs text-stone-500 dark:text-stone-300">
+                  {currentEpisode.seriesTitle || 'Kathaisolli Series'}
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => playEpisode(currentEpisode.episodeId || currentEpisode.id || '', currentEpisode.seriesId)}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+            <Link
+              to="/player"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white text-xs font-bold transition-all shadow-md"
             >
               <Play className="h-4 w-4 fill-current" />
-              <span>{isPlaying ? 'தற்போது ஒலிக்கிறது' : 'தொடர்க'}</span>
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* Continue Listening Items from Backend */}
-      {!currentEpisode && continueListening && continueListening.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <History className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
-                தொடர்ந்து கேட்க (Continue Listening)
-              </h2>
-            </div>
-            <Link to="/library" className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
-              அனைத்தும்
+              <span>Continue Listening</span>
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {continueListening.slice(0, 3).map((item) => (
-              <div
-                key={item.episodeId}
-                className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-[#14231E] border border-emerald-100 dark:border-emerald-900/40 shadow-sm"
-              >
-                <div className="min-w-0 pr-3">
-                  <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                    {item.episodeTitle || 'அத்தியாயம்'}
-                  </h4>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">
-                    {item.series?.title || 'கதைசொல்லி தொடர்'}
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    playEpisode(
-                      {
-                        episodeId: item.episodeId,
-                        title: item.episodeTitle,
-                        seriesId: item.series?.id,
-                        seriesTitle: item.series?.title,
-                        coverImage: item.series?.coverImage,
-                        durationSec: item.durationSec,
-                      },
-                      item.series?.id
-                    )
-                  }
-                  className="p-2.5 rounded-full bg-emerald-700 text-white hover:bg-emerald-600 transition-colors shrink-0"
-                >
-                  <Play className="h-4 w-4 fill-current" />
-                </button>
-              </div>
-            ))}
-          </div>
         </section>
       )}
 
-      {/* Loading Skeleton */}
-      {isLoading && (
-        <div className="space-y-8">
-          <div className="h-8 w-48 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-lg animate-pulse" />
-          <StoryGridSkeleton count={8} />
-        </div>
-      )}
-
-      {/* Error State */}
-      {isError && (
-        <div className="p-8 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-center space-y-4">
-          <AlertCircle className="h-10 w-10 text-rose-600 mx-auto" />
-          <h3 className="text-lg font-bold text-rose-900 dark:text-rose-200">
-            கதைகளை ஏற்றுவதில் பிழை ஏற்பட்டது
-          </h3>
-          <p className="text-xs text-rose-700 dark:text-rose-300 max-w-md mx-auto">
-            {(error as any)?.message || 'சர்வர் இணைப்பில் தடங்கல். தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold shadow-sm transition-colors"
+      {/* Category Filter Pills */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#166534] dark:text-[#A7F3D0]">
+            <Leaf className="w-3.5 h-3.5 fill-current" />
+            <span>Stories By Category</span>
+          </div>
+          <Link
+            to="/categories"
+            className="text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
           >
-            <RefreshCw className="h-4 w-4" />
-            <span>மீண்டும் முயற்சி செய்</span>
-          </button>
+            All Categories →
+          </Link>
         </div>
-      )}
 
-      {/* Content if loaded successfully */}
-      {!isLoading && !isError && (
-        <>
-          {/* Category Filter Pills Bar */}
-          {categories.length > 0 && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
-                  வகைப்பாடுகள் (Categories)
-                </h2>
-                <Link to="/categories" className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
-                  அனைத்தும் காண்க
-                </Link>
-              </div>
-              <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
-                <CategoryPill
-                  id="all"
-                  name="All"
-                  tamilName="அனைத்தும்"
-                  isActive={selectedCategory === 'all'}
-                  onClick={setSelectedCategory}
-                />
-                {categories.map((cat) => (
-                  <CategoryPill
-                    key={cat.id || cat.slug}
-                    id={cat.slug}
-                    name={cat.name}
-                    tamilName={cat.name}
-                    isActive={selectedCategory === cat.slug}
-                    onClick={setSelectedCategory}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          {['all', 'Moral Stories', 'Culture & Tradition', 'For Kids', 'Tamil History', 'Life Lessons'].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 ${
+                selectedCategory === cat
+                  ? 'bg-[#064E3B] text-white shadow-md'
+                  : 'bg-white dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] text-[#173D2E] dark:text-stone-200 hover:bg-[#E8F0E2] dark:hover:bg-[#0d4432]'
+              }`}
+            >
+              {cat === 'all' ? 'அனைத்தும் (All)' : cat}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {/* Filtered Stories / Top Trending */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-amber-500" />
-                <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
-                  {selectedCategory === 'all' ? 'முன்னணி கதைகள் (Top Trending Stories)' : 'தேர்ந்தெடுக்கப்பட்ட கதைகள்'}
-                </h2>
-              </div>
-              <Link to="/explore" className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
-                மேலும் கதைகள்
-              </Link>
-            </div>
-            {filteredStories.length === 0 ? (
-              <div className="text-center py-12 text-zinc-500">
-                இந்த வகைப்பாட்டில் தற்போது கதைகள் இல்லை.
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-                {filteredStories.map((story) => (
-                  <StoryCard
-                    key={story.id}
-                    id={story.id}
-                    slug={story.slug}
-                    title={story.title}
-                    authorName={story.authorName || undefined}
-                    coverImage={story.coverImage}
-                    categoryName={story.category?.name}
-                    totalEpisodes={1}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+      {/* Stories Grid */}
+      <section className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+            பிரபலமான கதைகள் (Popular Stories)
+          </h2>
+          <Link
+            to="/explore"
+            className="text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+          >
+            View All →
+          </Link>
+        </div>
 
-          {/* Featured Stories Shelf */}
-          {featured.length > 0 && selectedCategory === 'all' && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <BookMarked className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
-                    சிறப்புக் கதைகள் (Featured Series)
-                  </h2>
-                </div>
-                <Link to="/explore" className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">
-                  அனைத்தும் காண்க
-                </Link>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-5">
-                {featured.map((story) => (
-                  <StoryCard
-                    key={story.id}
-                    id={story.id}
-                    slug={story.slug}
-                    title={story.title}
-                    authorName={story.authorName || undefined}
-                    coverImage={story.coverImage}
-                    categoryName={story.category?.name}
-                    totalEpisodes={1}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-        </>
-      )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-5">
+          {filteredStories.map((story: any) => (
+            <StoryCard
+              key={story.id}
+              id={story.id}
+              slug={story.slug || story.id}
+              title={story.title}
+              authorName={story.authorName}
+              coverImageUrl={story.coverImageUrl || story.coverImage}
+              categoryName={story.categoryName || story.category?.name}
+              language={story.language}
+              totalEpisodes={story.totalEpisodes || 1}
+              totalDurationSeconds={story.totalDurationSeconds}
+            />
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

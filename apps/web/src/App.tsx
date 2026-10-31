@@ -46,7 +46,7 @@ export const App: React.FC = () => {
       <AuthProvider>
         <PlayerProvider>
           <BrowserRouter>
-            <div className="min-h-screen flex flex-col bg-[#F8FAF7] dark:bg-[#101A16] text-zinc-900 dark:text-zinc-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+            <div className="min-h-screen flex flex-col bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
               <Navbar />
 
               <main className="flex-1 pb-28">
@@ -66,6 +66,15 @@ export const App: React.FC = () => {
                   {/* Auth routes */}
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/signup" element={<Navigate to="/register" replace />} />
+
+                  {/* Stories alias */}
+                  <Route path="/stories" element={<Navigate to="/explore" replace />} />
+
+                  {/* Admin aliases */}
+                  <Route path="/admin" element={<Navigate to="/creator/apply" replace />} />
+                  <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+                  <Route path="/admin/dashboard" element={<Navigate to="/creator/apply" replace />} />
 
                   {/* User Library and Profile */}
                   <Route path="/profile" element={<ProfilePage />} />

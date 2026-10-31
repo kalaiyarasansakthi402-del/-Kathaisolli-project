@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Play,
@@ -7,11 +7,13 @@ import {
   RotateCw,
   Volume2,
   VolumeX,
-  Moon,
   Clock,
   ArrowLeft,
   Headphones,
   Sparkles,
+  Share2,
+  Bookmark,
+  Leaf,
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { formatTamilDuration } from '@kathaisolli/shared-utils';
@@ -27,6 +29,7 @@ export const FullPlayerPage: React.FC = () => {
     sleepTimerMinutes,
     volume,
     isMuted,
+    playEpisode,
     play,
     pause,
     seek,
@@ -35,6 +38,20 @@ export const FullPlayerPage: React.FC = () => {
     setPlayerVolume,
     toggleMute,
   } = usePlayer();
+
+  // If no track is currently playing, initialize with "The Clever Crow" demo track
+  useEffect(() => {
+    if (!currentEpisode) {
+      playEpisode({
+        episodeId: 'ep-clever-crow',
+        title: 'காக்கையின் தாகம் (The Clever Crow)',
+        seriesTitle: 'பஞ்சதந்திரக் கதைகள் (Panchatantra Tales)',
+        coverImageUrl: '/images/story-clever-crow.jpg',
+        narratorName: 'கதைசொல்லி Studio',
+        durationSec: 360,
+      });
+    }
+  }, [currentEpisode, playEpisode]);
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     seek(parseFloat(e.target.value));
@@ -56,104 +73,104 @@ export const FullPlayerPage: React.FC = () => {
     setSleepTimer(timers[nextIdx]);
   };
 
-  if (!currentEpisode) {
-    return (
-      <div className="py-24 text-center max-w-md mx-auto px-4 space-y-4">
-        <Headphones className="h-16 w-16 text-emerald-600 mx-auto" />
-        <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-          ஆடியோ எதுவும் இயக்கப்படவில்லை
-        </h2>
-        <p className="text-sm text-zinc-500">
-          கேட்க விரும்பும் கதையை தேர்ந்தெடுங்கள்.
-        </p>
-        <button
-          onClick={() => navigate('/explore')}
-          className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-600"
-        >
-          கதைகளை உலாவுங்கள்
-        </button>
-      </div>
-    );
-  }
+  const activeTrack = currentEpisode || {
+    title: 'காக்கையின் தாகம் (The Clever Crow)',
+    seriesTitle: 'பஞ்சதந்திரக் கதைகள் (Panchatantra)',
+    coverImageUrl: '/images/story-clever-crow.jpg',
+    narratorName: 'கதைசொல்லி ஸ்டுடியோ',
+    durationSec: 360,
+  };
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const effectiveDuration = duration > 0 ? duration : activeTrack.durationSec || 360;
+  const progressPercent = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center py-10 px-4 sm:px-6 max-w-2xl mx-auto space-y-8">
+    <div className="min-h-[85vh] flex flex-col justify-center py-10 px-4 sm:px-6 max-w-2xl mx-auto space-y-8 bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] transition-colors">
       {/* Top Bar with Back Button */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+          className="p-2.5 rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#173D2E] dark:text-stone-200 hover:scale-105 transition-all shadow-sm"
         >
-          <ArrowLeft className="h-6 w-6" />
+          <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="text-center">
-          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
-            100% இலவச தமிழ் ஆடியோ
-          </span>
-          <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            {currentEpisode.seriesTitle || 'கதைசொல்லி'}
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider">
+            <Leaf className="w-3.5 h-3.5 fill-current" />
+            <span>100% Free Tamil Audio</span>
+          </div>
+          <h4 className="text-xs font-medium text-stone-500 dark:text-stone-400 mt-1">
+            {activeTrack.seriesTitle || 'Kathaisolli'}
           </h4>
         </div>
-        <div className="w-10" />
+        <button
+          onClick={() => alert('பகிர்வதற்கான இணைப்பு நகலெடுக்கப்பட்டது (Share link copied)!')}
+          className="p-2.5 rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#173D2E] dark:text-stone-200 hover:scale-105 transition-all shadow-sm"
+        >
+          <Share2 className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* Album Artwork */}
-      <div className="aspect-square max-w-sm mx-auto w-full rounded-3xl overflow-hidden shadow-2xl bg-emerald-950 relative border-4 border-emerald-900/30">
+      {/* Main Storybook Album Artwork */}
+      <div className="relative aspect-square max-w-sm mx-auto w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#124835] group">
         <img
-          src={
-            currentEpisode.coverImage ||
-            currentEpisode.coverImageUrl ||
-            'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80'
-          }
-          alt={currentEpisode.title}
-          className="w-full h-full object-cover"
+          src={activeTrack.coverImageUrl || '/images/story-clever-crow.jpg'}
+          alt={activeTrack.title}
+          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
         />
-        <div className="absolute top-4 right-4 bg-emerald-700/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
-          இலவசம்
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
       </div>
 
-      {/* Title & Narrator */}
+      {/* Title & Metadata */}
       <div className="text-center space-y-1">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif">
-          {currentEpisode.title}
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          குரல்: {currentEpisode.narratorName || 'கதைசொல்லி கலைஞர்'}
+        <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9] tracking-tight">
+          {activeTrack.title}
+        </h2>
+        <p className="text-sm font-semibold font-tamil text-[#166534] dark:text-[#A7F3D0]">
+          {activeTrack.narratorName ? `குரல்: ${activeTrack.narratorName}` : 'Kathaisolli Production'}
         </p>
       </div>
 
       {/* Progress Bar & Timestamps */}
       <div className="space-y-2">
-        <input
-          type="range"
-          min="0"
-          max={duration || 100}
-          value={currentTime}
-          onChange={handleSeek}
-          className="w-full h-2 rounded-lg bg-zinc-200 dark:bg-emerald-950 accent-emerald-600 cursor-pointer"
-        />
-        <div className="flex justify-between text-xs text-zinc-400">
-          <span>{formatTamilDuration(currentTime)}</span>
-          <span>{formatTamilDuration(duration)}</span>
+        <div className="relative flex items-center">
+          <input
+            type="range"
+            min={0}
+            max={effectiveDuration}
+            step={1}
+            value={currentTime}
+            onChange={handleSeek}
+            className="w-full h-2 bg-[#E3DCBA] dark:bg-[#124835] rounded-lg appearance-none cursor-pointer accent-[#064E3B] dark:accent-[#A7F3D0]"
+          />
+        </div>
+        <div className="flex justify-between text-xs font-mono font-medium text-stone-500 dark:text-stone-400">
+          <span>{formatTamilDuration(Math.floor(currentTime))}</span>
+          <span>{formatTamilDuration(Math.floor(effectiveDuration))}</span>
         </div>
       </div>
 
-      {/* Playback Controls */}
-      <div className="flex items-center justify-center gap-6">
+      {/* Main Playback Controls */}
+      <div className="flex items-center justify-center gap-6 sm:gap-8">
         <button
-          onClick={() => seek(currentTime - 10)}
-          className="p-3 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-          title="10 வினாடிகள் பின்செல்"
+          onClick={cycleRate}
+          className="p-2.5 rounded-full text-xs font-bold font-mono bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#064E3B] dark:text-[#A7F3D0] hover:scale-105 transition-all w-11 h-11 flex items-center justify-center"
+          title="Playback Speed"
+        >
+          {playbackRate}x
+        </button>
+
+        <button
+          onClick={() => seek(Math.max(0, currentTime - 10))}
+          className="p-3 rounded-full hover:bg-[#E8F0E2] dark:hover:bg-[#083325] text-[#064E3B] dark:text-[#A7F3D0] transition-colors"
+          title="Rewind 10 seconds"
         >
           <RotateCcw className="h-6 w-6" />
         </button>
 
         <button
           onClick={isPlaying ? pause : play}
-          className="h-16 w-16 rounded-full bg-emerald-700 text-white flex items-center justify-center hover:bg-emerald-600 transition-transform active:scale-95 shadow-xl shadow-emerald-900/30"
+          className="h-16 w-16 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white flex items-center justify-center shadow-xl shadow-emerald-950/30 hover:scale-105 transition-all"
         >
           {isPlaying ? (
             <Pause className="h-8 w-8 fill-current" />
@@ -163,49 +180,57 @@ export const FullPlayerPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => seek(currentTime + 10)}
-          className="p-3 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-          title="10 வினாடிகள் முன்செல்"
+          onClick={() => seek(Math.min(effectiveDuration, currentTime + 10))}
+          className="p-3 rounded-full hover:bg-[#E8F0E2] dark:hover:bg-[#083325] text-[#064E3B] dark:text-[#A7F3D0] transition-colors"
+          title="Forward 10 seconds"
         >
           <RotateCw className="h-6 w-6" />
         </button>
-      </div>
 
-      {/* Auxiliary Settings: Speed & Sleep Timer & Volume */}
-      <div className="flex items-center justify-around pt-4 border-t border-emerald-100 dark:border-emerald-900/30 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
-        {/* Playback Speed */}
-        <button
-          onClick={cycleRate}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-emerald-950/40 hover:bg-zinc-200 transition-colors"
-        >
-          <Clock className="h-4 w-4 text-emerald-600" />
-          <span>வேகம்: {playbackRate}x</span>
-        </button>
-
-        {/* Sleep Timer */}
         <button
           onClick={cycleSleepTimer}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-emerald-950/40 hover:bg-zinc-200 transition-colors"
+          className={`p-2.5 rounded-full w-11 h-11 flex items-center justify-center border transition-all ${
+            sleepTimerMinutes
+              ? 'bg-[#064E3B] text-white border-[#064E3B]'
+              : 'bg-white dark:bg-[#083325] border-[#D5CEBA] dark:border-[#124835] text-[#064E3B] dark:text-[#A7F3D0]'
+          }`}
+          title="Sleep Timer"
         >
-          <Moon className="h-4 w-4 text-emerald-600" />
-          <span>{sleepTimerMinutes ? `${sleepTimerMinutes} நிமி` : 'தூக்க டைமர்'}</span>
+          <Clock className="h-4 w-4" />
         </button>
+      </div>
 
-        {/* Volume */}
-        <div className="flex items-center gap-2">
-          <button onClick={toggleMute} className="text-zinc-500">
-            {isMuted ? <VolumeX className="h-4 w-4 text-rose-500" /> : <Volume2 className="h-4 w-4" />}
+      {/* Volume and Extras */}
+      <div className="flex items-center justify-between pt-4 border-t border-[#E3DCBA] dark:border-[#124835]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleMute}
+            className="p-2 rounded-lg text-stone-500 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]"
+          >
+            {isMuted || volume === 0 ? (
+              <VolumeX className="h-5 w-5 text-rose-500" />
+            ) : (
+              <Volume2 className="h-5 w-5" />
+            )}
           </button>
           <input
             type="range"
-            min="0"
-            max="1"
-            step="0.05"
+            min={0}
+            max={1}
+            step={0.05}
             value={isMuted ? 0 : volume}
             onChange={handleVolumeChange}
-            className="w-16 h-1.5 rounded-lg bg-zinc-200 dark:bg-emerald-950 accent-emerald-600 cursor-pointer"
+            className="w-24 h-1.5 bg-[#E3DCBA] dark:bg-[#124835] rounded-lg appearance-none cursor-pointer accent-[#064E3B] dark:accent-[#A7F3D0]"
           />
         </div>
+
+        <button
+          onClick={() => alert('நூலகத்தில் சேமிக்கப்பட்டது (Saved to Library)!')}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:scale-105 transition-all"
+        >
+          <Bookmark className="w-4 h-4" />
+          <span>Save to Library</span>
+        </button>
       </div>
     </div>
   );

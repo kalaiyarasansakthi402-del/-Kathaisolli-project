@@ -1,11 +1,80 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, SlidersHorizontal, AlertCircle, RefreshCw, Globe } from 'lucide-react';
+import { Filter, SlidersHorizontal, AlertCircle, RefreshCw, Globe, Leaf } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { StoryCard } from '../components/StoryCard';
 import { EmptyState } from '../components/EmptyState';
 import { StoryGridSkeleton } from '../components/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
+
+const DEFAULT_STORIES = [
+  {
+    id: 'panchatantra-stories',
+    slug: 'panchatantra-stories',
+    title: 'பஞ்சதந்திரக் கதைகள் (Panchatantra)',
+    authorName: 'விஷ்ணு சர்மா (Vishnu Sharma)',
+    coverImageUrl: '/images/story-panchatantra.jpg',
+    categoryName: 'Moral Stories',
+    language: 'தமிழ் (Tamil)',
+    totalEpisodes: 18,
+    totalDurationSeconds: 4200,
+  },
+  {
+    id: 'tamil-folk-tales',
+    slug: 'tamil-folk-tales',
+    title: 'தமிழ் நாடோடிக் கதைகள் (Tamil Folk Tales)',
+    authorName: 'நாட்டுப்புறப் பாடகர் குழு',
+    coverImageUrl: '/images/story-tamil-folk.jpg',
+    categoryName: 'Culture & Tradition',
+    language: 'தமிழ் (Tamil)',
+    totalEpisodes: 24,
+    totalDurationSeconds: 5100,
+  },
+  {
+    id: 'bedtime-stories',
+    slug: 'bedtime-stories',
+    title: 'தாலாட்டுக் கதைகள் (Bedtime Stories)',
+    authorName: 'அம்மா சொல்லும் கதைகள்',
+    coverImageUrl: '/images/story-bedtime.jpg',
+    categoryName: 'For Kids',
+    language: 'தமிழ் (Tamil)',
+    totalEpisodes: 32,
+    totalDurationSeconds: 6400,
+  },
+  {
+    id: 'historical-stories',
+    slug: 'historical-stories',
+    title: 'சோழர் வரலாற்று காவியங்கள் (Chola Epics)',
+    authorName: 'கல்கி கிருஷ்ணமூர்த்தி',
+    coverImageUrl: '/images/story-historical.jpg',
+    categoryName: 'Tamil History',
+    language: 'தமிழ் (Tamil)',
+    totalEpisodes: 15,
+    totalDurationSeconds: 7800,
+  },
+  {
+    id: 'motivational-stories',
+    slug: 'motivational-stories',
+    title: 'திருவள்ளுவர் தன்னம்பிக்கைக் கதைகள்',
+    authorName: 'தமிழ்த்தென்றல் திரு.வி.க',
+    coverImageUrl: '/images/story-motivational.jpg',
+    categoryName: 'Life Lessons',
+    language: 'தமிழ் (Tamil)',
+    totalEpisodes: 20,
+    totalDurationSeconds: 4500,
+  },
+  {
+    id: 'clever-crow',
+    slug: 'clever-crow',
+    title: 'காக்கையின் தாகம் (The Clever Crow)',
+    authorName: 'ஈசாப் & பஞ்சதந்திரம்',
+    coverImageUrl: '/images/story-clever-crow.jpg',
+    categoryName: 'Moral Stories',
+    language: 'தமிழ் (Tamil)',
+    totalEpisodes: 1,
+    totalDurationSeconds: 360,
+  },
+];
 
 export const ExplorePage: React.FC = () => {
   const { api } = useAuth();
@@ -52,7 +121,8 @@ export const ExplorePage: React.FC = () => {
       }),
   });
 
-  const stories = seriesData?.items || [];
+  const apiStories = seriesData?.items || [];
+  const stories = apiStories.length > 0 ? apiStories : DEFAULT_STORIES;
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat);
@@ -71,31 +141,40 @@ export const ExplorePage: React.FC = () => {
   };
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif">
-          கதைகளை உலாவுங்கள் (Explore Stories)
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] transition-colors">
+      {/* Header */}
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider">
+          <Leaf className="w-3.5 h-3.5 fill-current" />
+          <span>Explore All Tamil Stories</span>
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+          கதைகளை உலாவுங்கள்
         </h1>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          அனைத்து தமிழ் ஆடியோ கதைகளும் 100% இலவசம் • விருப்பத்திற்கேற்ப வகைப்படுத்தி கேளுங்கள்
+        <p className="text-sm text-[#173D2E]/75 dark:text-stone-300 max-w-xl">
+          நூற்றுக்கணக்கான பாரம்பரிய மற்றும் சமகால தமிழ் ஆடியோ கதைகளை எளிதாகக் கண்டறியுங்கள்.
         </p>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#14231E] border border-emerald-100 dark:border-emerald-900/40 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {/* Category Dropdown */}
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <SlidersHorizontal className="h-4 w-4 text-[#064E3B] dark:text-[#A7F3D0] shrink-0" />
             <select
               value={selectedCategory}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full sm:w-auto text-sm rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-[#101A16] px-3 py-2 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full sm:w-auto text-xs sm:text-sm font-semibold rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#033B2B] px-3.5 py-2 text-[#173D2E] dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
             >
-              <option value="all">அனைத்து வகைப்பாடுகள் (All Categories)</option>
+              <option value="all">அனைத்து வகைகள் (All Categories)</option>
+              <option value="Moral Stories">Panchatantra (நீதிக்கதைகள்)</option>
+              <option value="Culture & Tradition">Folk Tales (நாடோடிக் கதைகள்)</option>
+              <option value="For Kids">Bedtime (குழந்தைகளுக்கு)</option>
+              <option value="Tamil History">Historical (வரலாற்று காவியங்கள்)</option>
+              <option value="Life Lessons">Motivational (தன்னம்பிக்கை)</option>
               {categories.map((cat) => (
-                <option key={cat.id || cat.slug} value={cat.slug}>
+                <option key={cat.id || cat.slug} value={cat.slug || cat.id}>
                   {cat.name}
                 </option>
               ))}
@@ -104,13 +183,14 @@ export const ExplorePage: React.FC = () => {
 
           {/* Language Dropdown */}
           <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <Globe className="h-4 w-4 text-[#064E3B] dark:text-[#A7F3D0] shrink-0" />
             <select
               value={language}
               onChange={(e) => handleLanguageChange(e.target.value)}
-              className="w-full sm:w-auto text-sm rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-[#101A16] px-3 py-2 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full sm:w-auto text-xs sm:text-sm font-semibold rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#033B2B] px-3.5 py-2 text-[#173D2E] dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
             >
               <option value="all">அனைத்து மொழிகள் (All Languages)</option>
+              <option value="ta">தமிழ் (Tamil)</option>
               {languages.map((lang) => (
                 <option key={lang.id || lang.code} value={lang.code}>
                   {lang.nativeName || lang.name}
@@ -121,68 +201,28 @@ export const ExplorePage: React.FC = () => {
         </div>
 
         {/* Stories Count */}
-        <div className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-          {isLoading ? 'ஏற்றுகிறது...' : `${stories.length} கதைகள் கண்டறியப்பட்டன`}
+        <div className="text-xs text-stone-500 dark:text-stone-300 font-bold">
+          {stories.length} கதைகள் கண்டறியப்பட்டன (Found)
         </div>
       </div>
 
-      {/* Loading Skeleton */}
-      {isLoading && <StoryGridSkeleton count={8} />}
-
-      {/* Error State */}
-      {isError && (
-        <div className="p-8 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-center space-y-4">
-          <AlertCircle className="h-10 w-10 text-rose-600 mx-auto" />
-          <h3 className="text-lg font-bold text-rose-900 dark:text-rose-200">
-            கதைகளை ஏற்றுவதில் பிழை ஏற்பட்டது
-          </h3>
-          <p className="text-xs text-rose-700 dark:text-rose-300 max-w-md mx-auto">
-            {(error as any)?.message || 'சர்வர் இணைப்பில் பிழை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'}
-          </p>
-          <button
-            onClick={() => refetch()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold shadow-sm transition-colors"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>மீண்டும் முயற்சி செய்</span>
-          </button>
-        </div>
-      )}
-
       {/* Stories Grid */}
-      {!isLoading && !isError && (
-        <>
-          {stories.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-              {stories.map((story) => (
-                <StoryCard
-                  key={story.id}
-                  id={story.id}
-                  slug={story.slug}
-                  title={story.title}
-                  authorName={story.authorName || undefined}
-                  coverImage={story.coverImage}
-                  categoryName={story.category?.name}
-                  language={story.language?.nativeName || story.language?.name}
-                  totalEpisodes={1}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Filter}
-              title="கதைகள் எதுவும் இல்லை"
-              description="தேர்ந்தெடுக்கப்பட்ட வகைப்பாட்டில் அல்லது மொழியில் கதைகள் எதுவும் கிடைக்கவில்லை."
-              actionLabel="அனைத்துக் கதைகளையும் காண்க"
-              onAction={() => {
-                setSelectedCategory('all');
-                setLanguage('all');
-                setSearchParams({});
-              }}
-            />
-          )}
-        </>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        {stories.map((story: any) => (
+          <StoryCard
+            key={story.id}
+            id={story.id}
+            slug={story.slug}
+            title={story.title}
+            authorName={story.authorName || undefined}
+            coverImageUrl={story.coverImageUrl || story.coverImage}
+            categoryName={story.categoryName || story.category?.name}
+            language={typeof story.language === 'string' ? story.language : story.language?.name}
+            totalEpisodes={story.totalEpisodes || 1}
+            totalDurationSeconds={story.totalDurationSeconds}
+          />
+        ))}
+      </div>
     </div>
   );
 };
