@@ -1,0 +1,415 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  LISTENER
+  CREATOR
+  MODERATOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ContentType {
+  STORY
+  AUDIOBOOK
+  PODCAST
+  SHORT_STORY
+}
+
+enum ContentStatus {
+  DRAFT
+  PROCESSING
+  PENDING_REVIEW
+  SCHEDULED
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum AgeRating {
+  ALL_AGES
+  AGE_7_PLUS
+  AGE_13_PLUS
+  AGE_16_PLUS
+  AGE_18_PLUS
+}
+
+enum UploadStatus {
+  INITIATED
+  UPLOADED
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id              String          @id @default(uuid()) @db.Uuid
+  email           String          @unique @db.VarChar(320)
+  passwordHash    String          @map("password_hash")
+  role            UserRole        @default(LISTENER)
+  displayName     String          @map("display_name") @db.VarChar(100)
+  avatarUrl       String?         @map("avatar_url") @db.VarChar(2048)
+  emailVerifiedAt DateTime?       @map("email_verified_at")
+  disabledAt      DateTime?       @map("disabled_at")
+  sessions        AuthSession[]
+  creatorProfile  CreatorProfile?
+  createdSeries   Series[]        @relation("SeriesCreator")
+  reviewedSeries  Series[]        @relation("SeriesReviewer")
+  reviewedEpisodes Episode[]       @relation("EpisodeReviewer")
+  uploadJobs      UploadJob[]     @relation("UploadRequester")
+  entitlements    SubscriptionEntitlement[]
+  favorites       Favorite[]
+  progress        PlaybackProgress[]
+  playlists       Playlist[]
+  notifications   Notification[]
+  creatorApplications CreatorApplication[]
+  auditLogs       AuditLog[]
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@index([role, createdAt])
+  @@map("users")
+}
+
+model AuthSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  refreshTokenHash String?   @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
+}
+
+model CreatorProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  slug        String   @unique @db.VarChar(120)
+  bio         String?  @db.Text
+  approvedAt  DateTime? @map("approved_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("creator_profiles")
+}
+
+model Language {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique @db.VarChar(16)
+  name      String   @db.VarChar(80)
+  nativeName String  @map("native_name") @db.VarChar(80)
+  isActive  Boolean  @default(true) @map("is_active")
+  series    Series[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("languages")
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique @db.VarChar(120)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  isActive    Boolean  @default(true) @map("is_active")
+  series      Series[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("categories")
+}
+
+model Series {
+  id              String        @id @default(uuid()) @db.Uuid
+  slug            String        @unique @db.VarChar(160)
+  title           String        @db.VarChar(200)
+  shortDescription String       @map("short_description") @db.VarChar(500)
+  fullDescription String?       @map("full_description") @db.Text
+  coverImage      String?       @map("cover_image") @db.VarChar(2048)
+  bannerImage     String?       @map("banner_image") @db.VarChar(2048)
+  contentType     ContentType   @default(STORY) @map("content_type")
+  languageId      String        @map("language_id") @db.Uuid
+  categoryId      String        @map("category_id") @db.Uuid
+  creatorId       String?       @map("creator_id") @db.Uuid
+  authorName      String?       @map("author_name") @db.VarChar(160)
+  narratorName    String?       @map("narrator_name") @db.VarChar(160)
+  tags            String[]      @default([])
+  ageRating       AgeRating     @default(ALL_AGES) @map("age_rating")
+  premiumFlag     Boolean       @default(false) @map("premium_flag")
+  featuredFlag    Boolean       @default(false) @map("featured_flag")
+  status          ContentStatus @default(DRAFT)
+  publishedAt     DateTime?     @map("published_at")
+  moderationNote  String?       @map("moderation_note") @db.Text
+  reviewedAt      DateTime?     @map("reviewed_at")
+  reviewedById    String?       @map("reviewed_by_id") @db.Uuid
+  language        Language      @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  category        Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  creator         User?         @relation("SeriesCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  reviewedBy      User?         @relation("SeriesReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  seasons         Season[]
+  favorites       Favorite[]
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt])
+  @@index([languageId, status])
+  @@index([categoryId, status])
+  @@index([creatorId, status])
+  @@map("series")
+}
+
+model Season {
+  id        String   @id @default(uuid()) @db.Uuid
+  seriesId  String   @map("series_id") @db.Uuid
+  title     String   @db.VarChar(160)
+  number    Int
+  series    Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodes  Episode[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([seriesId, number])
+  @@map("seasons")
+}
+
+model MediaAsset {
+  id          String   @id @default(uuid()) @db.Uuid
+  objectKey   String   @unique @map("object_key") @db.VarChar(512)
+  contentType String   @map("content_type") @db.VarChar(120)
+  sizeBytes   BigInt   @map("size_bytes")
+  durationSec Int?     @map("duration_sec")
+  isProcessed Boolean  @default(false) @map("is_processed")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  episode     Episode?
+  renditions  MediaRendition[]
+  uploadJob   UploadJob?
+
+  @@map("media_assets")
+}
+
+model Episode {
+  id              String        @id @default(uuid()) @db.Uuid
+  seasonId        String        @map("season_id") @db.Uuid
+  title           String        @db.VarChar(200)
+  description     String?       @db.Text
+  episodeNumber   Int           @map("episode_number")
+  durationSec     Int?          @map("duration_sec")
+  mediaAssetId    String?       @unique @map("media_asset_id") @db.Uuid
+  previewDuration Int?          @map("preview_duration")
+  premiumFlag     Boolean       @default(false) @map("premium_flag")
+  releaseDate     DateTime?     @map("release_date")
+  status          ContentStatus @default(DRAFT)
+  season          Season        @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  mediaAsset      MediaAsset?   @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+  moderationNote String?       @map("moderation_note") @db.Text
+  publishedAt    DateTime?     @map("published_at")
+  reviewedAt     DateTime?     @map("reviewed_at")
+  reviewedById   String?       @map("reviewed_by_id") @db.Uuid
+  reviewedBy     User?         @relation("EpisodeReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  uploadJobs      UploadJob[]
+  progress        PlaybackProgress[]
+  playlistItems   PlaylistItem[]
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@unique([seasonId, episodeNumber])
+  @@index([status, releaseDate])
+  @@map("episodes")
+}
+
+model UploadJob {
+  id            String       @id @default(uuid()) @db.Uuid
+  requesterId   String       @map("requester_id") @db.Uuid
+  episodeId     String       @map("episode_id") @db.Uuid
+  activeEpisodeId String?    @unique @map("active_episode_id") @db.Uuid
+  mediaAssetId  String?      @unique @map("media_asset_id") @db.Uuid
+  objectKey     String       @unique @map("object_key") @db.VarChar(512)
+  originalName  String       @map("original_name") @db.VarChar(255)
+  contentType   String       @map("content_type") @db.VarChar(120)
+  sizeBytes     BigInt       @map("size_bytes")
+  status        UploadStatus @default(INITIATED)
+  failureReason String?      @map("failure_reason") @db.Text
+  attemptCount  Int          @default(0) @map("attempt_count")
+  expiresAt     DateTime     @map("expires_at")
+  uploadedAt    DateTime?    @map("uploaded_at")
+  processedAt   DateTime?    @map("processed_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  requester     User         @relation("UploadRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  episode       Episode      @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  mediaAsset    MediaAsset?  @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+
+  @@index([requesterId, status])
+  @@index([episodeId, createdAt])
+  @@index([status, updatedAt])
+  @@map("upload_jobs")
+}
+
+model MediaRendition {
+  id          String     @id @default(uuid()) @db.Uuid
+  mediaAssetId String    @map("media_asset_id") @db.Uuid
+  objectKey   String     @unique @map("object_key") @db.VarChar(512)
+  contentType String     @map("content_type") @db.VarChar(120)
+  bitrate     Int?
+  mediaAsset  MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([mediaAssetId])
+  @@map("media_renditions")
+}
+
+model SubscriptionEntitlement {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  providerReference String?  @unique @map("provider_reference") @db.VarChar(255)
+  startsAt         DateTime  @map("starts_at")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startsAt, expiresAt, revokedAt])
+  @@map("subscription_entitlements")
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  SYSTEM
+  CONTENT_PUBLISHED
+  CREATOR_STATUS
+  REMINDER
+}
+
+model Favorite {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  seriesId  String   @map("series_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  series Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, seriesId])
+  @@index([userId, createdAt])
+  @@map("favorites")
+}
+
+model PlaybackProgress {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  episodeId     String   @map("episode_id") @db.Uuid
+  positionSec   Int      @default(0) @map("position_sec")
+  durationSec   Int      @default(0) @map("duration_sec")
+  completedFlag Boolean  @default(false) @map("completed_flag")
+  lastPlayedAt  DateTime @default(now()) @map("last_played_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, episodeId])
+  @@index([userId, lastPlayedAt])
+  @@map("playback_progress")
+}
+
+model Playlist {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @map("user_id") @db.Uuid
+  title       String         @db.VarChar(160)
+  description String?        @db.Text
+  isPublic    Boolean        @default(false) @map("is_public")
+  items       PlaylistItem[]
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("playlists")
+}
+
+model PlaylistItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  playlistId String   @map("playlist_id") @db.Uuid
+  episodeId  String   @map("episode_id") @db.Uuid
+  position   Int      @default(0)
+  addedAt    DateTime @default(now()) @map("added_at")
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  episode  Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, episodeId])
+  @@index([playlistId, position])
+  @@map("playlist_items")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  title     String           @db.VarChar(200)
+  body      String           @db.Text
+  type      NotificationType @default(SYSTEM)
+  data      Json?
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@map("notifications")
+}
+
+model CreatorApplication {
+  id             String            @id @default(uuid()) @db.Uuid
+  userId         String            @map("user_id") @db.Uuid
+  bio            String?           @db.Text
+  sampleAudioUrl String?           @map("sample_audio_url") @db.VarChar(2048)
+  experience     String?           @db.Text
+  status         ApplicationStatus @default(PENDING)
+  reviewNote     String?           @map("review_note") @db.Text
+  reviewedById   String?           @map("reviewed_by_id") @db.Uuid
+  reviewedAt     DateTime?         @map("reviewed_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("creator_applications")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String   @db.VarChar(120)
+  targetType String   @map("target_type") @db.VarChar(80)
+  targetId   String?  @map("target_id") @db.VarChar(120)
+  details    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+

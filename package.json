@@ -1,0 +1,24 @@
+{
+  "name": "kathaisolli",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.18.0",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @kathaisolli/api start:dev",
+    "build:api": "pnpm --filter @kathaisolli/api build",
+    "test:api": "pnpm --filter @kathaisolli/api test --runInBand",
+    "dev:web": "pnpm --filter @kathaisolli/web dev",
+    "build:web": "pnpm --filter @kathaisolli/web build",
+    "build:all": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @kathaisolli/api prisma:generate",
+    "db:migrate": "pnpm --filter @kathaisolli/api prisma:migrate",
+    "db:seed": "pnpm --filter @kathaisolli/api prisma:seed",
+    "infra:up": "docker compose up -d postgres redis minio",
+    "infra:down": "docker compose down"
+  }
+}
