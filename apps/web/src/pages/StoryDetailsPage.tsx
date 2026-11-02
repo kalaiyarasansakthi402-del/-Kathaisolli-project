@@ -4,6 +4,7 @@ import { Play, Pause, Heart, Share2, Clock, Headphones, Star, AlertCircle, Refre
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
+import { COMPLETE_LIBRARY_CATALOG, type LibraryBook } from '../data/libraryCatalog';
 
 export const StoryDetailsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -12,9 +13,23 @@ export const StoryDetailsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
 
-  // Fetch series details
+  // Fallback to static catalog if backend API has no match or is unavailable
+  const catalogBook = React.useMemo(() => {
+    if (!slug) return null;
+    const lower = slug.toLowerCase();
+    return (
+      COMPLETE_LIBRARY_CATALOG.find(
+        (b) =>
+          b.slug.toLowerCase() === lower ||
+          b.id.toLowerCase() === lower ||
+          b.folderName.toLowerCase() === lower,
+      ) || null
+    );
+  }, [slug]);
+
+  // Fetch series details from API (optional)
   const {
-    data: story,
+    data: apiStory,
     isLoading: storyLoading,
     isError: storyError,
     error,
@@ -23,6 +38,8 @@ export const StoryDetailsPage: React.FC = () => {
     queryKey: ['catalog', 'series', slug],
     queryFn: () => api.catalog.getSeries(slug || ''),
     enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   // Fetch episodes list
@@ -38,6 +55,41 @@ export const StoryDetailsPage: React.FC = () => {
     queryFn: () => api.library.getFavorites(),
     enabled: !!user,
   });
+
+  const story = React.useMemo(() => {
+    if (apiStory) return apiStory;
+    if (!catalogBook) return null;
+    return {
+      id: catalogBook.id,
+      slug: catalogBook.slug,
+      title: catalogBook.tamilTitle ? `${catalogBook.tamilTitle} (${catalogBook.title})` : catalogBook.title,
+      authorName: catalogBook.authorName,
+      narratorName: catalogBook.narratorName,
+      coverImage: catalogBook.coverImageUrl,
+      shortDescription: catalogBook.description,
+      fullDescription: catalogBook.description,
+      category: { name: catalogBook.category },
+      language: {
+        name: catalogBook.language === 'Tamil' ? 'தமிழ்' : catalogBook.language,
+        nativeName: catalogBook.language === 'Tamil' ? 'தமிழ்' : 'English',
+      },
+      tags: [catalogBook.category, catalogBook.language] as string[],
+      seasons: [
+        {
+          id: 'season-1',
+          number: 1,
+          title: 'அத்தியாயங்கள் (Chapters)',
+          episodes: catalogBook.chapters.map((ch) => ({
+            id: ch.id,
+            episodeNumber: ch.number,
+            title: ch.tamilTitle ? `${ch.tamilTitle} (${ch.title})` : ch.title,
+            durationSec: ch.durationSeconds,
+            audioUrl: ch.audioUrl,
+          })),
+        },
+      ],
+    };
+  }, [apiStory, catalogBook]);
 
   const isFavorited = !!story && favorites.some((f: any) => f.seriesId === story.id || f.id === story.id);
 
@@ -69,7 +121,7 @@ export const StoryDetailsPage: React.FC = () => {
   const firstEpisode = allEpisodes[0];
   const isCurrentStoryPlaying = !!story && currentEpisode?.seriesId === story.id && isPlaying;
 
-  if (storyLoading) {
+  if (storyLoading && !catalogBook) {
     return (
       <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 animate-pulse">
         <div className="h-72 rounded-3xl bg-emerald-100/40 dark:bg-emerald-900/20" />
@@ -78,7 +130,7 @@ export const StoryDetailsPage: React.FC = () => {
     );
   }
 
-  if (storyError || !story) {
+  if (!story) {
     return (
       <div className="py-20 px-4 text-center max-w-md mx-auto space-y-4">
         <AlertCircle className="h-12 w-12 text-rose-600 mx-auto" />
@@ -188,6 +240,7 @@ export const StoryDetailsPage: React.FC = () => {
                         coverImage: story.coverImage,
                         narratorName: story.narratorName || undefined,
                         durationSec: firstEpisode.durationSec,
+                        audioUrl: firstEpisode.audioUrl,
                       },
                       story.id
                     );
@@ -294,6 +347,7 @@ export const StoryDetailsPage: React.FC = () => {
                             coverImage: story.coverImage,
                             narratorName: story.narratorName || undefined,
                             durationSec: ep.durationSec,
+                            audioUrl: ep.audioUrl,
                           },
                           story.id
                         );

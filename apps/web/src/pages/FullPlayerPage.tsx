@@ -1,28 +1,47 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Play,
   Pause,
+  SkipBack,
+  SkipForward,
   RotateCcw,
   RotateCw,
+  Repeat,
   Volume2,
   VolumeX,
-  Clock,
-  ArrowLeft,
-  Headphones,
-  Sparkles,
-  Share2,
+  Sun,
+  Moon,
   Bookmark,
+  Heart,
+  Search,
+  Sparkles,
+  ChevronUp,
+  ChevronDown,
+  Headphones,
+  Phone,
+  ShieldAlert,
+  FileText,
+  Check,
+  Share2,
   Leaf,
+  X,
 } from 'lucide-react';
-import { usePlayer } from '../context/PlayerContext';
-import { formatTamilDuration } from '@kathaisolli/shared-utils';
+import { usePlayer, type PlayingTrack } from '../context/PlayerContext';
+import { formatDuration } from '@kathaisolli/shared-utils';
+import {
+  COMPLETE_LIBRARY_CATALOG,
+  type LibraryBook,
+  type LibraryChapter,
+} from '../data/libraryCatalog';
 
 export const FullPlayerPage: React.FC = () => {
   const navigate = useNavigate();
   const {
-    currentEpisode,
+    currentTrack,
     isPlaying,
+    isBuffering,
+    playbackError,
     currentTime,
     duration,
     playbackRate,
@@ -30,35 +49,111 @@ export const FullPlayerPage: React.FC = () => {
     volume,
     isMuted,
     playEpisode,
-    play,
     pause,
+    resume,
+    togglePlay,
     seek,
+    skipForward,
+    skipBackward,
     setRate,
     setSleepTimer,
     setPlayerVolume,
     toggleMute,
+    clearError,
   } = usePlayer();
 
-  // If no track is currently playing, initialize with "The Clever Crow" demo track
+  // Active category filter tab in right panel
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showTranscript, setShowTranscript] = useState<boolean>(false);
+  const [isLooping, setIsLooping] = useState<boolean>(false);
+  const [isFavorited, setIsFavorited] = useState<boolean>(false);
+
+  // If no track is playing on mount, start with Arthashastram Chapter 1 (Real verified MP3)
   useEffect(() => {
-    if (!currentEpisode) {
-      playEpisode({
-        episodeId: 'ep-clever-crow',
-        title: 'காக்கையின் தாகம் (The Clever Crow)',
-        seriesTitle: 'பஞ்சதந்திரக் கதைகள் (Panchatantra Tales)',
-        coverImageUrl: '/images/story-clever-crow.jpg',
-        narratorName: 'கதைசொல்லி Studio',
-        durationSec: 360,
-      });
+    if (!currentTrack) {
+      const defaultBook = COMPLETE_LIBRARY_CATALOG.find((b) => b.slug === 'arthashastram') || COMPLETE_LIBRARY_CATALOG[0];
+      const defaultChapter = defaultBook.chapters[0];
+      if (defaultChapter) {
+        playEpisode({
+          episodeId: defaultChapter.id,
+          title: `${defaultBook.tamilTitle} - ${defaultChapter.title}`,
+          seriesId: defaultBook.id,
+          seriesTitle: defaultBook.title,
+          coverImageUrl: defaultBook.coverImageUrl,
+          narratorName: defaultBook.narratorName || 'By Anzles Studio',
+          durationSec: defaultChapter.durationSeconds,
+          audioUrl: defaultChapter.audioUrl,
+        });
+      }
     }
-  }, [currentEpisode, playEpisode]);
+  }, [currentTrack, playEpisode]);
+
+  // Flatten all chapters from catalog with book reference for the right grid
+  const allCatalogChapters = useMemo(() => {
+    const list: Array<{
+      book: LibraryBook;
+      chapter: LibraryChapter;
+      trackId: string;
+    }> = [];
+
+    for (const book of COMPLETE_LIBRARY_CATALOG) {
+      for (const chapter of book.chapters) {
+        list.push({
+          book,
+          chapter,
+          trackId: chapter.id,
+        });
+      }
+    }
+    return list;
+  }, []);
+
+  // Filtered chapters for the right-side grid
+  const filteredChapters = useMemo(() => {
+    return allCatalogChapters.filter(({ book, chapter }) => {
+      // Tab category filter
+      if (activeTab === 'moral' && book.category !== 'Motivation' && book.category !== 'Self Help') {
+        return false;
+      }
+      if (activeTab === 'history' && book.category !== 'History') {
+        return false;
+      }
+      if (activeTab === 'philosophy' && book.category !== 'Mythology' && book.category !== 'Literature') {
+        return false;
+      }
+      if (activeTab === 'biography' && book.category !== 'Biography') {
+        return false;
+      }
+
+      // Search query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesBook = book.title.toLowerCase().includes(q) || book.tamilTitle.toLowerCase().includes(q);
+        const matchesChapter = chapter.title.toLowerCase().includes(q) || chapter.tamilTitle.toLowerCase().includes(q);
+        const matchesAuthor = book.authorName.toLowerCase().includes(q);
+        return matchesBook || matchesChapter || matchesAuthor;
+      }
+
+      return true;
+    });
+  }, [allCatalogChapters, activeTab, searchQuery]);
+
+  const handlePlayChapterItem = (book: LibraryBook, chapter: LibraryChapter) => {
+    playEpisode({
+      episodeId: chapter.id,
+      title: `${book.tamilTitle} - ${chapter.title}`,
+      seriesId: book.id,
+      seriesTitle: book.title,
+      coverImageUrl: book.coverImageUrl,
+      narratorName: book.narratorName || 'By Anzles Studio',
+      durationSec: chapter.durationSeconds,
+      audioUrl: chapter.audioUrl,
+    });
+  };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     seek(parseFloat(e.target.value));
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPlayerVolume(parseFloat(e.target.value));
   };
 
   const cycleRate = () => {
@@ -68,170 +163,434 @@ export const FullPlayerPage: React.FC = () => {
   };
 
   const cycleSleepTimer = () => {
-    const timers = [null, 15, 30, 45, 60];
+    const timers = [null, 15, 20, 30, 45, 60];
     const nextIdx = (timers.indexOf(sleepTimerMinutes) + 1) % timers.length;
     setSleepTimer(timers[nextIdx]);
   };
 
-  const activeTrack = currentEpisode || {
-    title: 'காக்கையின் தாகம் (The Clever Crow)',
-    seriesTitle: 'பஞ்சதந்திரக் கதைகள் (Panchatantra)',
-    coverImageUrl: '/images/story-clever-crow.jpg',
-    narratorName: 'கதைசொல்லி ஸ்டுடியோ',
-    durationSec: 360,
-  };
-
-  const effectiveDuration = duration > 0 ? duration : activeTrack.durationSec || 360;
+  const effectiveDuration = duration > 0 ? duration : currentTrack?.durationSec || 180;
   const progressPercent = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center py-10 px-4 sm:px-6 max-w-2xl mx-auto space-y-8 bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] transition-colors">
-      {/* Top Bar with Back Button */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2.5 rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#173D2E] dark:text-stone-200 hover:scale-105 transition-all shadow-sm"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div className="text-center">
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider">
-            <Leaf className="w-3.5 h-3.5 fill-current" />
-            <span>100% Free Tamil Audio</span>
+    <div className="min-h-screen bg-[#07241D] text-[#E8F0E2] flex flex-col font-sans select-none overflow-x-hidden">
+      {/* ============================================================== */}
+      {/* 1. TOP HEADER (White / Cream cleanly aligned branding)        */}
+      {/* ============================================================== */}
+      <header className="w-full bg-[#FAF7EE] text-[#063828] border-b border-[#E3DCBA] px-6 lg:px-12 py-3.5 flex items-center justify-between shadow-md z-30">
+        {/* Left: Kathaisolli concentric brand mark & typography */}
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="w-11 h-11 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-md relative group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 rounded-full border-2 border-[#A7F3D0]/60 flex items-center justify-center">
+              <Leaf className="w-4 h-4 text-[#A7F3D0] fill-current" />
+            </div>
           </div>
-          <h4 className="text-xs font-medium text-stone-500 dark:text-stone-400 mt-1">
-            {activeTrack.seriesTitle || 'Kathaisolli'}
-          </h4>
-        </div>
-        <button
-          onClick={() => alert('பகிர்வதற்கான இணைப்பு நகலெடுக்கப்பட்டது (Share link copied)!')}
-          className="p-2.5 rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#173D2E] dark:text-stone-200 hover:scale-105 transition-all shadow-sm"
-        >
-          <Share2 className="h-5 w-5" />
-        </button>
-      </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black font-serif tracking-tight text-[#064E3B]">
+                Kathaisolli
+              </span>
+              <span className="text-sm font-bold font-tamil text-[#0B6B52]">
+                கதைசொல்லி
+              </span>
+            </div>
+            <p className="text-[10px] uppercase tracking-wider text-[#0B6B52]/75 font-semibold">
+              Kathaisolli | Botanical Oasis · By Anzles
+            </p>
+          </div>
+        </Link>
 
-      {/* Main Storybook Album Artwork */}
-      <div className="relative aspect-square max-w-sm mx-auto w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-[#124835] group">
-        <img
-          src={activeTrack.coverImageUrl || '/images/story-clever-crow.jpg'}
-          alt={activeTrack.title}
-          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
-      </div>
-
-      {/* Title & Metadata */}
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9] tracking-tight">
-          {activeTrack.title}
-        </h2>
-        <p className="text-sm font-semibold font-tamil text-[#166534] dark:text-[#A7F3D0]">
-          {activeTrack.narratorName ? `குரல்: ${activeTrack.narratorName}` : 'Kathaisolli Production'}
-        </p>
-      </div>
-
-      {/* Progress Bar & Timestamps */}
-      <div className="space-y-2">
-        <div className="relative flex items-center">
-          <input
-            type="range"
-            min={0}
-            max={effectiveDuration}
-            step={1}
-            value={currentTime}
-            onChange={handleSeek}
-            className="w-full h-2 bg-[#E3DCBA] dark:bg-[#124835] rounded-lg appearance-none cursor-pointer accent-[#064E3B] dark:accent-[#A7F3D0]"
-          />
-        </div>
-        <div className="flex justify-between text-xs font-mono font-medium text-stone-500 dark:text-stone-400">
-          <span>{formatTamilDuration(Math.floor(currentTime))}</span>
-          <span>{formatTamilDuration(Math.floor(effectiveDuration))}</span>
-        </div>
-      </div>
-
-      {/* Main Playback Controls */}
-      <div className="flex items-center justify-center gap-6 sm:gap-8">
-        <button
-          onClick={cycleRate}
-          className="p-2.5 rounded-full text-xs font-bold font-mono bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#064E3B] dark:text-[#A7F3D0] hover:scale-105 transition-all w-11 h-11 flex items-center justify-center"
-          title="Playback Speed"
-        >
-          {playbackRate}x
-        </button>
-
-        <button
-          onClick={() => seek(Math.max(0, currentTime - 10))}
-          className="p-3 rounded-full hover:bg-[#E8F0E2] dark:hover:bg-[#083325] text-[#064E3B] dark:text-[#A7F3D0] transition-colors"
-          title="Rewind 10 seconds"
-        >
-          <RotateCcw className="h-6 w-6" />
-        </button>
-
-        <button
-          onClick={isPlaying ? pause : play}
-          className="h-16 w-16 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white flex items-center justify-center shadow-xl shadow-emerald-950/30 hover:scale-105 transition-all"
-        >
-          {isPlaying ? (
-            <Pause className="h-8 w-8 fill-current" />
-          ) : (
-            <Play className="h-8 w-8 fill-current ml-1" />
-          )}
-        </button>
-
-        <button
-          onClick={() => seek(Math.min(effectiveDuration, currentTime + 10))}
-          className="p-3 rounded-full hover:bg-[#E8F0E2] dark:hover:bg-[#083325] text-[#064E3B] dark:text-[#A7F3D0] transition-colors"
-          title="Forward 10 seconds"
-        >
-          <RotateCw className="h-6 w-6" />
-        </button>
-
-        <button
-          onClick={cycleSleepTimer}
-          className={`p-2.5 rounded-full w-11 h-11 flex items-center justify-center border transition-all ${
-            sleepTimerMinutes
-              ? 'bg-[#064E3B] text-white border-[#064E3B]'
-              : 'bg-white dark:bg-[#083325] border-[#D5CEBA] dark:border-[#124835] text-[#064E3B] dark:text-[#A7F3D0]'
-          }`}
-          title="Sleep Timer"
-        >
-          <Clock className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* Volume and Extras */}
-      <div className="flex items-center justify-between pt-4 border-t border-[#E3DCBA] dark:border-[#124835]">
+        {/* Right Action Pills (Matching Reference UI) */}
         <div className="flex items-center gap-3">
           <button
-            onClick={toggleMute}
-            className="p-2 rounded-lg text-stone-500 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]"
+            onClick={() => alert('Kathaisolli 24/7 Support: +91 94440 00000 · By Anzles')}
+            className="px-3.5 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
           >
-            {isMuted || volume === 0 ? (
-              <VolumeX className="h-5 w-5 text-rose-500" />
-            ) : (
-              <Volume2 className="h-5 w-5" />
-            )}
+            SOS
           </button>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={isMuted ? 0 : volume}
-            onChange={handleVolumeChange}
-            className="w-24 h-1.5 bg-[#E3DCBA] dark:bg-[#124835] rounded-lg appearance-none cursor-pointer accent-[#064E3B] dark:accent-[#A7F3D0]"
-          />
+          <Link
+            to="/profile"
+            className="w-9 h-9 rounded-full bg-[#064E3B] text-white flex items-center justify-center text-sm font-bold hover:scale-105 transition-transform shadow-sm"
+          >
+            P
+          </Link>
+          <a
+            href="tel:+919444000000"
+            className="w-9 h-9 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] flex items-center justify-center transition-colors shadow-sm"
+            title="Contact Studio"
+          >
+            <Phone className="w-4 h-4" />
+          </a>
+        </div>
+      </header>
+
+      {/* ============================================================== */}
+      {/* 2. MAIN TWO-COLUMN STUDIO PLAYER INTERFACE                     */}
+      {/* ============================================================== */}
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-12 py-8 pb-32 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* ------------------------------------------------------------ */}
+        {/* LEFT COLUMN: TURNTABLE RECORD PLAYER CONSOLE (5 cols)         */}
+        {/* ------------------------------------------------------------ */}
+        <section className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-[#0F352C]/90 backdrop-blur-2xl border border-[#1C5749]/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-6">
+          {/* Vinyl Record Turntable Frame */}
+          <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl bg-gradient-to-tr from-[#08221B] to-[#124237] p-5 shadow-2xl border-2 border-[#1E5C4E] flex items-center justify-center">
+            {/* Turntable Platter Outer Ring */}
+            <div className="relative w-full h-full rounded-full bg-[#041410] border-4 border-[#1B5749] flex items-center justify-center shadow-inner overflow-hidden">
+              {/* Subtle Vinyl Grooves Pattern */}
+              <div className="absolute inset-2 rounded-full border border-white/5 pointer-events-none" />
+              <div className="absolute inset-6 rounded-full border border-white/5 pointer-events-none" />
+              <div className="absolute inset-10 rounded-full border border-white/5 pointer-events-none" />
+              <div className="absolute inset-14 rounded-full border border-white/5 pointer-events-none" />
+
+              {/* Rotating Center Artwork Disc */}
+              <div
+                className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-[#07241D] shadow-2xl transition-transform duration-700 ${
+                  isPlaying ? 'animate-[spin_12s_linear_infinite]' : ''
+                }`}
+              >
+                <img
+                  src={currentTrack?.coverImageUrl || currentTrack?.coverImage || '/images/covers/arthashastram.jpg'}
+                  alt={currentTrack?.title || 'Story Artwork'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Center Spindle Hole */}
+              <div className="absolute w-5 h-5 rounded-full bg-[#1B5749] border-2 border-[#A7F3D0] shadow-md z-10" />
+            </div>
+
+            {/* Stylized Tonearm (Turntable Needle) resting on record */}
+            <div
+              className={`absolute top-4 right-4 w-12 h-28 pointer-events-none transition-transform duration-700 origin-top-right ${
+                isPlaying ? 'rotate-12' : 'rotate-0'
+              }`}
+            >
+              {/* Tonearm Pivot Base */}
+              <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-[#1B5749] border border-[#A7F3D0]/60 shadow-lg" />
+              {/* Arm stem */}
+              <div className="absolute top-4 right-2.5 w-1 h-20 bg-gradient-to-b from-[#A7F3D0] to-[#10B981] rounded-full shadow" />
+              {/* Cartridge & Needle head */}
+              <div className="absolute bottom-0 right-1 w-4 h-6 rounded-sm bg-[#041410] border border-[#10B981] shadow-md" />
+            </div>
+          </div>
+
+          {/* Title & Narrator Metadata */}
+          <div className="text-center space-y-1.5 w-full px-2">
+            <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#F8F5E9] tracking-tight truncate drop-shadow">
+              {currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ'}
+            </h2>
+            <p className="text-xs sm:text-sm font-semibold text-[#A7F3D0]/80 truncate">
+              {currentTrack?.narratorName || currentTrack?.seriesTitle || 'Kathaisolli Original · By Anzles Studio'}
+            </p>
+          </div>
+
+          {/* Interactive Playback Controls Bar */}
+          <div className="flex items-center justify-between w-full max-w-sm px-4 pt-1">
+            {/* Script / Lyrics toggle button (歌词 / தமிழ்) */}
+            <button
+              onClick={() => setShowTranscript(!showTranscript)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                showTranscript
+                  ? 'bg-[#10B981] text-[#07241D] border-[#10B981]'
+                  : 'bg-white/5 hover:bg-white/10 text-stone-300 border-white/10'
+              }`}
+              title="Toggle Story Script / Tamil Text"
+            >
+              தமிழ் உரை
+            </button>
+
+            {/* Previous Chapter / 10s Backward */}
+            <button
+              onClick={() => skipBackward(10)}
+              className="p-3 rounded-full text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5 active:scale-95 transition-all"
+              title="10 விநாடிகள் பின்னே (Rewind 10s)"
+            >
+              <SkipBack className="w-6 h-6 fill-current" />
+            </button>
+
+            {/* Large Glowing Circular Play / Pause Button */}
+            <button
+              onClick={togglePlay}
+              className="w-16 h-16 rounded-full bg-white text-[#07241D] flex items-center justify-center hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all"
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isBuffering ? (
+                <div className="w-6 h-6 border-3 border-[#07241D] border-t-transparent rounded-full animate-spin" />
+              ) : isPlaying ? (
+                <Pause className="w-7 h-7 fill-current" />
+              ) : (
+                <Play className="w-7 h-7 fill-current ml-1" />
+              )}
+            </button>
+
+            {/* Next Chapter / 10s Forward */}
+            <button
+              onClick={() => skipForward(10)}
+              className="p-3 rounded-full text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5 active:scale-95 transition-all"
+              title="10 விநாடிகள் முன்னே (Forward 10s)"
+            >
+              <SkipForward className="w-6 h-6 fill-current" />
+            </button>
+
+            {/* Loop / Repeat Toggle */}
+            <button
+              onClick={() => setIsLooping(!isLooping)}
+              className={`p-2.5 rounded-full transition-all ${
+                isLooping ? 'text-[#10B981] bg-white/10' : 'text-stone-400 hover:text-white'
+              }`}
+              title="Repeat Chapter"
+            >
+              <Repeat className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Glowing Cyan/Teal Progress Seekbar */}
+          <div className="w-full max-w-sm space-y-2">
+            <div
+              className="relative w-full h-2.5 bg-black/40 rounded-full cursor-pointer overflow-hidden group shadow-inner"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = (e.clientX - rect.left) / rect.width;
+                seek(pct * effectiveDuration);
+              }}
+            >
+              <div
+                className="h-full bg-gradient-to-r from-[#059669] via-[#10B981] to-[#34D399] relative transition-all rounded-full shadow-[0_0_12px_rgba(16,185,129,0.8)]"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs font-mono font-semibold text-stone-400">
+              <span>{formatDuration(currentTime)}</span>
+              <span>{formatDuration(effectiveDuration)}</span>
+            </div>
+          </div>
+
+          {/* Playback Error Banner if any */}
+          {playbackError && (
+            <div className="w-full max-w-sm p-3 rounded-2xl bg-amber-950/80 border border-amber-600/60 text-amber-200 text-xs flex items-center justify-between">
+              <span className="truncate">{playbackError}</span>
+              <button onClick={clearError} className="p-1 hover:bg-white/10 rounded">✕</button>
+            </div>
+          )}
+
+          {/* Transcript Panel (Collapsible) */}
+          {showTranscript && (
+            <div className="w-full max-w-sm p-4 rounded-2xl bg-black/50 border border-white/10 text-xs text-stone-200 leading-relaxed max-h-40 overflow-y-auto font-tamil">
+              <p className="font-bold text-[#A7F3D0] mb-1">தமிழ் உரை சுருக்கம்:</p>
+              <p>
+                {currentTrack?.title} — கதைசொல்லி வழங்கும் உயர்தர தமிழ் ஒலிநூல் வடிவம்.
+                அரசியல், தத்துவம், தன்னம்பிக்கை மற்றும் வாழ்க்கைப் பாடங்களை எங்கும் எப்போதும் கேட்டு மகிழுங்கள்.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* ------------------------------------------------------------ */}
+        {/* RIGHT COLUMN: CHAPTER & AUDIOBOOK 4-COLUMN GRID (7 cols)     */}
+        {/* ------------------------------------------------------------ */}
+        <section className="lg:col-span-7 space-y-6">
+          {/* Top Filter Tabs & Search Pill (Matching Reference UI) */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            {/* Category Tabs */}
+            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-1 text-sm font-bold">
+              {[
+                { id: 'all', label: 'அனைத்தும்' },
+                { id: 'moral', label: 'நீதிக்கதை' },
+                { id: 'history', label: 'வரலாறு' },
+                { id: 'philosophy', label: 'தத்துவம்' },
+                { id: 'biography', label: 'வாழ்க்கை' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative pb-2 whitespace-nowrap transition-colors ${
+                    activeTab === tab.id ? 'text-[#A7F3D0]' : 'text-stone-400 hover:text-stone-200'
+                  }`}
+                >
+                  {tab.label}
+                  {activeTab === tab.id && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10B981] rounded-full shadow-[0_0_8px_#10B981]" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Rounded Search Pill Input */}
+            <div className="relative w-full sm:w-56 shrink-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="தேடுங்கள்..."
+                className="w-full pl-9 pr-8 py-2 rounded-full bg-[#0F352C]/80 border border-[#1C5749] text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 4-Column Card Grid (Matching Reference UI Cards) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {filteredChapters.slice(0, 12).map(({ book, chapter }) => {
+              const isCardPlaying =
+                (currentTrack?.episodeId === chapter.id || currentTrack?.title?.includes(chapter.title)) &&
+                isPlaying;
+
+              return (
+                <div
+                  key={`${book.id}-${chapter.id}`}
+                  onClick={() => handlePlayChapterItem(book, chapter)}
+                  className={`relative aspect-square rounded-2xl overflow-hidden cursor-pointer group shadow-lg border transition-all duration-300 hover:-translate-y-1 ${
+                    isCardPlaying
+                      ? 'border-[#10B981] ring-2 ring-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                      : 'border-white/10 hover:border-[#10B981]/50'
+                  }`}
+                >
+                  {/* Card Artwork */}
+                  <img
+                    src={book.coverImageUrl}
+                    alt={book.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+
+                  {/* Dark Gradient Overlay for Typography Contrast */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-85 group-hover:opacity-95 transition-opacity" />
+
+                  {/* Play Indicator Icon */}
+                  <div
+                    className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                      isCardPlaying
+                        ? 'bg-[#10B981] text-[#07241D] scale-100 shadow-md'
+                        : 'bg-black/60 text-white opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100'
+                    }`}
+                  >
+                    {isCardPlaying ? (
+                      <div className="w-2.5 h-2.5 bg-[#07241D] rounded-sm animate-pulse" />
+                    ) : (
+                      <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                    )}
+                  </div>
+
+                  {/* Bottom Text Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
+                    <h3 className="font-bold text-sm text-[#F8F5E9] font-serif line-clamp-1 group-hover:text-[#A7F3D0] transition-colors">
+                      {chapter.tamilTitle || chapter.title}
+                    </h3>
+                    <p className="text-[11px] text-stone-300/80 truncate mt-0.5 font-medium">
+                      {book.authorName}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+
+      {/* ============================================================== */}
+      {/* 3. STICKY BOTTOM MINI-PLAYER DOCK (Matching Reference UI)      */}
+      {/* ============================================================== */}
+      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-[#0A261F]/95 backdrop-blur-2xl border-t border-[#16493B]/80 px-6 py-3.5 flex items-center justify-between gap-4 shadow-[0_-10px_35px_rgba(0,0,0,0.6)]">
+        {/* Left: Green Circular Headphone Icon + Title */}
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="w-10 h-10 rounded-full bg-[#059669] text-[#07241D] flex items-center justify-center shrink-0 shadow-lg">
+            <Headphones className="w-5 h-5 stroke-[2.5]" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold font-serif text-[#F8F5E9] truncate font-tamil">
+              {currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ'}
+            </p>
+            <p className="text-xs text-[#A7F3D0]/70 truncate">
+              {currentTrack?.narratorName || currentTrack?.seriesTitle || 'By Anzles Studio'}
+            </p>
+          </div>
         </div>
 
-        <button
-          onClick={() => alert('நூலகத்தில் சேமிக்கப்பட்டது (Saved to Library)!')}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:scale-105 transition-all"
-        >
-          <Bookmark className="w-4 h-4" />
-          <span>Save to Library</span>
-        </button>
-      </div>
+        {/* Center: Controls, Speed, and Sleep Timer Pills */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Collapse / Expand icon */}
+          <button
+            onClick={() => navigate('/library')}
+            className="p-2 rounded-full text-stone-400 hover:text-white hover:bg-white/5 transition-colors"
+            title="நூலகத்திற்குச் செல் (Go to Library)"
+          >
+            <ChevronUp className="w-5 h-5" />
+          </button>
+
+          {/* Mini Play / Pause */}
+          <button
+            onClick={togglePlay}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-sm"
+          >
+            {isPlaying ? (
+              <Pause className="w-4 h-4 fill-current" />
+            ) : (
+              <Play className="w-4 h-4 fill-current ml-0.5" />
+            )}
+          </button>
+
+          {/* Speed Selector Pill */}
+          <button
+            onClick={cycleRate}
+            className="px-3 py-1 rounded-full text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-[#A7F3D0] border border-white/10 transition-colors"
+            title="Playback Speed"
+          >
+            {playbackRate}x
+          </button>
+
+          {/* Sleep Timer Pill */}
+          <button
+            onClick={cycleSleepTimer}
+            className="px-3 py-1 rounded-full text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-stone-300 border border-white/10 transition-colors"
+            title="Sleep Timer"
+          >
+            {sleepTimerMinutes ? `${sleepTimerMinutes}m` : 'Timer'}
+          </button>
+        </div>
+
+        {/* Right: Theme Toggle, Favorite, and Volume Slider */}
+        <div className="hidden sm:flex items-center gap-3">
+          {/* Favorite Toggle */}
+          <button
+            onClick={() => setIsFavorited(!isFavorited)}
+            className={`p-2 rounded-full transition-colors ${
+              isFavorited ? 'text-rose-500' : 'text-stone-400 hover:text-white'
+            }`}
+          >
+            <Bookmark className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
+          </button>
+
+          {/* Volume Control */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMute}
+              className="text-stone-400 hover:text-white transition-colors"
+            >
+              {isMuted || volume === 0 ? (
+                <VolumeX className="w-4 h-4 text-rose-400" />
+              ) : (
+                <Volume2 className="w-4 h-4" />
+              )}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={isMuted ? 0 : volume}
+              onChange={(e) => setPlayerVolume(parseFloat(e.target.value))}
+              className="w-16 sm:w-20 h-1.5 bg-black/40 rounded-full appearance-none cursor-pointer accent-[#10B981]"
+            />
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

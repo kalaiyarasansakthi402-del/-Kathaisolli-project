@@ -38,11 +38,22 @@ let auth: Auth | null = null;
 try {
   if (isFirebaseConfigured() || firebaseConfig.projectId) {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    storage = getStorage(
-      app,
-      `gs://${firebaseConfig.storageBucket.replace(/^gs:\/\//, '')}`,
-    );
-    auth = getAuth(app);
+    try {
+      storage = getStorage(
+        app,
+        `gs://${firebaseConfig.storageBucket.replace(/^gs:\/\//, '')}`,
+      );
+    } catch (storageErr) {
+      console.warn('[Kathaisolli Firebase] Storage init warning:', storageErr);
+    }
+
+    if (isFirebaseConfigured()) {
+      try {
+        auth = getAuth(app);
+      } catch (authErr) {
+        console.warn('[Kathaisolli Firebase] Auth init warning:', authErr);
+      }
+    }
   }
 } catch (error) {
   console.warn(

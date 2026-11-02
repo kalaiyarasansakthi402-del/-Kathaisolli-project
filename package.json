@@ -19,5 +19,8 @@
     "db:seed": "pnpm --filter @kathaisolli/api prisma:seed",
     "infra:up": "docker compose up -d postgres redis minio",
     "infra:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@ffmpeg-installer/ffmpeg": "1.1.0"
   }
 }

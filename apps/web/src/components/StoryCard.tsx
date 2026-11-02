@@ -72,6 +72,12 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           alt={title}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (target.src !== window.location.origin + '/images/story-panchatantra.jpg') {
+              target.src = '/images/story-panchatantra.jpg';
+            }
+          }}
         />
 
         {/* 100% Free Badge */}

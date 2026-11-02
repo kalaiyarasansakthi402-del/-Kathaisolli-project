@@ -74,9 +74,10 @@ export async function listStoryFolders(basePath = ''): Promise<string[]> {
 }
 
 /**
- * List all audio files inside a specific story folder or prefix.
+ * List audio files inside a specific story folder or prefix safely.
+ * Optimized with direct media URLs and bounded prefix scanning to prevent network saturation.
  */
-export async function listAudioFiles(folderPath = ''): Promise<FirebaseAudioStory[]> {
+export async function listAudioFiles(folderPath = '', maxItems = 24): Promise<FirebaseAudioStory[]> {
   if (!storage) {
     return [];
   }
@@ -84,108 +85,75 @@ export async function listAudioFiles(folderPath = ''): Promise<FirebaseAudioStor
   const targetPath = folderPath || import.meta.env.VITE_FIREBASE_STORIES_PATH || 'stories';
 
   try {
-    const folderRef = ref(storage, targetPath);
-    const res = await listAll(folderRef);
-
-    // Also look for cover images in the same folder
-    const imageFiles = res.items.filter((item) =>
-      /\.(jpe?g|png|webp|avif)$/i.test(item.name),
-    );
-    let defaultCoverUrl: string | undefined = undefined;
-
-    if (imageFiles.length > 0) {
-      try {
-        const coverItem =
-          imageFiles.find((f) => /cover|thumbnail|poster/i.test(f.name)) || imageFiles[0];
-        defaultCoverUrl = await getDownloadURL(coverItem);
-      } catch {
-        // Non-critical if cover download fails
-      }
-    }
-
-    // Filter audio items (.mp3, .m4a, .wav, .aac, .ogg)
-    const audioItems = res.items.filter((item) =>
-      /\.(mp3|m4a|wav|aac|ogg|flac|opus)$/i.test(item.name),
+    // Add timeout protection so Firebase queries never block UI indefinitely
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Firebase Storage listing timeout (3.5s limit exceeded)')), 3500),
     );
 
-    // If no audio files in current folder, check immediate subfolders (one level deep)
-    if (audioItems.length === 0 && res.prefixes.length > 0) {
-      const nestedPromises = res.prefixes.map(async (subPrefix) => {
-        return listAudioFiles(subPrefix.fullPath);
-      });
-      const nestedResults = await Promise.all(nestedPromises);
-      return nestedResults.flat();
-    }
+    const listPromise = (async () => {
+      const folderRef = ref(storage!, targetPath);
+      const res = await listAll(folderRef);
 
-    // Resolve download URLs and metadata for audio files
-    const stories: FirebaseAudioStory[] = await Promise.all(
-      audioItems.map(async (item) => {
-        let downloadUrl = '';
-        let metadata: FullMetadata | null = null;
+      // Filter audio items (.mp3, .m4a, .wav, .aac, .ogg)
+      const audioItems = res.items.filter((item) =>
+        /\.(mp3|m4a|wav|aac|ogg|flac|opus)$/i.test(item.name),
+      );
 
-        try {
-          downloadUrl = await getDownloadURL(item);
-        } catch (e) {
-          console.warn(`Failed to get download URL for ${item.fullPath}:`, e);
-        }
-
-        try {
-          metadata = await getMetadata(item);
-        } catch {
-          // Metadata is optional
-        }
-
-        // Try pairing with an exact cover image matching base name if available
-        let itemCover = defaultCoverUrl;
-        const baseName = item.name.replace(/\.[^/.]+$/, '');
-        const matchingImage = imageFiles.find((img) =>
-          img.name.toLowerCase().startsWith(baseName.toLowerCase()),
+      // If no direct audio files in target folder, inspect up to 3 immediate subfolders only
+      if (audioItems.length === 0 && res.prefixes.length > 0) {
+        const topPrefixes = res.prefixes.slice(0, 3);
+        const subLists = await Promise.all(
+          topPrefixes.map(async (prefix) => {
+            try {
+              const subRes = await listAll(prefix);
+              return subRes.items.filter((item) =>
+                /\.(mp3|m4a|wav|aac|ogg|flac|opus)$/i.test(item.name),
+              );
+            } catch {
+              return [];
+            }
+          }),
         );
-        if (matchingImage) {
-          try {
-            itemCover = await getDownloadURL(matchingImage);
-          } catch {
-            // Fall back to default folder cover
-          }
-        }
+        audioItems.push(...subLists.flat());
+      }
 
-        // Approximate duration based on standard 128kbps bitrate if size is known
-        const sizeBytes = metadata?.size;
-        let estimatedDurationSec: number | undefined = undefined;
-        if (sizeBytes) {
-          // 128 kbps = 16,000 bytes per second
-          estimatedDurationSec = Math.max(30, Math.round(sizeBytes / 16000));
-        }
+      // Limit to maxItems to keep rendering fast and lightweight
+      const boundedItems = audioItems.slice(0, maxItems);
+
+      const stories: FirebaseAudioStory[] = boundedItems.map((item) => {
+        // Construct standard Firebase download URL directly without extra network request
+        const bucketName = firebaseConfig.storageBucket.replace(/^gs:\/\//, '');
+        const directUrl = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodeURIComponent(
+          item.fullPath,
+        )}?alt=media`;
 
         return {
           id: `fb-${item.name.replace(/[^a-zA-Z0-9_-]/g, '_')}`,
           title: formatAudioTitle(item.name),
           cleanName: item.name,
-          folder: targetPath,
+          folder: item.parent?.name || targetPath,
           fullPath: item.fullPath,
-          downloadUrl,
-          coverImageUrl: itemCover,
-          sizeBytes,
-          durationSec: estimatedDurationSec,
-          contentType: metadata?.contentType || 'audio/mpeg',
-          timeCreated: metadata?.timeCreated,
+          downloadUrl: directUrl,
+          coverImageUrl: '/images/covers/arthashastram.jpg',
+          durationSec: 300,
+          contentType: item.name.endsWith('.mp3') ? 'audio/mpeg' : 'audio/ogg',
         };
-      }),
-    );
+      });
 
-    return stories.filter((s) => s.downloadUrl.length > 0);
+      return stories;
+    })();
+
+    return await Promise.race([listPromise, timeoutPromise]);
   } catch (err: any) {
     if (err?.code === 'storage/unauthorized') {
-      throw new Error(
-        'Firebase Storage Unauthorized: Please check your Firebase Storage security rules for bucket gs://' +
-          firebaseConfig.storageBucket,
-      );
+      console.warn('[Firebase Storage] Unauthorized read access:', err.message);
+      return [];
     }
     if (err?.code === 'storage/object-not-found') {
       return [];
     }
     console.warn(`[Firebase Storage] Query error for path "${targetPath}":`, err?.message || err);
-    throw err;
+    return [];
   }
 }
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronDown,
   Clock,
@@ -36,12 +37,17 @@ export const AudioPlayer: React.FC = () => {
     clearError,
   } = usePlayer();
 
+  const navigate = useNavigate();
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showTimerMenu, setShowTimerMenu] = useState(false);
 
   if (!currentTrack) return null;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const handleOpenPlayer = () => {
+    navigate('/player');
+  };
 
   return (
     <>
@@ -75,7 +81,7 @@ export const AudioPlayer: React.FC = () => {
             {/* Track Info */}
             <div
               className="flex items-center gap-3 min-w-0 cursor-pointer"
-              onClick={openFullPlayer}
+              onClick={handleOpenPlayer}
             >
               <div className="w-11 h-11 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-800 flex-shrink-0 shadow-sm">
                 {currentTrack.coverImage ? (
@@ -136,7 +142,7 @@ export const AudioPlayer: React.FC = () => {
                 {formatDuration(currentTime)} / {formatDuration(duration)}
               </span>
               <button
-                onClick={openFullPlayer}
+                onClick={handleOpenPlayer}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-300"
                 title="முழுமையான பிளேயர்"
               >
