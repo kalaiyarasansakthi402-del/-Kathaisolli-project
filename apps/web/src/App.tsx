@@ -72,16 +72,17 @@ const AppContent: React.FC = () => {
   const isFullBleedLibraryPage = location.pathname === '/library';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
-      {!isDedicatedPlayerPage && !isFullBleedLibraryPage && <Navbar />}
+    <div className="min-h-screen flex flex-col bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
+      {!isDedicatedPlayerPage && <Navbar />}
 
-      <main className={`flex-1 ${isDedicatedPlayerPage || isFullBleedLibraryPage ? 'pb-0' : 'pb-28'}`}>
+      <main className={`flex-1 ${isDedicatedPlayerPage ? 'pb-0' : 'pb-28'}`}>
         <ErrorBoundary>
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
               {/* Public routes */}
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<HomePage />} />
               <Route path="/home" element={<HomePage />} />
+              <Route path="/landing" element={<LandingPage />} />
               <Route path="/explore" element={<ExplorePage />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/categories" element={<CategoriesPage />} />

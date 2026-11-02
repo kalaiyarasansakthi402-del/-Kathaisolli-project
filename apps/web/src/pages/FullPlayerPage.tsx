@@ -19,7 +19,6 @@ import {
   ChevronUp,
   ChevronDown,
   Headphones,
-  Phone,
   ShieldAlert,
   FileText,
   Check,
@@ -199,27 +198,28 @@ export const FullPlayerPage: React.FC = () => {
           </div>
         </Link>
 
-        {/* Right Action Pills (Matching Reference UI) */}
+        {/* Right Action: Clean Navigation & Close controls */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => alert('Kathaisolli 24/7 Support: +91 94440 00000 · By Anzles')}
-            className="px-3.5 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
-          >
-            SOS
-          </button>
           <Link
-            to="/profile"
-            className="w-9 h-9 rounded-full bg-[#064E3B] text-white flex items-center justify-center text-sm font-bold hover:scale-105 transition-transform shadow-sm"
+            to="/explore"
+            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
           >
-            P
+            <span>கதைகளை உலாவு (Explore)</span>
           </Link>
-          <a
-            href="tel:+919444000000"
-            className="w-9 h-9 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] flex items-center justify-center transition-colors shadow-sm"
-            title="Contact Studio"
+          <Link
+            to="/my-library"
+            className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
           >
-            <Phone className="w-4 h-4" />
-          </a>
+            <span>எனது நூலகம் (Library)</span>
+          </Link>
+          <button
+            onClick={() => navigate(-1)}
+            className="w-9 h-9 rounded-full bg-[#064E3B] text-white hover:bg-[#085a44] flex items-center justify-center transition-transform hover:scale-105 shadow-sm"
+            title="மூடு / பின்செல்க (Close / Back)"
+            aria-label="Close Player"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
@@ -248,9 +248,12 @@ export const FullPlayerPage: React.FC = () => {
                 }`}
               >
                 <img
-                  src={currentTrack?.coverImageUrl || currentTrack?.coverImage || '/images/covers/arthashastram.jpg'}
+                  src={currentTrack?.coverImageUrl || currentTrack?.coverImage || '/images/temple-sunset.jpg'}
                   alt={currentTrack?.title || 'Story Artwork'}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/images/temple-sunset.jpg';
+                  }}
                 />
               </div>
 
