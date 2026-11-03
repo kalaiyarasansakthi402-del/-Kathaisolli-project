@@ -46,11 +46,16 @@ export const AudioPlayer: React.FC = () => {
     closeFullPlayer,
     toggleCollapse,
     clearError,
+    // Queue & Audio Navigation Controls
+    playNext,
+    playPrevious,
+    toggleRepeat,
+    repeatMode,
+    isShuffle,
+    toggleShuffle,
   } = usePlayer();
 
   const navigate = useNavigate();
-  const [isShuffle, setIsShuffle] = useState(false);
-  const [isRepeat, setIsRepeat] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showTimerMenu, setShowTimerMenu] = useState(false);
 
@@ -183,26 +188,40 @@ export const AudioPlayer: React.FC = () => {
             {/* Center: Playback Controls & Scrubber (Matching Screenshot) */}
             <div className="flex-1 max-w-xl flex flex-col items-center justify-center gap-1.5">
               {/* Controls Top Row */}
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-3.5 sm:gap-4 lg:gap-5">
+                {/* 1. Shuffle Button */}
                 <button
-                  onClick={() => setIsShuffle(!isShuffle)}
+                  onClick={toggleShuffle}
                   className={`p-1.5 rounded-full transition-colors ${
                     isShuffle ? 'text-[#A7F3D0]' : 'text-[#86EFAC]/60 hover:text-white'
                   }`}
-                  title="குழப்பல் (Shuffle)"
+                  title={isShuffle ? 'குழப்பல் ஆன் (Shuffle On)' : 'குழப்பல் ஆஃப் (Shuffle Off)'}
+                  aria-label="Shuffle"
                 >
                   <Shuffle className="w-4 h-4" />
                 </button>
 
+                {/* 2. Previous Audio / Chapter Button */}
                 <button
-                  onClick={() => skipBackward(10)}
-                  className="p-1.5 text-white hover:text-[#A7F3D0] transition-colors"
-                  title="10 விநாடிகள் பின்னே (Rewind 10s)"
+                  onClick={playPrevious}
+                  className="p-1.5 text-white hover:text-[#A7F3D0] transition-colors active:scale-95"
+                  title="முந்தைய ஆடியோ (Previous Audio)"
+                  aria-label="Previous Audio"
                 >
                   <SkipBack className="w-4 h-4 fill-current" />
                 </button>
 
-                {/* Circular Mint Play/Pause Button */}
+                {/* 3. Rewind 10 Seconds Button */}
+                <button
+                  onClick={() => skipBackward(10)}
+                  className="p-1.5 text-stone-300 hover:text-white transition-colors active:scale-95"
+                  title="10 விநாடிகள் பின்னே (Rewind 10s)"
+                  aria-label="Rewind 10s"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+
+                {/* 4. Circular Mint Play/Pause Button */}
                 <button
                   onClick={togglePlay}
                   className="w-10 h-10 rounded-full bg-[#A7F3D0] hover:bg-[#6EE7B7] text-[#064E3B] flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 flex-shrink-0"
@@ -217,22 +236,47 @@ export const AudioPlayer: React.FC = () => {
                   )}
                 </button>
 
+                {/* 5. Forward 10 Seconds Button */}
                 <button
                   onClick={() => skipForward(10)}
-                  className="p-1.5 text-white hover:text-[#A7F3D0] transition-colors"
+                  className="p-1.5 text-stone-300 hover:text-white transition-colors active:scale-95"
                   title="10 விநாடிகள் முன்னே (Forward 10s)"
+                  aria-label="Forward 10s"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                </button>
+
+                {/* 6. Next Audio / Chapter Button */}
+                <button
+                  onClick={playNext}
+                  className="p-1.5 text-white hover:text-[#A7F3D0] transition-colors active:scale-95"
+                  title="அடுத்த ஆடியோ (Next Audio)"
+                  aria-label="Next Audio"
                 >
                   <SkipForward className="w-4 h-4 fill-current" />
                 </button>
 
+                {/* 7. Repeat Toggle Button */}
                 <button
-                  onClick={() => setIsRepeat(!isRepeat)}
-                  className={`p-1.5 rounded-full transition-colors ${
-                    isRepeat ? 'text-[#A7F3D0]' : 'text-[#86EFAC]/60 hover:text-white'
+                  onClick={toggleRepeat}
+                  className={`p-1.5 rounded-full transition-colors relative ${
+                    repeatMode !== 'off' ? 'text-[#A7F3D0]' : 'text-[#86EFAC]/60 hover:text-white'
                   }`}
-                  title="மீண்டும் இயக்கு (Repeat)"
+                  title={
+                    repeatMode === 'one'
+                      ? 'தற்போதைய ஆடியோவை மீண்டும் இயக்கு (Repeat One)'
+                      : repeatMode === 'all'
+                      ? 'அனைத்து ஆடியோக்களையும் மீண்டும் இயக்கு (Repeat All)'
+                      : 'மீண்டும் இயக்கு ஆஃப் (Repeat Off)'
+                  }
+                  aria-label="Repeat"
                 >
                   <Repeat className="w-4 h-4" />
+                  {repeatMode === 'one' && (
+                    <span className="absolute -top-1 -right-1 text-[8px] font-black bg-[#10B981] text-[#073224] rounded-full w-3 h-3 flex items-center justify-center">
+                      1
+                    </span>
+                  )}
                 </button>
               </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Play, Pause, Heart, Bookmark, Share2, Clock, Headphones, Star, AlertCircle, RefreshCw, Check } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usePlayer } from '../context/PlayerContext';
+import { usePlayer, type PlayingTrack } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
 import { COMPLETE_LIBRARY_CATALOG, type LibraryBook } from '../data/libraryCatalog';
 import { isBookSaved, toggleSaveBook } from '../services/userLibrary';
@@ -264,6 +264,18 @@ export const StoryDetailsPage: React.FC = () => {
                   if (isCurrentStoryPlaying) {
                     pause();
                   } else {
+                    const storyQueue: PlayingTrack[] = allEpisodes.map((ep: any) => ({
+                      id: ep.id,
+                      episodeId: ep.id,
+                      title: ep.title,
+                      seriesId: story.id,
+                      seriesTitle: story.title,
+                      coverImage: story.coverImage,
+                      coverImageUrl: story.coverImage,
+                      narratorName: story.narratorName || undefined,
+                      durationSec: ep.durationSec,
+                      audioUrl: ep.audioUrl,
+                    }));
                     playEpisode(
                       {
                         episodeId: firstEpisode.id,
@@ -275,7 +287,9 @@ export const StoryDetailsPage: React.FC = () => {
                         durationSec: firstEpisode.durationSec,
                         audioUrl: firstEpisode.audioUrl,
                       },
-                      story.id
+                      story.id,
+                      storyQueue,
+                      0,
                     );
                   }
                 }}
@@ -357,7 +371,7 @@ export const StoryDetailsPage: React.FC = () => {
         </div>
 
         <div className="divide-y divide-emerald-50 dark:divide-emerald-900/30">
-          {allEpisodes.map((ep: any) => {
+          {allEpisodes.map((ep: any, epIndex: number) => {
             const isThisEpisodePlaying = (currentEpisode?.episodeId === ep.id || currentEpisode?.id === ep.id) && isPlaying;
 
             return (
@@ -371,6 +385,18 @@ export const StoryDetailsPage: React.FC = () => {
                       if (isThisEpisodePlaying) {
                         pause();
                       } else {
+                        const storyQueue: PlayingTrack[] = allEpisodes.map((item: any) => ({
+                          id: item.id,
+                          episodeId: item.id,
+                          title: item.title,
+                          seriesId: story.id,
+                          seriesTitle: story.title,
+                          coverImage: story.coverImage,
+                          coverImageUrl: story.coverImage,
+                          narratorName: story.narratorName || undefined,
+                          durationSec: item.durationSec,
+                          audioUrl: item.audioUrl,
+                        }));
                         playEpisode(
                           {
                             episodeId: ep.id,
@@ -382,7 +408,9 @@ export const StoryDetailsPage: React.FC = () => {
                             durationSec: ep.durationSec,
                             audioUrl: ep.audioUrl,
                           },
-                          story.id
+                          story.id,
+                          storyQueue,
+                          epIndex,
                         );
                       }
                     }}

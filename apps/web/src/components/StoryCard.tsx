@@ -80,15 +80,20 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     if (firstEpisodeId) {
       playEpisode(firstEpisodeId, id);
     } else {
-      playEpisode({
-        episodeId: id,
-        title,
-        seriesTitle: categoryName || 'Kathaisolli Story',
-        coverImageUrl: image,
-        narratorName: authorName || 'By Anzles Studio',
-        durationSec: totalDurationSeconds || 300,
-        audioUrl,
-      });
+      playEpisode(
+        {
+          id: id || slug,
+          episodeId: id || slug,
+          title,
+          seriesId: id || slug,
+          seriesTitle: categoryName || 'Kathaisolli Story',
+          coverImageUrl: image,
+          narratorName: authorName || 'By Anzles Studio',
+          durationSec: totalDurationSeconds || 300,
+          audioUrl,
+        },
+        id || slug,
+      );
     }
   };
 

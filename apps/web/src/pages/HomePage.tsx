@@ -283,16 +283,45 @@ export const HomePage: React.FC = () => {
   const { playEpisode } = usePlayer();
 
   const handlePlayStory = (item: any) => {
-    playEpisode({
-      episodeId: item.id || 'ep-1',
-      title: item.title,
-      seriesTitle: item.author || 'கதைசொல்லி',
-      coverImage: item.coverImage,
-      coverImageUrl: item.coverImage,
-      narratorName: item.author,
-      audioUrl: item.audioUrl || 'https://firebasestorage.googleapis.com/v0/b/vaagai-audio-books-36a4e.appspot.com/o/Arthashastram%2F01.mp3?alt=media&token=f23cdc19-d206-4e89-bd98-51dc916e7804',
-      durationSec: item.durationSec || 1200,
-    });
+    const targetBook = COMPLETE_LIBRARY_CATALOG.find(
+      (b) => b.id === item.id || b.slug === item.slug || b.title === item.title || b.tamilTitle === item.title,
+    );
+    const seriesId = targetBook ? targetBook.id : item.slug || item.id;
+    const bookQueue = targetBook
+      ? targetBook.chapters.map((ch) => ({
+          id: ch.id,
+          episodeId: ch.id,
+          title: `${targetBook.tamilTitle} - ${ch.title}`,
+          seriesId: targetBook.id,
+          seriesTitle: targetBook.title,
+          coverImage: targetBook.coverImageUrl,
+          coverImageUrl: targetBook.coverImageUrl,
+          narratorName: targetBook.authorName || targetBook.narratorName || 'By Anzles Studio',
+          durationSec: ch.durationSeconds,
+          audioUrl: ch.audioUrl || '/audio/arthashastram_01.mp3',
+        }))
+      : undefined;
+
+    playEpisode(
+      {
+        id: item.id || 'ep-1',
+        episodeId: item.id || 'ep-1',
+        title: item.title,
+        seriesId,
+        seriesTitle: item.author || targetBook?.title || 'கதைசொல்லி',
+        coverImage: item.coverImage,
+        coverImageUrl: item.coverImage,
+        narratorName: item.author || targetBook?.authorName,
+        audioUrl:
+          item.audioUrl ||
+          targetBook?.chapters[0]?.audioUrl ||
+          'https://firebasestorage.googleapis.com/v0/b/vaagai-audio-books-36a4e.appspot.com/o/Arthashastram%2F01.mp3?alt=media&token=f23cdc19-d206-4e89-bd98-51dc916e7804',
+        durationSec: item.durationSec || targetBook?.chapters[0]?.durationSeconds || 1200,
+      },
+      seriesId,
+      bookQueue,
+      0,
+    );
   };
 
   // Convert catalog books to carousel format

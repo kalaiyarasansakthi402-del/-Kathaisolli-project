@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { updateListeningProgress, getProgress } from '../services/userLibrary';
+import { COMPLETE_LIBRARY_CATALOG, type LibraryBook } from '../data/libraryCatalog';
 
 export interface PlayingTrack {
   id?: string;
@@ -72,6 +73,61 @@ export const detectAudioFormat = (url?: string | null): AudioFormatInfo => {
   };
 };
 
+/**
+ * Resolves the playlist queue for any given track or chapter.
+ * If customQueue is provided, it uses that queue.
+ * Otherwise, it looks up the book in COMPLETE_LIBRARY_CATALOG and constructs
+ * a chapter queue, enabling seamless Next/Previous Audio playback.
+ */
+export const resolveTrackQueue = (
+  track: PlayingTrack,
+  seriesId?: string,
+  customQueue?: PlayingTrack[],
+): { queue: PlayingTrack[]; index: number } => {
+  if (customQueue && customQueue.length > 0) {
+    const idx = customQueue.findIndex(
+      (t) => t.episodeId === track.episodeId || (t.id && t.id === track.id) || t.title === track.title,
+    );
+    return { queue: customQueue, index: idx >= 0 ? idx : 0 };
+  }
+
+  // Look for matching book in COMPLETE_LIBRARY_CATALOG
+  const targetId = seriesId || track.seriesId || track.id || track.episodeId;
+  const targetTitle = (track.seriesTitle || track.title || '').toLowerCase();
+
+  const matchedBook = COMPLETE_LIBRARY_CATALOG.find((b) => {
+    if (b.id === targetId || b.slug === targetId) return true;
+    if (b.chapters.some((c) => c.id === track.episodeId || c.id === track.id)) return true;
+    if (b.title.toLowerCase() === targetTitle || b.tamilTitle === track.seriesTitle) return true;
+    if (track.title && (track.title.includes(b.tamilTitle) || track.title.includes(b.title))) return true;
+    return false;
+  });
+
+  if (matchedBook && matchedBook.chapters.length > 0) {
+    const bookQueue: PlayingTrack[] = matchedBook.chapters.map((ch) => ({
+      id: ch.id,
+      episodeId: ch.id,
+      title: `${matchedBook.tamilTitle} - ${ch.title}`,
+      seriesId: matchedBook.id,
+      seriesTitle: matchedBook.title,
+      coverImage: matchedBook.coverImageUrl,
+      coverImageUrl: matchedBook.coverImageUrl,
+      narratorName: matchedBook.authorName || matchedBook.narratorName || 'By Anzles Studio',
+      durationSec: ch.durationSeconds,
+      audioUrl: ch.audioUrl || '/audio/arthashastram_01.mp3',
+    }));
+
+    const chapterIdx = matchedBook.chapters.findIndex(
+      (c) => c.id === track.episodeId || c.id === track.id || track.title.includes(c.title),
+    );
+
+    return { queue: bookQueue, index: chapterIdx >= 0 ? chapterIdx : 0 };
+  }
+
+  // Fallback: single item queue
+  return { queue: [track], index: 0 };
+};
+
 export interface PlayerContextType {
   currentTrack: PlayingTrack | null;
   currentEpisode: PlayingTrack | null;
@@ -89,7 +145,25 @@ export interface PlayerContextType {
   isMuted: boolean;
   audioFormat: 'mp3' | 'ogg' | 'aac' | 'unknown';
   isFormatSupported: boolean;
-  playEpisode: (trackOrId: PlayingTrack | string, seriesId?: string) => Promise<void>;
+  // Queue & Playlist Controls
+  queue: PlayingTrack[];
+  queueIndex: number;
+  repeatMode: 'off' | 'all' | 'one';
+  isRepeat: boolean;
+  isShuffle: boolean;
+  playEpisode: (
+    trackOrId: PlayingTrack | string,
+    seriesId?: string,
+    customQueue?: PlayingTrack[],
+    index?: number,
+  ) => Promise<void>;
+  playNext: () => Promise<void>;
+  playPrevious: () => Promise<void>;
+  setQueue: (tracks: PlayingTrack[], startIndex?: number) => void;
+  toggleRepeat: () => void;
+  setRepeatMode: (mode: 'off' | 'all' | 'one') => void;
+  toggleShuffle: () => void;
+  setIsShuffle: (shuffle: boolean) => void;
   play: () => void;
   resume: () => void;
   pause: () => void;
@@ -116,16 +190,40 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const { api, user } = useAuth();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Default initial queue from COMPLETE_LIBRARY_CATALOG
+  const defaultInitialBook =
+    COMPLETE_LIBRARY_CATALOG.find((b) => b.slug === 'appusamiyum-africa-azhagiyum') ||
+    COMPLETE_LIBRARY_CATALOG.find((b) => b.slug === 'arthashastram') ||
+    COMPLETE_LIBRARY_CATALOG[0];
+
+  const defaultInitialQueue: PlayingTrack[] =
+    defaultInitialBook && defaultInitialBook.chapters.length > 0
+      ? defaultInitialBook.chapters.map((ch) => ({
+          id: ch.id,
+          episodeId: ch.id,
+          title: `${defaultInitialBook.tamilTitle} - ${ch.title}`,
+          seriesId: defaultInitialBook.id,
+          seriesTitle: defaultInitialBook.title,
+          coverImage: defaultInitialBook.coverImageUrl,
+          coverImageUrl: defaultInitialBook.coverImageUrl,
+          narratorName: defaultInitialBook.authorName || defaultInitialBook.narratorName || 'By Anzles Studio',
+          durationSec: ch.durationSeconds,
+          audioUrl: ch.audioUrl || '/audio/arthashastram_01.mp3',
+        }))
+      : [];
+
   const [currentTrack, setCurrentTrack] = useState<PlayingTrack | null>(() => {
     try {
       const saved = localStorage.getItem('kathaisolli_last_track');
       if (saved) return JSON.parse(saved);
     } catch {}
-    // Default verified initial track
+    if (defaultInitialQueue.length > 0) {
+      return defaultInitialQueue[0];
+    }
     return {
-      id: 'appusamy-africa-ch2',
-      episodeId: 'appusamy-africa-ch2',
-      title: 'அப்புசாமியும் ஆப்பிரிக்க அழகியும் - அத்தியாயம் 2',
+      id: 'appusamy-africa-ch1',
+      episodeId: 'appusamy-africa-ch1',
+      title: 'அப்புசாமியும் ஆப்பிரிக்க அழகியும் - அத்தியாயம் 1',
       seriesTitle: 'பாக்கியம் ராமசாமி',
       coverImage: '/images/temple-sunset.jpg',
       coverImageUrl: '/images/temple-sunset.jpg',
@@ -133,6 +231,44 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       durationSec: 1456,
       audioUrl: '/audio/arthashastram_01.mp3',
     };
+  });
+
+  const [queue, setQueueState] = useState<PlayingTrack[]>(() => {
+    try {
+      const saved = localStorage.getItem('kathaisolli_queue');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return defaultInitialQueue;
+  });
+
+  const [queueIndex, setQueueIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('kathaisolli_queue_index');
+      if (saved !== null) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 0) return parsed;
+      }
+    } catch {}
+    return 0;
+  });
+
+  const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>(() => {
+    try {
+      const saved = localStorage.getItem('kathaisolli_repeat_mode');
+      if (saved === 'all' || saved === 'one' || saved === 'off') return saved;
+    } catch {}
+    return 'off';
+  });
+
+  const [isShuffle, setIsShuffle] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('kathaisolli_shuffle') === 'true';
+    } catch {
+      return false;
+    }
   });
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -158,12 +294,25 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // References for event listener handlers
   const currentTrackRef = useRef<PlayingTrack | null>(null);
   currentTrackRef.current = currentTrack;
+  const queueRef = useRef<PlayingTrack[]>(queue);
+  queueRef.current = queue;
+  const queueIndexRef = useRef<number>(queueIndex);
+  queueIndexRef.current = queueIndex;
+  const repeatModeRef = useRef<'off' | 'all' | 'one'>(repeatMode);
+  repeatModeRef.current = repeatMode;
+  const isShuffleRef = useRef<boolean>(isShuffle);
+  isShuffleRef.current = isShuffle;
   const userRef = useRef(user);
   userRef.current = user;
   const apiRef = useRef(api);
   apiRef.current = api;
   const lastSyncRef = useRef<number>(0);
   const fallbackAttemptsRef = useRef<Set<string>>(new Set());
+
+  // Ref forwarder for playEpisode in event listeners
+  const playEpisodeRef = useRef<
+    (trackOrId: PlayingTrack | string, seriesId?: string, customQueue?: PlayingTrack[], index?: number) => Promise<void>
+  >(() => Promise.resolve());
 
   // Toggle collapse state with persistence
   const toggleCollapse = useCallback(() => {
@@ -340,6 +489,63 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             .catch(() => {});
         }
       }
+
+      // Automatically play next item (Requirements 5 & 6)
+      const repMode = repeatModeRef.current;
+      const currentQ = queueRef.current;
+      const currentIdx = queueIndexRef.current;
+      const shuffle = isShuffleRef.current;
+
+      if (repMode === 'one') {
+        audio.currentTime = 0;
+        audio.play().catch(console.error);
+        return;
+      }
+
+      if (currentQ.length === 0) return;
+
+      if (currentQ.length === 1) {
+        if (repMode === 'all') {
+          audio.currentTime = 0;
+          audio.play().catch(console.error);
+        }
+        return;
+      }
+
+      if (shuffle) {
+        let nextIdx = currentIdx;
+        let attempts = 0;
+        while (nextIdx === currentIdx && attempts < 10) {
+          nextIdx = Math.floor(Math.random() * currentQ.length);
+          attempts++;
+        }
+        const nextTrack = currentQ[nextIdx];
+        if (nextTrack) {
+          setQueueIndex(nextIdx);
+          playEpisodeRef.current(nextTrack, nextTrack.seriesId, currentQ, nextIdx);
+        }
+        return;
+      }
+
+      // Next sequential chapter/track
+      if (currentIdx < currentQ.length - 1) {
+        const nextIdx = currentIdx + 1;
+        const nextTrack = currentQ[nextIdx];
+        if (nextTrack) {
+          setQueueIndex(nextIdx);
+          playEpisodeRef.current(nextTrack, nextTrack.seriesId, currentQ, nextIdx);
+        }
+      } else if (repMode === 'all') {
+        // Repeat-all loops back to the first item
+        const nextIdx = 0;
+        const nextTrack = currentQ[nextIdx];
+        if (nextTrack) {
+          setQueueIndex(nextIdx);
+          playEpisodeRef.current(nextTrack, nextTrack.seriesId, currentQ, nextIdx);
+        }
+      } else {
+        // Repeat off: stops playback at end of playlist
+      }
     };
 
     const onLoadedMetadata = () => {
@@ -438,91 +644,267 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => clearTimeout(timer);
   }, [sleepTimer]);
 
-  const playEpisode = async (trackOrId: PlayingTrack | string, seriesId?: string) => {
-    try {
-      setPlaybackError(null);
-      const episodeId = typeof trackOrId === 'string' ? trackOrId : trackOrId.episodeId;
-      const track: PlayingTrack =
-        typeof trackOrId === 'string'
-          ? {
-              id: trackOrId,
-              episodeId: trackOrId,
-              title: `அத்தியாயம் (${episodeId})`,
-              seriesId,
-            }
-          : {
-              ...trackOrId,
-              id: trackOrId.id || trackOrId.episodeId,
-            };
-
-      setCurrentTrack(track);
-      if (track.durationSec && track.durationSec > 0) {
-        setDuration(track.durationSec);
-      }
-      setCurrentTime(0);
-
+  const playEpisode = useCallback(
+    async (
+      trackOrId: PlayingTrack | string,
+      seriesId?: string,
+      customQueue?: PlayingTrack[],
+      index?: number,
+    ) => {
       try {
-        localStorage.setItem('kathaisolli_last_track', JSON.stringify(track));
-      } catch {}
+        setPlaybackError(null);
+        const episodeId = typeof trackOrId === 'string' ? trackOrId : trackOrId.episodeId;
+        const track: PlayingTrack =
+          typeof trackOrId === 'string'
+            ? {
+                id: trackOrId,
+                episodeId: trackOrId,
+                title: `அத்தியாயம் (${episodeId})`,
+                seriesId,
+              }
+            : {
+                ...trackOrId,
+                id: trackOrId.id || trackOrId.episodeId,
+              };
 
-      // 1. Direct audio URL (Firebase Storage or direct cloud stream)
-      let initialStreamUrl = track.audioUrl || track.downloadUrl;
+        // Requirement 2: Resolve chapter queue for next/previous navigation
+        if (customQueue && customQueue.length > 0) {
+          setQueueState(customQueue);
+          const idx =
+            index !== undefined
+              ? index
+              : customQueue.findIndex(
+                  (t) => t.episodeId === track.episodeId || (t.id && t.id === track.id) || t.title === track.title,
+                );
+          const safeIdx = idx >= 0 ? idx : 0;
+          setQueueIndex(safeIdx);
+          try {
+            localStorage.setItem('kathaisolli_queue', JSON.stringify(customQueue));
+            localStorage.setItem('kathaisolli_queue_index', String(safeIdx));
+          } catch {}
+        } else {
+          const resolved = resolveTrackQueue(track, seriesId);
+          setQueueState(resolved.queue);
+          setQueueIndex(resolved.index);
+          try {
+            localStorage.setItem('kathaisolli_queue', JSON.stringify(resolved.queue));
+            localStorage.setItem('kathaisolli_queue_index', String(resolved.index));
+          } catch {}
+        }
 
-      // 2. If no direct streamUrl, fetch from backend playback authorization
-      if (!initialStreamUrl) {
+        // Requirement 3: Update title, artwork, duration, and reset progress
+        setCurrentTrack(track);
+        if (track.durationSec && track.durationSec > 0) {
+          setDuration(track.durationSec);
+        }
+        setCurrentTime(0);
+
         try {
-          const authData = await api.playback.authorize(episodeId);
-          initialStreamUrl = authData.audioUrl;
-        } catch {
-          console.warn('[Player] Backend stream authorization unavailable, checking fallback audio');
-        }
-      }
+          localStorage.setItem('kathaisolli_last_track', JSON.stringify(track));
+        } catch {}
 
-      // Format detection
-      const formatInfo = detectAudioFormat(initialStreamUrl);
-      setAudioFormat(formatInfo.format);
-      setIsFormatSupported(formatInfo.isSupportedByBrowser);
-
-      // Resolve and normalize stream URL
-      const streamUrl = resolveAudioPlaybackUrl(
-        initialStreamUrl,
-        track.title || track.seriesTitle,
-        episodeId,
-      );
-
-      // Check if user has saved progress for this episode
-      const savedProg = getProgress(episodeId);
-      const startPosition = savedProg?.positionSec && savedProg.positionSec > 0 ? savedProg.positionSec : 0;
-
-      const audio = audioRef.current;
-      if (audio) {
-        setIsBuffering(true);
-        audio.pause();
-        audio.src = streamUrl;
-        audio.playbackRate = playbackRate;
-        audio.volume = isMuted ? 0 : volume;
-        audio.load();
-
-        if (startPosition > 0) {
-          audio.currentTime = startPosition;
-          setCurrentTime(startPosition);
+        // Requirement 3: Stop currently playing audio before loading next
+        const audio = audioRef.current;
+        if (audio) {
+          audio.pause();
         }
 
-        await audio.play().catch((playErr) => {
+        // 1. Direct audio URL (Firebase Storage or direct cloud stream)
+        let initialStreamUrl = track.audioUrl || track.downloadUrl;
+
+        // 2. If no direct streamUrl, fetch from backend playback authorization
+        if (!initialStreamUrl) {
+          try {
+            const authData = await api.playback.authorize(episodeId);
+            initialStreamUrl = authData.audioUrl;
+          } catch {
+            console.warn('[Player] Backend stream authorization unavailable, checking fallback audio');
+          }
+        }
+
+        // Requirement 8: If the next audio URL is missing or invalid, show a useful error and do not break the player
+        if (!initialStreamUrl) {
+          console.warn('[Player] No audio URL found for track:', track.title);
+          setPlaybackError('அடுத்த ஆடியோ இணைப்பு கிடைக்கவில்லை (Next audio URL is missing or unavailable).');
           setIsBuffering(false);
           setIsPlaying(false);
-          if (playErr.name !== 'AbortError') {
-            console.warn('[Player] Audio play interrupted:', playErr.message);
+          return;
+        }
+
+        // Format detection
+        const formatInfo = detectAudioFormat(initialStreamUrl);
+        setAudioFormat(formatInfo.format);
+        setIsFormatSupported(formatInfo.isSupportedByBrowser);
+
+        // Resolve and normalize stream URL
+        const streamUrl = resolveAudioPlaybackUrl(
+          initialStreamUrl,
+          track.title || track.seriesTitle,
+          episodeId,
+        );
+
+        // Check if user has saved progress for this episode
+        const savedProg = getProgress(episodeId);
+        const startPosition = savedProg?.positionSec && savedProg.positionSec > 0 ? savedProg.positionSec : 0;
+
+        if (audio) {
+          setIsBuffering(true);
+          audio.src = streamUrl;
+          audio.playbackRate = playbackRate;
+          audio.volume = isMuted ? 0 : volume;
+          audio.load();
+
+          if (startPosition > 0) {
+            audio.currentTime = startPosition;
+            setCurrentTime(startPosition);
           }
-        });
+
+          // Requirement 3: Starts playing the next audio automatically
+          await audio.play().catch((playErr) => {
+            setIsBuffering(false);
+            setIsPlaying(false);
+            if (playErr.name !== 'AbortError') {
+              console.warn('[Player] Audio play interrupted:', playErr.message);
+              setPlaybackError('ஆடியோ இயக்க முடியவில்லை (Audio playback interrupted).');
+            }
+          });
+        }
+      } catch (err) {
+        console.error('Playback error:', err);
+        setIsBuffering(false);
+        setIsPlaying(false);
+        setPlaybackError('ஆடியோ இயக்க முடியவில்லை (Could not play audio).');
       }
-    } catch (err) {
-      console.error('Playback error:', err);
-      setIsBuffering(false);
-      setIsPlaying(false);
-      setPlaybackError('ஆடியோ இயக்க முடியவில்லை (Could not play audio).');
+    },
+    [api, isMuted, playbackRate, resolveAudioPlaybackUrl, volume],
+  );
+
+  // Keep playEpisodeRef synchronized
+  playEpisodeRef.current = playEpisode;
+
+  // Requirement 3 & 6 & 7: Next Audio Button Logic
+  const playNext = useCallback(async () => {
+    const currentQ = queueRef.current;
+    const currentIdx = queueIndexRef.current;
+    const repMode = repeatModeRef.current;
+    const shuffle = isShuffleRef.current;
+
+    if (currentQ.length === 0) return;
+
+    // Requirement 7: If only one audio item exists, do not switch to a nonexistent item.
+    if (currentQ.length === 1) {
+      if (repMode === 'all' || repMode === 'one') {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(console.error);
+        }
+      }
+      return;
     }
-  };
+
+    if (shuffle) {
+      let nextIdx = currentIdx;
+      let attempts = 0;
+      while (nextIdx === currentIdx && attempts < 10) {
+        nextIdx = Math.floor(Math.random() * currentQ.length);
+        attempts++;
+      }
+      const nextTrack = currentQ[nextIdx];
+      if (nextTrack) {
+        setQueueIndex(nextIdx);
+        await playEpisode(nextTrack, nextTrack.seriesId, currentQ, nextIdx);
+      }
+      return;
+    }
+
+    // Sequential Next
+    if (currentIdx < currentQ.length - 1) {
+      const nextIdx = currentIdx + 1;
+      const nextTrack = currentQ[nextIdx];
+      if (nextTrack) {
+        setQueueIndex(nextIdx);
+        await playEpisode(nextTrack, nextTrack.seriesId, currentQ, nextIdx);
+      }
+    } else if (repMode === 'all') {
+      // Requirement 6: If repeat-all is enabled, play the first item
+      const nextIdx = 0;
+      const nextTrack = currentQ[nextIdx];
+      if (nextTrack) {
+        setQueueIndex(nextIdx);
+        await playEpisode(nextTrack, nextTrack.seriesId, currentQ, nextIdx);
+      }
+    } else {
+      // Requirement 6: Stop playback when repeat is off
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlaying(false);
+    }
+  }, [playEpisode]);
+
+  // Requirement 4: Previous Audio Button Logic
+  const playPrevious = useCallback(async () => {
+    const currentQ = queueRef.current;
+    const currentIdx = queueIndexRef.current;
+    const repMode = repeatModeRef.current;
+
+    if (currentQ.length === 0) return;
+
+    // If current audio has played more than 3 seconds, restart current track
+    if (audioRef.current && audioRef.current.currentTime > 3) {
+      audioRef.current.currentTime = 0;
+      setCurrentTime(0);
+      return;
+    }
+
+    if (currentIdx > 0) {
+      const prevIdx = currentIdx - 1;
+      const prevTrack = currentQ[prevIdx];
+      if (prevTrack) {
+        setQueueIndex(prevIdx);
+        await playEpisode(prevTrack, prevTrack.seriesId, currentQ, prevIdx);
+      }
+    } else if (repMode === 'all' && currentQ.length > 1) {
+      const prevIdx = currentQ.length - 1;
+      const prevTrack = currentQ[prevIdx];
+      if (prevTrack) {
+        setQueueIndex(prevIdx);
+        await playEpisode(prevTrack, prevTrack.seriesId, currentQ, prevIdx);
+      }
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      setCurrentTime(0);
+    }
+  }, [playEpisode]);
+
+  const setQueue = useCallback((tracks: PlayingTrack[], startIndex = 0) => {
+    setQueueState(tracks);
+    setQueueIndex(startIndex);
+    try {
+      localStorage.setItem('kathaisolli_queue', JSON.stringify(tracks));
+      localStorage.setItem('kathaisolli_queue_index', String(startIndex));
+    } catch {}
+  }, []);
+
+  const toggleRepeat = useCallback(() => {
+    setRepeatMode((prev) => {
+      const next = prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off';
+      try {
+        localStorage.setItem('kathaisolli_repeat_mode', next);
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffle((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('kathaisolli_shuffle', String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -612,7 +994,19 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isMuted,
         audioFormat,
         isFormatSupported,
+        queue,
+        queueIndex,
+        repeatMode,
+        isRepeat: repeatMode !== 'off',
+        isShuffle,
         playEpisode,
+        playNext,
+        playPrevious,
+        setQueue,
+        toggleRepeat,
+        setRepeatMode,
+        toggleShuffle,
+        setIsShuffle,
         play,
         resume,
         pause,

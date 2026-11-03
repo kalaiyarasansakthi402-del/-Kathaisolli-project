@@ -48,6 +48,10 @@ export const FullPlayerPage: React.FC = () => {
     volume,
     isMuted,
     playEpisode,
+    playNext,
+    playPrevious,
+    toggleRepeat,
+    repeatMode,
     pause,
     resume,
     togglePlay,
@@ -65,7 +69,6 @@ export const FullPlayerPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showTranscript, setShowTranscript] = useState<boolean>(false);
-  const [isLooping, setIsLooping] = useState<boolean>(false);
   const [isFavorited, setIsFavorited] = useState<boolean>(false);
 
   // If no track is playing on mount, start with Arthashastram Chapter 1 (Real verified MP3)
@@ -139,16 +142,34 @@ export const FullPlayerPage: React.FC = () => {
   }, [allCatalogChapters, activeTab, searchQuery]);
 
   const handlePlayChapterItem = (book: LibraryBook, chapter: LibraryChapter) => {
-    playEpisode({
-      episodeId: chapter.id,
-      title: `${book.tamilTitle} - ${chapter.title}`,
+    const bookQueue: PlayingTrack[] = book.chapters.map((ch) => ({
+      id: ch.id,
+      episodeId: ch.id,
+      title: `${book.tamilTitle} - ${ch.title}`,
       seriesId: book.id,
       seriesTitle: book.title,
       coverImageUrl: book.coverImageUrl,
-      narratorName: book.narratorName || 'By Anzles Studio',
-      durationSec: chapter.durationSeconds,
-      audioUrl: chapter.audioUrl,
-    });
+      narratorName: book.authorName || book.narratorName || 'By Anzles Studio',
+      durationSec: ch.durationSeconds,
+      audioUrl: ch.audioUrl,
+    }));
+    const chIdx = book.chapters.findIndex((c) => c.id === chapter.id);
+
+    playEpisode(
+      {
+        episodeId: chapter.id,
+        title: `${book.tamilTitle} - ${chapter.title}`,
+        seriesId: book.id,
+        seriesTitle: book.title,
+        coverImageUrl: book.coverImageUrl,
+        narratorName: book.narratorName || 'By Anzles Studio',
+        durationSec: chapter.durationSeconds,
+        audioUrl: chapter.audioUrl,
+      },
+      book.id,
+      bookQueue,
+      chIdx >= 0 ? chIdx : 0,
+    );
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,13 +322,24 @@ export const FullPlayerPage: React.FC = () => {
               தமிழ் உரை
             </button>
 
-            {/* Previous Chapter / 10s Backward */}
+            {/* Previous Chapter */}
             <button
-              onClick={() => skipBackward(10)}
+              onClick={playPrevious}
               className="p-3 rounded-full text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5 active:scale-95 transition-all"
-              title="10 விநாடிகள் பின்னே (Rewind 10s)"
+              title="முந்தைய அத்தியாயம் (Previous Chapter)"
+              aria-label="Previous Chapter"
             >
               <SkipBack className="w-6 h-6 fill-current" />
+            </button>
+
+            {/* Rewind 10 Seconds */}
+            <button
+              onClick={() => skipBackward(10)}
+              className="p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+              title="10 விநாடிகள் பின்னே (Rewind 10s)"
+              aria-label="Rewind 10 seconds"
+            >
+              <RotateCcw className="w-5 h-5" />
             </button>
 
             {/* Large Glowing Circular Play / Pause Button */}
@@ -315,6 +347,7 @@ export const FullPlayerPage: React.FC = () => {
               onClick={togglePlay}
               className="w-16 h-16 rounded-full bg-white text-[#07241D] flex items-center justify-center hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all"
               title={isPlaying ? 'Pause' : 'Play'}
+              aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isBuffering ? (
                 <div className="w-6 h-6 border-3 border-[#07241D] border-t-transparent rounded-full animate-spin" />
@@ -325,24 +358,47 @@ export const FullPlayerPage: React.FC = () => {
               )}
             </button>
 
-            {/* Next Chapter / 10s Forward */}
+            {/* Forward 10 Seconds */}
             <button
               onClick={() => skipForward(10)}
-              className="p-3 rounded-full text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5 active:scale-95 transition-all"
+              className="p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
               title="10 விநாடிகள் முன்னே (Forward 10s)"
+              aria-label="Forward 10 seconds"
+            >
+              <RotateCw className="w-5 h-5" />
+            </button>
+
+            {/* Next Chapter */}
+            <button
+              onClick={playNext}
+              className="p-3 rounded-full text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5 active:scale-95 transition-all"
+              title="அடுத்த அத்தியாயம் (Next Chapter)"
+              aria-label="Next Chapter"
             >
               <SkipForward className="w-6 h-6 fill-current" />
             </button>
 
             {/* Loop / Repeat Toggle */}
             <button
-              onClick={() => setIsLooping(!isLooping)}
-              className={`p-2.5 rounded-full transition-all ${
-                isLooping ? 'text-[#10B981] bg-white/10' : 'text-stone-400 hover:text-white'
+              onClick={toggleRepeat}
+              className={`p-2.5 rounded-full transition-all relative ${
+                repeatMode !== 'off' ? 'text-[#10B981] bg-white/10' : 'text-stone-400 hover:text-white'
               }`}
-              title="Repeat Chapter"
+              title={
+                repeatMode === 'one'
+                  ? 'தற்போதைய அத்தியாயத்தை மீண்டும் இயக்கு (Repeat One)'
+                  : repeatMode === 'all'
+                  ? 'அனைத்து அத்தியாயங்களையும் மீண்டும் இயக்கு (Repeat All)'
+                  : 'மீண்டும் இயக்கு ஆஃப் (Repeat Off)'
+              }
+              aria-label="Repeat"
             >
               <Repeat className="w-5 h-5" />
+              {repeatMode === 'one' && (
+                <span className="absolute -top-1 -right-1 text-[8px] font-black bg-[#10B981] text-[#07241D] rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                  1
+                </span>
+              )}
             </button>
           </div>
 
