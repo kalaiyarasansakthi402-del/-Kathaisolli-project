@@ -520,9 +520,9 @@ export const FullPlayerPage: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Collapse / Expand icon */}
           <button
-            onClick={() => navigate('/library')}
+            onClick={() => navigate('/explore')}
             className="p-2 rounded-full text-stone-400 hover:text-white hover:bg-white/5 transition-colors"
-            title="நூலகத்திற்குச் செல் (Go to Library)"
+            title="கதைகளை உலாவவும் (Browse Stories)"
           >
             <ChevronUp className="w-5 h-5" />
           </button>

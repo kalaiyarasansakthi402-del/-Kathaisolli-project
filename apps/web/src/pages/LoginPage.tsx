@@ -13,7 +13,7 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as any)?.from?.pathname || '/library';
+  const from = (location.state as any)?.from?.pathname || '/explore';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

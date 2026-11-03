@@ -32,7 +32,7 @@ export const RegisterPage: React.FC = () => {
         displayName,
         role,
       });
-      navigate('/library');
+      navigate('/explore');
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||

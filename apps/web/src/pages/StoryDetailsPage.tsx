@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Play, Pause, Heart, Share2, Clock, Headphones, Star, AlertCircle, RefreshCw, Check } from 'lucide-react';
+import { Play, Pause, Heart, Bookmark, Share2, Clock, Headphones, Star, AlertCircle, RefreshCw, Check } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
 import { COMPLETE_LIBRARY_CATALOG, type LibraryBook } from '../data/libraryCatalog';
+import { isBookSaved, toggleSaveBook } from '../services/userLibrary';
 
 export const StoryDetailsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -92,6 +93,15 @@ export const StoryDetailsPage: React.FC = () => {
   }, [apiStory, catalogBook]);
 
   const isFavorited = !!story && favorites.some((f: any) => f.seriesId === story.id || f.id === story.id);
+  const [isSavedLocally, setIsSavedLocally] = useState(() => isBookSaved(slug || '', user?.id));
+
+  useEffect(() => {
+    if (story) {
+      setIsSavedLocally(isBookSaved(story.id, user?.id) || isBookSaved(story.slug, user?.id));
+    }
+  }, [story, user?.id]);
+
+  const isSaved = isSavedLocally || isFavorited;
 
   const favoriteMutation = useMutation({
     mutationFn: async () => {
@@ -106,6 +116,29 @@ export const StoryDetailsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['library', 'favorites'] });
     },
   });
+
+  const handleToggleLibrary = () => {
+    if (!story) return;
+    const res = toggleSaveBook(
+      {
+        id: story.id,
+        slug: story.slug || slug || story.id,
+        title: story.title,
+        authorName: story.authorName || undefined,
+        coverImageUrl: story.coverImage || undefined,
+        categoryName: story.category?.name || undefined,
+        language: story.language?.name || undefined,
+        totalEpisodes: allEpisodes.length,
+        totalDurationSeconds: allEpisodes.reduce((acc: number, ep: any) => acc + (ep.durationSec || 0), 0),
+      },
+      user?.id,
+      api,
+    );
+    setIsSavedLocally(res.isSaved);
+    if (user) {
+      favoriteMutation.mutate();
+    }
+  };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -262,20 +295,20 @@ export const StoryDetailsPage: React.FC = () => {
               </button>
             )}
 
-            {/* Favorite Button */}
-            {user && (
-              <button
-                onClick={() => favoriteMutation.mutate()}
-                aria-label="Add to favorites"
-                className={`p-3.5 rounded-xl border transition-colors ${
-                  isFavorited
-                    ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950/40 dark:border-rose-900'
-                    : 'bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100'
-                }`}
-              >
-                <Heart className={`h-5 w-5 ${isFavorited ? 'fill-current' : ''}`} />
-              </button>
-            )}
+            {/* Save to My Library Button */}
+            <button
+              onClick={handleToggleLibrary}
+              aria-label={isSaved ? 'Remove from My Library' : 'Save to My Library'}
+              title={isSaved ? 'சேமிக்கப்பட்டது (Saved to My Library)' : 'நூலகத்தில் சேமி (Save to My Library)'}
+              className={`inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border font-bold text-sm transition-all shadow-sm active:scale-95 ${
+                isSaved
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-zinc-50 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <Bookmark className={`h-5 w-5 ${isSaved ? 'fill-current text-emerald-600 dark:text-emerald-400' : ''}`} />
+              <span>{isSaved ? 'சேமிக்கப்பட்டது (Saved)' : 'நூலகத்தில் சேமி (Save)'}</span>
+            </button>
 
             {/* Share Button */}
             <button

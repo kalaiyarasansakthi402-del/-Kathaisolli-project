@@ -9,4 +9,14 @@ export class AppController {
       status: 'ok',
     };
   }
+
+  @Get('health')
+  getHealth() {
+    return {
+      status: 'ok',
+      service: 'Kathaisolli API',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    };
+  }
 }

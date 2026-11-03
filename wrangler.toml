@@ -1,0 +1,15 @@
+# Cloudflare Wrangler Configuration for Kathaisolli D1 Integration
+name = "kathaisolli"
+main = "apps/api/src/worker.ts"
+compatibility_date = "2024-09-23"
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "kathaisolli"
+database_id = "1446e71e-f6f2-4835-956d-07704f141f44"
+migrations_dir = "migrations"
+
+[vars]
+ENVIRONMENT = "production"
+APP_NAME = "Kathaisolli"

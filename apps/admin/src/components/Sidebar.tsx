@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   BookOpen,
@@ -10,16 +10,23 @@ import {
   CheckSquare,
   ShieldAlert,
   Radio,
-  Sliders,
-  LogOut,
   FolderOpen,
   FileAudio,
+  LogOut,
+  UploadCloud,
+  Layers,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const Sidebar: React.FC = () => {
-  const { user, activeMode, setActiveMode } = useAdminAuth();
+  const { user, activeMode, setActiveMode, logout } = useAdminAuth();
+  const navigate = useNavigate();
   const isAdminUser = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <aside className="w-64 shrink-0 bg-[#06241C] text-emerald-100 flex flex-col justify-between border-r border-emerald-900/60 min-h-screen">
@@ -154,52 +161,93 @@ export const Sidebar: React.FC = () => {
               </NavLink>
 
               <NavLink
-                to="/admin/users"
+                to="/admin/books"
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                     isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
                   }`
                 }
               >
-                <Users className="h-4 w-4" />
-                <span>பயனர்கள் (Users)</span>
+                <BookOpen className="h-4 w-4" />
+                <span>புத்தகங்கள் (Books)</span>
               </NavLink>
 
               <NavLink
-                to="/admin/creators"
+                to="/admin/books/new"
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                     isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
                   }`
                 }
               >
-                <CheckSquare className="h-4 w-4" />
-                <span>படைப்பாளர் விண்ணப்பங்கள்</span>
+                <PlusCircle className="h-4 w-4" />
+                <span>புதிய புத்தகம் (Add Book)</span>
               </NavLink>
 
               <NavLink
-                to="/admin/moderation"
+                to="/admin/audio-upload"
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                     isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
                   }`
                 }
               >
-                <ShieldAlert className="h-4 w-4" />
-                <span>உள்ளடக்க மதிப்பாய்வு</span>
+                <FileAudio className="h-4 w-4" />
+                <span>ஆடியோ பதிவேற்றம் (Audio Upload)</span>
               </NavLink>
 
-              <NavLink
-                to="/admin/audio-queue"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <Radio className="h-4 w-4" />
-                <span>ஆடியோ டிரான்ஸ்கோடிங் வரிசை</span>
-              </NavLink>
+              <div className="pt-2">
+                <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider px-3 mb-2">
+                  அமைப்பு & பயனர்கள்
+                </div>
+                <NavLink
+                  to="/admin/users"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
+                    }`
+                  }
+                >
+                  <Users className="h-4 w-4" />
+                  <span>பயனர்கள் (Users)</span>
+                </NavLink>
+
+                <NavLink
+                  to="/admin/creators"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
+                    }`
+                  }
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  <span>படைப்பாளர் விண்ணப்பங்கள்</span>
+                </NavLink>
+
+                <NavLink
+                  to="/admin/moderation"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
+                    }`
+                  }
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  <span>உள்ளடக்க மதிப்பாய்வு</span>
+                </NavLink>
+
+                <NavLink
+                  to="/admin/audio-queue"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
+                    }`
+                  }
+                >
+                  <Radio className="h-4 w-4" />
+                  <span>ஆடியோ டிரான்ஸ்கோடிங் வரிசை</span>
+                </NavLink>
+              </div>
             </>
           )}
         </nav>
@@ -207,12 +255,12 @@ export const Sidebar: React.FC = () => {
 
       {/* User info at bottom */}
       <div className="p-4 border-t border-emerald-900/40 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-8 w-8 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shrink-0">
             {user?.displayName?.charAt(0) || 'U'}
           </div>
-          <div className="text-left overflow-hidden">
-            <p className="text-xs font-bold text-white truncate max-w-[120px]">
+          <div className="text-left overflow-hidden min-w-0">
+            <p className="text-xs font-bold text-white truncate max-w-[110px]">
               {user?.displayName || 'பயனர்'}
             </p>
             <span className="text-[10px] text-emerald-400 block truncate">
@@ -220,6 +268,14 @@ export const Sidebar: React.FC = () => {
             </span>
           </div>
         </div>
+
+        <button
+          onClick={handleLogout}
+          title="வெளியேறு (Logout)"
+          className="p-1.5 rounded-lg text-emerald-400 hover:text-white hover:bg-emerald-900/60 transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
       </div>
     </aside>
   );

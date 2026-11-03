@@ -4,7 +4,6 @@ import {
   Home,
   Headphones,
   LayoutGrid,
-  Library,
   Info,
   Mail,
   Search,
@@ -49,7 +48,6 @@ export const Navbar: React.FC = () => {
   const isHomeActive = location.pathname === '/' || location.pathname === '/home';
   const isStoriesActive = location.pathname.startsWith('/explore') || location.pathname.startsWith('/stories');
   const isCategoriesActive = location.pathname.startsWith('/categories');
-  const isLibraryActive = location.pathname.startsWith('/library');
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#FAF7EE]/95 dark:bg-[#04281E]/95 border-b border-[#E8E1CE] dark:border-[#0F4738] transition-colors shadow-sm">
@@ -110,18 +108,6 @@ export const Navbar: React.FC = () => {
           >
             <LayoutGrid className={`w-4 h-4 ${isCategoriesActive ? 'text-[#064E3B] dark:text-[#A7F3D0]' : 'text-stone-500 dark:text-stone-400'}`} />
             <span>Categories</span>
-          </Link>
-
-          <Link
-            to="/library"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              isLibraryActive
-                ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
-                : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
-            }`}
-          >
-            <Library className={`w-4 h-4 ${isLibraryActive ? 'text-[#064E3B] dark:text-[#A7F3D0]' : 'text-stone-500 dark:text-stone-400'}`} />
-            <span>Library</span>
           </Link>
 
           <Link
@@ -247,13 +233,6 @@ export const Navbar: React.FC = () => {
               className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
             >
               Categories (வகைகள்)
-            </Link>
-            <Link
-              to="/library"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              My Library (நூலகம்)
             </Link>
           </nav>
 

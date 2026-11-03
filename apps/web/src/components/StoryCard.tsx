@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Headphones, BookOpen, Star, Sparkles } from 'lucide-react';
+import { Play, Headphones, BookOpen, Star, Sparkles, Bookmark } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
+import { useAuth } from '../context/AuthContext';
+import { isBookSaved, toggleSaveBook } from '../services/userLibrary';
 
 export interface StoryCardProps {
   id: string;
@@ -35,6 +37,38 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   audioUrl,
 }) => {
   const { playEpisode } = usePlayer();
+  const { user, api } = useAuth();
+  const [saved, setSaved] = useState(() => isBookSaved(id || slug, user?.id));
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setSaved(isBookSaved(id || slug, user?.id));
+    };
+    window.addEventListener('kathaisolli:library-updated', handleUpdate);
+    return () => window.removeEventListener('kathaisolli:library-updated', handleUpdate);
+  }, [id, slug, user?.id]);
+
+  const handleToggleSave = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const result = toggleSaveBook(
+      {
+        id: id || slug,
+        slug: slug || id,
+        title,
+        authorName,
+        coverImageUrl: image,
+        categoryName,
+        language,
+        totalEpisodes,
+        totalDurationSeconds,
+      },
+      user?.id,
+      api,
+    );
+    setSaved(result.isSaved);
+  };
+
   const image =
     coverImageUrl ||
     coverImage ||
@@ -91,6 +125,21 @@ export const StoryCard: React.FC<StoryCardProps> = ({
             {categoryName}
           </span>
         )}
+
+        {/* Save to My Library Button */}
+        <button
+          onClick={handleToggleSave}
+          aria-label={saved ? 'Remove from My Library' : 'Save to My Library'}
+          title={saved ? 'சேமிக்கப்பட்டது (Saved to My Library)' : 'நூலகத்தில் சேமி (Save to My Library)'}
+          className={`absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold backdrop-blur-md transition-all shadow-md active:scale-95 z-10 ${
+            saved
+              ? 'bg-[#064E3B] text-[#A7F3D0] border border-[#A7F3D0]/60'
+              : 'bg-black/60 hover:bg-black/80 text-white'
+          }`}
+        >
+          <Bookmark className={`h-3.5 w-3.5 ${saved ? 'fill-current text-[#A7F3D0]' : 'text-white'}`} />
+          <span>{saved ? 'Saved' : 'Save'}</span>
+        </button>
 
         {/* Floating Play Button */}
         <button

@@ -9,7 +9,7 @@
   "scripts": {
     "dev:api": "pnpm --filter @kathaisolli/api start:dev",
     "build:api": "pnpm --filter @kathaisolli/api build",
-    "test:api": "pnpm --filter @kathaisolli/api test --runInBand",
+    "test:api": "pnpm --filter @kathaisolli/api test -- --runInBand",
     "dev:web": "pnpm --filter @kathaisolli/web dev",
     "build:web": "pnpm --filter @kathaisolli/web... build",
     "build:all": "pnpm -r build",

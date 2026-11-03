@@ -27,7 +27,6 @@ const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
 
 // Lazy-loaded routes for code splitting
 const HomePage = lazyWithRetry(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
-const LibraryPage = lazyWithRetry(() => import('./pages/LibraryPage').then((m) => ({ default: m.LibraryPage })));
 const MyLibraryPage = lazyWithRetry(() => import('./pages/MyLibraryPage').then((m) => ({ default: m.MyLibraryPage })));
 const ExplorePage = lazyWithRetry(() => import('./pages/ExplorePage').then((m) => ({ default: m.ExplorePage })));
 const SearchPage = lazyWithRetry(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })));
@@ -39,7 +38,6 @@ const FullPlayerPage = lazyWithRetry(() => import('./pages/FullPlayerPage').then
 const LoginPage = lazyWithRetry(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazyWithRetry(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
-const AdminDashboardPage = lazyWithRetry(() => import('./pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })));
 const PlaylistsPage = lazyWithRetry(() => import('./pages/PlaylistsPage').then((m) => ({ default: m.PlaylistsPage })));
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
 const CreatorApplyPage = lazyWithRetry(() => import('./pages/CreatorApplyPage').then((m) => ({ default: m.CreatorApplyPage })));
@@ -69,7 +67,6 @@ const queryClient = new QueryClient({
 const AppContent: React.FC = () => {
   const location = useLocation();
   const isDedicatedPlayerPage = location.pathname === '/player';
-  const isFullBleedLibraryPage = location.pathname === '/library';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
@@ -100,14 +97,12 @@ const AppContent: React.FC = () => {
               {/* Stories alias */}
               <Route path="/stories" element={<Navigate to="/explore" replace />} />
 
-              {/* Admin Dashboard */}
-              <Route path="/admin" element={<AdminDashboardPage />} />
-              <Route path="/admin/login" element={<LoginPage />} />
-              <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+              {/* Public Website Isolation: Admin is hosted completely separately on Private Admin Website */}
+              <Route path="/admin/*" element={<Navigate to="/" replace />} />
 
               {/* User Library and Profile */}
               <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/library" element={<LibraryPage />} />
+              <Route path="/library" element={<Navigate to="/explore" replace />} />
               <Route path="/my-library" element={<MyLibraryPage />} />
               <Route path="/favorites" element={<Navigate to="/my-library?tab=favorites" replace />} />
               <Route path="/history" element={<Navigate to="/my-library?tab=history" replace />} />
@@ -134,7 +129,7 @@ const AppContent: React.FC = () => {
       {/* Global Mini Player docked at the bottom (except on dedicated player page) */}
       {!isDedicatedPlayerPage && <AudioPlayer />}
 
-      {!isDedicatedPlayerPage && !isFullBleedLibraryPage && <Footer />}
+      {!isDedicatedPlayerPage && <Footer />}
     </div>
   );
 };

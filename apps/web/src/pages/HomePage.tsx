@@ -432,7 +432,7 @@ export const HomePage: React.FC = () => {
               </Link>
 
               <Link
-                to="/library"
+                to="/explore"
                 className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-full bg-white dark:bg-[#073224] border border-[#064E3B]/30 hover:border-[#064E3B] text-[#064E3B] dark:text-[#A7F3D0] font-bold text-sm shadow-sm hover:scale-105 active:scale-95 transition-all"
               >
                 <Compass className="w-4 h-4 text-[#064E3B] dark:text-[#A7F3D0]" />
@@ -486,7 +486,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             <Link
-              to="/library"
+              to="/explore"
               className="text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline flex items-center gap-0.5"
             >
               <span>View All</span>
@@ -568,7 +568,7 @@ export const HomePage: React.FC = () => {
           title="Popular Tamil Audiobooks"
           subtitle="Handpicked and widely listened audiobooks"
           icon={<BookOpen className="w-5 h-5 text-[#064E3B] dark:text-[#A7F3D0]" />}
-          viewAllLink="/library"
+          viewAllLink="/explore"
           items={popularTamilAudiobooks}
           onPlay={handlePlayStory}
         />
@@ -579,7 +579,7 @@ export const HomePage: React.FC = () => {
             title="English Audiobooks"
             subtitle="Great classics and inspiring stories in English"
             icon={<BookMarked className="w-5 h-5 text-[#064E3B] dark:text-[#A7F3D0]" />}
-            viewAllLink="/library"
+            viewAllLink="/explore"
             items={englishAudiobooks}
             onPlay={handlePlayStory}
           />
