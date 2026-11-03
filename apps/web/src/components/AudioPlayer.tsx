@@ -131,6 +131,15 @@ export const AudioPlayer: React.FC = () => {
               </button>
 
               <button
+                onClick={playNext}
+                className="p-1.5 rounded-full text-[#86EFAC] hover:text-white hover:bg-white/10 transition-colors"
+                title="அடுத்த ஆடியோ (Next Audio)"
+                aria-label="Next Audio"
+              >
+                <SkipForward className="w-3.5 h-3.5 fill-current" />
+              </button>
+
+              <button
                 onClick={toggleCollapse}
                 className="p-1.5 rounded-full text-[#86EFAC] hover:text-white hover:bg-white/10 transition-colors"
                 title="பிளேயரை விரிவாக்கு (Expand player)"
