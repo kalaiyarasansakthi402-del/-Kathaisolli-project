@@ -44,7 +44,7 @@ export const EpisodeDetailsPage: React.FC = () => {
           {(error as any)?.message || 'கோரப்பட்ட அத்தியாய ஆடியோ கிடைக்கவில்லை.'}
         </p>
         <button
-          onClick={() => navigate('/explore')}
+          onClick={() => navigate('/categories')}
           className="px-5 py-2.5 rounded-xl bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-600"
         >
           கதைகளை உலாவு

@@ -27,7 +27,7 @@ export const NotFoundPage: React.FC = () => {
           <span>முகப்புப் பக்கம்</span>
         </Link>
         <Link
-          to="/explore"
+          to="/categories"
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <Headphones className="h-4 w-4" />

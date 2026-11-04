@@ -1,36 +1,95 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 
-// Authentication
-import { AdminLoginPage } from './pages/AdminLoginPage';
+// Resilient lazy route loader with automatic retry on chunk fetch failure
+const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
+  factory: () => Promise<T>,
+) =>
+  lazy(async () => {
+    try {
+      return await factory();
+    } catch (error) {
+      console.warn('[Kathaisolli Admin] Route chunk fetch failed, retrying once...', error);
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return await factory();
+    }
+  });
 
-// Admin Core Pages
-import { AdminOverviewPage } from './pages/AdminOverviewPage';
-import { AdminBooksPage } from './pages/AdminBooksPage';
-import { CreateBookPage } from './pages/CreateBookPage';
-import { AdminBookChaptersPage } from './pages/AdminBookChaptersPage';
-import { AdminAudioUploadPage } from './pages/AdminAudioUploadPage';
-import { AdminCategoriesPage } from './pages/AdminCategoriesPage';
-import { AdminAnalyticsPage } from './pages/AdminAnalyticsPage';
-import { AdminSettingsPage } from './pages/AdminSettingsPage';
+// Authentication (Lazy Loaded)
+const AdminLoginPage = lazyWithRetry(() =>
+  import('./pages/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage }))
+);
 
-// Admin Management Pages
-import { AdminUsersPage } from './pages/AdminUsersPage';
-import { AdminCreatorApplicationsPage } from './pages/AdminCreatorApplicationsPage';
-import { AdminModerationQueuePage } from './pages/AdminModerationQueuePage';
-import { AdminAudioQueuePage } from './pages/AdminAudioQueuePage';
+// Admin Core Pages (Lazy Loaded for Fast Initial Bundle)
+const AdminOverviewPage = lazyWithRetry(() =>
+  import('./pages/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage }))
+);
+const AdminBooksPage = lazyWithRetry(() =>
+  import('./pages/AdminBooksPage').then((m) => ({ default: m.AdminBooksPage }))
+);
+const CreateBookPage = lazyWithRetry(() =>
+  import('./pages/CreateBookPage').then((m) => ({ default: m.CreateBookPage }))
+);
+const AdminBookChaptersPage = lazyWithRetry(() =>
+  import('./pages/AdminBookChaptersPage').then((m) => ({ default: m.AdminBookChaptersPage }))
+);
+const AdminAudioUploadPage = lazyWithRetry(() =>
+  import('./pages/AdminAudioUploadPage').then((m) => ({ default: m.AdminAudioUploadPage }))
+);
+const AdminCategoriesPage = lazyWithRetry(() =>
+  import('./pages/AdminCategoriesPage').then((m) => ({ default: m.AdminCategoriesPage }))
+);
+const AdminAnalyticsPage = lazyWithRetry(() =>
+  import('./pages/AdminAnalyticsPage').then((m) => ({ default: m.AdminAnalyticsPage }))
+);
+const AdminSettingsPage = lazyWithRetry(() =>
+  import('./pages/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage }))
+);
 
-// Creator Studio Pages
-import { CreatorDashboard } from './pages/CreatorDashboard';
-import { CreatorSeriesPage } from './pages/CreatorSeriesPage';
-import { CreateSeriesPage } from './pages/CreateSeriesPage';
-import { ManageEpisodesPage } from './pages/ManageEpisodesPage';
-import { AiAssistantPage } from './pages/AiAssistantPage';
-import { CreatorAnalyticsPage } from './pages/CreatorAnalyticsPage';
+// Admin Management Pages (Lazy Loaded)
+const AdminUsersPage = lazyWithRetry(() =>
+  import('./pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage }))
+);
+const AdminCreatorApplicationsPage = lazyWithRetry(() =>
+  import('./pages/AdminCreatorApplicationsPage').then((m) => ({ default: m.AdminCreatorApplicationsPage }))
+);
+const AdminModerationQueuePage = lazyWithRetry(() =>
+  import('./pages/AdminModerationQueuePage').then((m) => ({ default: m.AdminModerationQueuePage }))
+);
+const AdminAudioQueuePage = lazyWithRetry(() =>
+  import('./pages/AdminAudioQueuePage').then((m) => ({ default: m.AdminAudioQueuePage }))
+);
+
+// Creator Studio Pages (Lazy Loaded)
+const CreatorDashboard = lazyWithRetry(() =>
+  import('./pages/CreatorDashboard').then((m) => ({ default: m.CreatorDashboard }))
+);
+const CreatorSeriesPage = lazyWithRetry(() =>
+  import('./pages/CreatorSeriesPage').then((m) => ({ default: m.CreatorSeriesPage }))
+);
+const CreateSeriesPage = lazyWithRetry(() =>
+  import('./pages/CreateSeriesPage').then((m) => ({ default: m.CreateSeriesPage }))
+);
+const ManageEpisodesPage = lazyWithRetry(() =>
+  import('./pages/ManageEpisodesPage').then((m) => ({ default: m.ManageEpisodesPage }))
+);
+const AiAssistantPage = lazyWithRetry(() =>
+  import('./pages/AiAssistantPage').then((m) => ({ default: m.AiAssistantPage }))
+);
+const CreatorAnalyticsPage = lazyWithRetry(() =>
+  import('./pages/CreatorAnalyticsPage').then((m) => ({ default: m.CreatorAnalyticsPage }))
+);
+
+const RouteLoadingFallback = () => (
+  <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
+    <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+    <p className="text-xs font-semibold text-zinc-500 font-tamil">ஏற்றுகிறது...</p>
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,7 +114,9 @@ const ProtectedLayout: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0">
         <Header />
         <main className="flex-1 overflow-y-auto">
-          <Outlet />
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
@@ -69,7 +130,14 @@ export const App: React.FC = () => {
         <BrowserRouter>
           <Routes>
             {/* Public Login Route */}
-            <Route path="/login" element={<AdminLoginPage />} />
+            <Route
+              path="/login"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <AdminLoginPage />
+                </Suspense>
+              }
+            />
 
             {/* Protected Admin Routes */}
             <Route element={<ProtectedLayout />}>

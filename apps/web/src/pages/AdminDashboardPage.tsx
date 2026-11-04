@@ -181,7 +181,7 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/explore"
+            to="/categories"
             className="px-4 py-2 rounded-xl bg-white dark:bg-[#063828] border border-stone-200 dark:border-[#084D37] text-xs font-bold text-stone-700 dark:text-stone-200 hover:bg-stone-50 flex items-center gap-1.5 shadow-sm"
           >
             <BookOpen className="w-4 h-4 text-[#064E3B]" />

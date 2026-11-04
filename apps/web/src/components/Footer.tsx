@@ -38,7 +38,7 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-sm font-medium">
               <li>
-                <Link to="/explore" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
+                <Link to="/categories" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
                   All Stories (அனைத்து கதைகள்)
                 </Link>
               </li>

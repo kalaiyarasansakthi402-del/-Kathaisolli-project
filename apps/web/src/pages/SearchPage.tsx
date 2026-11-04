@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search as SearchIcon, X, Sparkles, BookOpen, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -6,6 +6,7 @@ import { StoryCard } from '../components/StoryCard';
 import { EmptyState } from '../components/EmptyState';
 import { StoryGridSkeleton } from '../components/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
+import { COMPLETE_LIBRARY_CATALOG, type LibraryBook } from '../data/libraryCatalog';
 
 const POPULAR_SEARCH_TAGS = [
   'பொன்னியின் செல்வன்',
@@ -23,15 +24,23 @@ export const SearchPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
   const [query, setQuery] = useState<string>(initialQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState<string>(initialQuery.trim());
 
   useEffect(() => {
     const q = searchParams.get('q');
     if (q !== null && q !== query) {
       setQuery(q);
+      setDebouncedQuery(q.trim());
     }
   }, [searchParams]);
 
-  const trimmedQuery = query.trim();
+  // Debounce search input (300ms) to cancel outdated requests & prevent network spam
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const {
     data: searchResults,
@@ -39,15 +48,18 @@ export const SearchPage: React.FC = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ['catalog', 'search', trimmedQuery],
-    queryFn: () => api.catalog.search({ q: trimmedQuery, pageSize: 30 }),
-    enabled: trimmedQuery.length > 0,
+    queryKey: ['catalog', 'search', debouncedQuery],
+    queryFn: () => api.catalog.search({ q: debouncedQuery, pageSize: 30 }),
+    enabled: debouncedQuery.length > 0,
+    staleTime: 3 * 60 * 1000,
   });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      setSearchParams({ q: query.trim() });
+    const trimmed = query.trim();
+    setDebouncedQuery(trimmed);
+    if (trimmed) {
+      setSearchParams({ q: trimmed });
     } else {
       setSearchParams({});
     }
@@ -55,10 +67,42 @@ export const SearchPage: React.FC = () => {
 
   const handleTagClick = (tag: string) => {
     setQuery(tag);
-    setSearchParams({ q: tag });
+    setDebouncedQuery(tag.trim());
+    setSearchParams({ q: tag.trim() });
   };
 
-  const results = searchResults?.items || [];
+  // Local matching catalog search fallback
+  const localMatchingResults = useMemo(() => {
+    if (!debouncedQuery) return [];
+    const q = debouncedQuery.toLowerCase();
+    return COMPLETE_LIBRARY_CATALOG.filter((b) => {
+      return (
+        b.title.toLowerCase().includes(q) ||
+        (b.tamilTitle && b.tamilTitle.toLowerCase().includes(q)) ||
+        (b.authorName && b.authorName.toLowerCase().includes(q)) ||
+        (b.category && b.category.toLowerCase().includes(q)) ||
+        (b.description && b.description.toLowerCase().includes(q))
+      );
+    }).map((b) => ({
+      id: b.id,
+      slug: b.slug,
+      title: b.tamilTitle ? `${b.tamilTitle} (${b.title})` : b.title,
+      authorName: b.authorName,
+      coverImage: b.coverImageUrl,
+      category: { name: b.category },
+      language: { nativeName: b.language === 'Tamil' ? 'தமிழ்' : b.language, name: b.language },
+      totalEpisodes: b.totalEpisodes || b.chapters.length || 1,
+      audioUrl: b.chapters[0]?.audioUrl,
+    }));
+  }, [debouncedQuery]);
+
+  const results = useMemo(() => {
+    const apiItems = searchResults?.items || [];
+    if (apiItems.length > 0) return apiItems;
+    return localMatchingResults;
+  }, [searchResults, localMatchingResults]);
+
+  const displayQuery = debouncedQuery || query.trim();
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
@@ -115,7 +159,7 @@ export const SearchPage: React.FC = () => {
       </div>
 
       {/* Loading Skeleton */}
-      {isLoading && trimmedQuery.length > 0 && (
+      {isLoading && displayQuery.length > 0 && (
         <div className="space-y-4">
           <div className="h-6 w-40 bg-emerald-100/40 dark:bg-emerald-900/30 rounded animate-pulse" />
           <StoryGridSkeleton count={8} />
@@ -136,11 +180,11 @@ export const SearchPage: React.FC = () => {
       )}
 
       {/* Results View */}
-      {!isLoading && !isError && trimmedQuery.length > 0 && (
+      {!isLoading && !isError && displayQuery.length > 0 && (
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/40 pb-4">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-              "{trimmedQuery}" -க்கான முடிவுகள் ({results.length})
+              "{displayQuery}" -க்கான முடிவுகள் ({results.length})
             </h2>
           </div>
 
@@ -164,7 +208,7 @@ export const SearchPage: React.FC = () => {
             <EmptyState
               icon={BookOpen}
               title="கதைகள் எதுவும் கண்டறியப்படவில்லை"
-              description={`"${trimmedQuery}" என்ற தேடலுக்குப் பொருத்தமான முடிவுகள் எதுவும் கிடைக்கவில்லை. வேறு சொற்களைக் கொண்டு தேடவும்.`}
+              description={`"${displayQuery}" என்ற தேடலுக்குப் பொருத்தமான முடிவுகள் எதுவும் கிடைக்கவில்லை. வேறு சொற்களைக் கொண்டு தேடவும்.`}
               actionLabel="அனைத்துக் கதைகளையும் உலாவுங்கள்"
               onAction={() => {
                 setQuery('');
@@ -176,7 +220,7 @@ export const SearchPage: React.FC = () => {
       )}
 
       {/* Empty Initial Search State */}
-      {!trimmedQuery && (
+      {!displayQuery && (
         <div className="text-center py-16 text-zinc-400 dark:text-zinc-500">
           <SearchIcon className="h-12 w-12 mx-auto mb-3 opacity-30 text-emerald-600" />
           <p className="text-sm">நீங்கள் கேட்க விரும்பும் கதையின் தலைப்பை அல்லது எழுத்தாளரின் பெயரை மேலே உள்ள பெட்டியில் உள்ளிடவும்.</p>

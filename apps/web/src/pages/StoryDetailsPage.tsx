@@ -181,7 +181,7 @@ export const StoryDetailsPage: React.FC = () => {
             மீண்டும் முயற்சி செய்
           </button>
           <Link
-            to="/explore"
+            to="/categories"
             className="px-5 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 text-sm font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
             கதைகளை உலாவு

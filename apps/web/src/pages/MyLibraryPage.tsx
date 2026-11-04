@@ -159,7 +159,7 @@ export const MyLibraryPage: React.FC = () => {
                 </p>
               </div>
               <Link
-                to="/explore"
+                to="/categories"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white text-xs sm:text-sm font-bold shadow-lg shadow-[#064E3B]/20 transition-all hover:scale-105"
               >
                 <span>கதைகளை உலாவு (Explore Audiobooks)</span>

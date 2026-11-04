@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
   Sparkles,
@@ -74,9 +75,12 @@ export const HomePage: React.FC = () => {
                 alt="மாயம் நிறைந்த தமிழ் கதைகள்"
                 className="w-full h-auto object-cover max-h-[460px] block"
               />
-              <div className="absolute bottom-4 left-4 right-4 p-3.5 sm:p-4 rounded-2xl bg-white/95 dark:bg-[#063324]/95 backdrop-blur-md border border-[#E3DCBA] dark:border-[#0F4738] shadow-lg flex items-center justify-between">
+              <Link
+                to="/categories"
+                className="absolute bottom-4 left-4 right-4 p-3.5 sm:p-4 rounded-2xl bg-white/95 dark:bg-[#063324]/95 backdrop-blur-md border border-[#E3DCBA] dark:border-[#0F4738] shadow-lg flex items-center justify-between hover:scale-[1.02] active:scale-[0.99] transition-all cursor-pointer group"
+              >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#064E3B] text-[#A7F3D0] flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-[#064E3B] text-[#A7F3D0] flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
                     <Sparkles className="w-5 h-5 fill-current" />
                   </div>
                   <div>
@@ -88,10 +92,10 @@ export const HomePage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-[#E8F0E2] dark:bg-[#073224] text-[#064E3B] dark:text-[#A7F3D0] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-[#E8F0E2] dark:bg-[#073224] text-[#064E3B] dark:text-[#A7F3D0] flex items-center justify-center shrink-0 group-hover:translate-x-1 transition-transform">
                   <ChevronRight className="w-4 h-4" />
                 </div>
-              </div>
+              </Link>
             </div>
           </div>
         </section>

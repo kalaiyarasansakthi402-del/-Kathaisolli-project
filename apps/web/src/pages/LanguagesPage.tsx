@@ -81,7 +81,7 @@ export const LanguagesPage: React.FC = () => {
               </div>
 
               <Link
-                to={`/explore?language=${lang.code}`}
+                to={lang.code === 'en' ? '/categories?category=English' : '/categories'}
                 className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
               >
                 <span>கதைகள்</span>

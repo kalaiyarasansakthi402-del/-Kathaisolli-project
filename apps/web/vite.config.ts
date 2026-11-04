@@ -9,11 +9,30 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'query-vendor': ['@tanstack/react-query'],
-          'icons': ['lucide-react'],
-          'firebase': ['firebase/app', 'firebase/storage', 'firebase/auth'],
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('@tanstack/react-query')) {
+              return 'query-vendor';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+            if (id.includes('axios')) {
+              return 'axios-vendor';
+            }
+            if (id.includes('zod')) {
+              return 'zod-vendor';
+            }
+          }
+          if (id.includes('libraryCatalog.ts')) {
+            return 'library-catalog';
+          }
         },
       },
     },

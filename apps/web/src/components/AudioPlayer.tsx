@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   SkipBack,
   Play,
@@ -53,10 +53,12 @@ export const AudioPlayer: React.FC = () => {
   } = usePlayer();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [showTimerMenu, setShowTimerMenu] = useState(false);
 
-  if (!currentTrack) return null;
+  // Guarantee player is never rendered on Home page
+  if (location.pathname === '/' || location.pathname === '/home' || !currentTrack) return null;
 
   const hasPrevious = queueIndex > 0;
   const hasNext = queueIndex < queue.length - 1;

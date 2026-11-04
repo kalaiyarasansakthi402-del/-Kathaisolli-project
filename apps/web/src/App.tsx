@@ -9,9 +9,6 @@ import { AudioPlayer } from './components/AudioPlayer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
-// Primary entry page (eager for fast initial FCP/LCP)
-import { LandingPage } from './pages/LandingPage';
-
 // Resilient lazy route loader with automatic retry on chunk fetch failure
 const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
   factory: () => Promise<T>,
@@ -27,6 +24,7 @@ const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
   });
 
 // Lazy-loaded routes for code splitting
+const LandingPage = lazyWithRetry(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 const HomePage = lazyWithRetry(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
 const MyLibraryPage = lazyWithRetry(() => import('./pages/MyLibraryPage').then((m) => ({ default: m.MyLibraryPage })));
 const ExplorePage = lazyWithRetry(() => import('./pages/ExplorePage').then((m) => ({ default: m.ExplorePage })));
@@ -97,7 +95,7 @@ const AppContent: React.FC = () => {
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/home" element={<HomePage />} />
-                <Route path="/explore" element={<ExplorePage />} />
+                <Route path="/explore" element={<Navigate to="/categories" replace />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/languages" element={<LanguagesPage />} />

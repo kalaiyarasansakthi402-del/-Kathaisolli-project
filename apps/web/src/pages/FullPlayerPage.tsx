@@ -224,7 +224,7 @@ export const FullPlayerPage: React.FC = () => {
         {/* Right Action: Clean Navigation & Close controls */}
         <div className="flex items-center gap-3">
           <Link
-            to="/explore"
+            to="/categories"
             className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
           >
             <span>கதைகளை உலாவு (Explore)</span>
@@ -558,7 +558,7 @@ export const FullPlayerPage: React.FC = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Collapse / Expand icon */}
           <button
-            onClick={() => navigate('/explore')}
+            onClick={() => navigate('/categories')}
             className="p-2 rounded-full text-stone-400 hover:text-white hover:bg-white/5 transition-colors"
             title="கதைகளை உலாவவும் (Browse Stories)"
           >

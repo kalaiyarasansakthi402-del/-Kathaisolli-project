@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Phone, Eye, EyeOff, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage: React.FC = () => {
@@ -8,7 +8,7 @@ export const RegisterPage: React.FC = () => {
   const { register, user, isLoading } = useAuth();
 
   // If already authenticated, redirect away from register
-  React.useEffect(() => {
+  useEffect(() => {
     if (user && !isLoading) {
       navigate('/', { replace: true });
     }
@@ -18,100 +18,65 @@ export const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // 6-digit optional OTP state
-  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
-  const [showOtpSection, setShowOtpSection] = useState(false);
-  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const handleOtpChange = (index: number, value: string) => {
-    // Only accept numeric digit
-    const cleaned = value.replace(/\D/g, '');
-    const newOtp = [...otp];
-
-    if (cleaned.length > 0) {
-      newOtp[index] = cleaned[cleaned.length - 1];
-      setOtp(newOtp);
-      // Auto-advance to next box if available
-      if (index < 5 && otpInputRefs.current[index + 1]) {
-        otpInputRefs.current[index + 1]?.focus();
-      }
-    } else {
-      newOtp[index] = '';
-      setOtp(newOtp);
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace') {
-      if (!otp[index] && index > 0 && otpInputRefs.current[index - 1]) {
-        otpInputRefs.current[index - 1]?.focus();
-      }
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (!pasteData) return;
-
-    const newOtp = [...otp];
-    for (let i = 0; i < pasteData.length; i++) {
-      newOtp[i] = pasteData[i];
-    }
-    setOtp(newOtp);
-
-    const focusIdx = Math.min(pasteData.length, 5);
-    otpInputRefs.current[focusIdx]?.focus();
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
-    // 1. Password validation
+    // 1. Full Name Validation
+    const trimmedName = displayName.trim();
+    if (!trimmedName) {
+      setError('முழு பெயரை உள்ளிடவும் (Please enter your full name)');
+      return;
+    }
+
+    // 2. Email Address Validation
+    const trimmedEmail = email.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      setError('சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும் (Please enter a valid email address)');
+      return;
+    }
+
+    // 3. Password Length Security Requirement
     if (password.length < 6) {
       setError('கடவுச்சொல் குறைந்தது 6 எழுத்துக்கள் இருக்க வேண்டும் (Password must be at least 6 characters)');
       return;
     }
 
-    // 2. Confirm Password Match Check
+    // 4. Confirm Password Match Check
     if (password !== confirmPassword) {
-      setError('கடவுச்சொற்கள் பொருந்தவில்லை. மீண்டும் சரிபார்க்கவும் (Passwords do not match.)');
+      setError('கடவுச்சொற்கள் பொருந்தவில்லை. மீண்டும் சரிபார்க்கவும் (Passwords do not match)');
       return;
-    }
-
-    // 3. Optional Phone Number Validation (only if entered)
-    const trimmedPhone = phoneNumber.trim();
-    if (trimmedPhone) {
-      const phoneRegex = /^[0-9+\-\s()]{7,15}$/;
-      if (!phoneRegex.test(trimmedPhone)) {
-        setError('செல்லுபடியாகும் தொலைபேசி எண்ணை உள்ளிடவும் (Please enter a valid phone number format)');
-        return;
-      }
     }
 
     setLoading(true);
 
     try {
-      // Only send required auth payload to backend - no confirmPassword, role defaults to LISTENER
+      // Save Full Name, Email Address, and securely hashed password via existing backend API
+      // Note: confirmPassword is not sent to the database
       await register({
-        email: email.trim(),
+        email: trimmedEmail,
         password,
-        displayName: displayName.trim(),
+        displayName: trimmedName,
         role: 'LISTENER',
       });
-      navigate('/');
+
+      setSuccess('கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது! (Account created successfully!)');
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
-          'பதிவு செய்வதில் பிழை ஏற்பட்டது. மீண்டும் முயற்சிக்கவும் (Registration failed)',
+          'பதிவு செய்வதில் பிழை ஏற்பட்டது. மின்னஞ்சல் ஏற்கனவே பயன்பாட்டில் உள்ளதா என சரிபார்க்கவும் (Registration failed. Please check if this email already exists).',
       );
     } finally {
       setLoading(false);
@@ -119,7 +84,7 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8 bg-[#F8F5E9] dark:bg-[#033B2B] transition-colors">
+    <div className="min-h-[85vh] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8 bg-[#FAF7EE] dark:bg-[#03261C] transition-colors">
       <div className="max-w-md w-full space-y-6 bg-white dark:bg-[#083325] p-7 sm:p-10 rounded-[32px] border-2 border-[#E3DCBA] dark:border-[#124835] shadow-2xl relative overflow-hidden">
         {/* Brand Header with App Icon */}
         <div className="text-center space-y-2 relative z-10">
@@ -149,8 +114,15 @@ export const RegisterPage: React.FC = () => {
           </div>
         )}
 
+        {success && (
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs relative z-10">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span className="font-medium">{success}</span>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
-          {/* Full Name */}
+          {/* 1. Full Name */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
               Full Name (முழு பெயர்)
@@ -168,7 +140,7 @@ export const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Email Address */}
+          {/* 2. Email Address */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
               Email Address (மின்னஞ்சல்)
@@ -187,24 +159,7 @@ export const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Phone Number (Optional) */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
-              Phone Number (Optional)
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#166534]/60 dark:text-emerald-300/60" />
-              <input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="+91 98765 43210 (விருப்பத்திற்குரியது)"
-                className="w-full pl-11 pr-4 py-3 rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9]/60 dark:bg-[#033B2B]/60 text-sm text-[#173D2E] dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[#064E3B] transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Password */}
+          {/* 3. Password */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
               Password (கடவுச்சொல்)
@@ -231,7 +186,7 @@ export const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Confirm Password */}
+          {/* 4. Confirm Password */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 mb-1.5 font-sans">
               Confirm Password
@@ -267,50 +222,6 @@ export const RegisterPage: React.FC = () => {
             )}
           </div>
 
-          {/* Optional OTP Verification Section */}
-          <div className="pt-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 font-sans">
-                OTP Verification (Optional)
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowOtpSection(!showOtpSection)}
-                className="text-[11px] font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
-              >
-                {showOtpSection ? 'மறை (Hide)' : 'OTP உள்ளிட (Enter OTP)'}
-              </button>
-            </div>
-
-            {showOtpSection && (
-              <div className="p-3.5 rounded-2xl bg-[#E8F0E2]/80 dark:bg-[#033B2B]/80 border border-[#064E3B]/20 space-y-2">
-                <p className="text-[11px] text-[#166534] dark:text-[#A7F3D0] font-medium text-center">
-                  6 இலக்க குறியீட்டை உள்ளிடவும் (6-Digit Optional Code)
-                </p>
-                <div className="flex justify-center gap-2 sm:gap-2.5">
-                  {otp.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      ref={(el) => {
-                        otpInputRefs.current[idx] = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                      onPaste={handleOtpPaste}
-                      aria-label={`OTP Digit ${idx + 1}`}
-                      className="w-10 h-12 sm:w-11 sm:h-12 text-center text-lg font-bold rounded-xl border border-[#D5CEBA] dark:border-[#124835] bg-white dark:bg-[#083325] text-[#064E3B] dark:text-[#A7F3D0] focus:outline-none focus:ring-2 focus:ring-[#064E3B] shadow-inner"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
           <button
             type="submit"
             disabled={loading}
@@ -320,7 +231,7 @@ export const RegisterPage: React.FC = () => {
           </button>
         </form>
 
-        {/* Existing account link */}
+        {/* Link to Login */}
         <div className="text-center pt-2 relative z-10 border-t border-[#E3DCBA] dark:border-[#124835]">
           <p className="text-xs text-stone-600 dark:text-stone-300">
             Already have an account?{' '}
@@ -336,3 +247,5 @@ export const RegisterPage: React.FC = () => {
     </div>
   );
 };
+
+export default RegisterPage;
