@@ -14,6 +14,9 @@ import { AdminBooksPage } from './pages/AdminBooksPage';
 import { CreateBookPage } from './pages/CreateBookPage';
 import { AdminBookChaptersPage } from './pages/AdminBookChaptersPage';
 import { AdminAudioUploadPage } from './pages/AdminAudioUploadPage';
+import { AdminCategoriesPage } from './pages/AdminCategoriesPage';
+import { AdminAnalyticsPage } from './pages/AdminAnalyticsPage';
+import { AdminSettingsPage } from './pages/AdminSettingsPage';
 
 // Admin Management Pages
 import { AdminUsersPage } from './pages/AdminUsersPage';
@@ -72,12 +75,19 @@ export const App: React.FC = () => {
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<Navigate to="/admin" replace />} />
               <Route path="/admin" element={<AdminOverviewPage />} />
+              <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
               <Route path="/admin/books" element={<AdminBooksPage />} />
               <Route path="/books" element={<Navigate to="/admin/books" replace />} />
               <Route path="/admin/books/new" element={<CreateBookPage />} />
+              <Route path="/admin/books/create" element={<CreateBookPage />} />
               <Route path="/books/new" element={<Navigate to="/admin/books/new" replace />} />
+              <Route path="/admin/books/:bookId" element={<CreateBookPage />} />
               <Route path="/admin/books/:bookId/chapters" element={<AdminBookChaptersPage />} />
               <Route path="/books/:bookId/chapters" element={<AdminBookChaptersPage />} />
+              <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+              <Route path="/admin/settings" element={<AdminSettingsPage />} />
+              <Route path="/admin/audio" element={<Navigate to="/admin/audio-upload" replace />} />
               <Route path="/admin/audio-upload" element={<AdminAudioUploadPage />} />
               <Route path="/audio-upload" element={<Navigate to="/admin/audio-upload" replace />} />
 

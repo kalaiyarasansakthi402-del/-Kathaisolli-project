@@ -272,6 +272,18 @@ export const Sidebar: React.FC = () => {
                   <Radio className="h-4 w-4" />
                   <span>ஆடியோ டிரான்ஸ்கோடிங் வரிசை</span>
                 </NavLink>
+
+                <NavLink
+                  to="/admin/settings"
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
+                    }`
+                  }
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>கணினி அமைப்புகள் (Settings)</span>
+                </NavLink>
               </div>
             </>
           )}
