@@ -16,14 +16,45 @@ async function bootstrap() {
     throw new Error('PORT must be an integer between 1 and 65535.');
   }
 
-  const allowedOrigins = config
-    .get<string>('CORS_ORIGINS', 'http://localhost:3001')
+  const defaultOrigins = [
+    'https://web-kalai21.vercel.app',
+    'https://web-a9wl0ahec-kalai21.vercel.app',
+    'https://admin-eight-theta-72.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://localhost:5173',
+    'http://localhost:5174',
+  ];
+
+  const configuredOrigins = config
+    .get<string>('CORS_ORIGINS', '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
 
+  const allowedSet = new Set([...defaultOrigins, ...configuredOrigins]);
+
   app.setGlobalPrefix('api/v1');
-  app.enableCors({ origin: allowedOrigins, credentials: true });
+  app.enableCors({
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Allow requests with no origin (like mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (
+        allowedSet.has(origin) ||
+        origin.endsWith('.vercel.app') ||
+        config.get('NODE_ENV') !== 'production'
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -31,6 +62,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
   if (config.get<string>('NODE_ENV') !== 'production') {
     const openApiConfig = new DocumentBuilder()
       .setTitle('Kathaisolli API')
@@ -41,6 +73,7 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, openApiConfig);
     SwaggerModule.setup('api/docs', app, document);
   }
+
   app.enableShutdownHooks();
   await app.listen(port, '0.0.0.0');
 }

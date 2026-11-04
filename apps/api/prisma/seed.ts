@@ -15,10 +15,69 @@ function getSeedPassword(environmentVariable: string, email: string): string {
 }
 
 async function main() {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Demo seed data is disabled in production.');
+  // 1. Essential reference data (Safe for both development and production)
+  await prisma.language.upsert({
+    where: { code: 'ta' },
+    update: { name: 'Tamil', nativeName: 'தமிழ்', isActive: true },
+    create: { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
+  });
+
+  const categories = [
+    { slug: 'general', name: 'பொதுவானவை (General)' },
+    { slug: 'romance', name: 'காதல் கதைகள்' },
+    { slug: 'horror', name: 'திகில் கதைகள்' },
+    { slug: 'mystery', name: 'மர்மக் கதைகள்' },
+    { slug: 'family', name: 'குடும்பக் கதைகள்' },
+    { slug: 'history', name: 'வரலாற்றுக் கதைகள்' },
+    { slug: 'children', name: 'சிறுவர் கதைகள்' },
+    { slug: 'inspiration', name: 'ஊக்கமளிக்கும் கதைகள்' },
+    { slug: 'crime-fiction', name: 'குற்றப் புனைகதைகள்' },
+    { slug: 'mythology', name: 'புராணக் கதைகள்' },
+    { slug: 'science-fiction', name: 'அறிவியல் புனைகதைகள்' },
+    { slug: 'comedy', name: 'நகைச்சுவைக் கதைகள்' },
+    { slug: 'biography', name: 'வாழ்க்கை வரலாறுகள்' },
+  ];
+
+  for (const category of categories) {
+    await prisma.category.upsert({
+      where: { slug: category.slug },
+      update: { name: category.name, isActive: true },
+      create: category,
+    });
   }
 
+  // 2. Optional Production/Deployment initial admin bootstrap
+  const initialAdminEmail = process.env.INITIAL_ADMIN_EMAIL?.toLowerCase().trim();
+  const initialAdminPassword = process.env.INITIAL_ADMIN_PASSWORD;
+  if (initialAdminEmail && initialAdminPassword && initialAdminPassword.length >= 16) {
+    const adminHash = await argon2.hash(initialAdminPassword, {
+      type: argon2.argon2id,
+    });
+    await prisma.user.upsert({
+      where: { email: initialAdminEmail },
+      update: {
+        role: UserRole.ADMIN,
+        passwordHash: adminHash,
+      },
+      create: {
+        email: initialAdminEmail,
+        displayName: process.env.INITIAL_ADMIN_NAME || 'Platform Administrator',
+        role: UserRole.ADMIN,
+        passwordHash: adminHash,
+      },
+    });
+    console.info(`Initial admin provisioned for ${initialAdminEmail}.`);
+  }
+
+  // 3. Skip demo user accounts in production
+  if (process.env.NODE_ENV === 'production') {
+    console.info(
+      `[Production] Successfully seeded ${categories.length} categories and the Tamil language. Demo user seeding is disabled in production.`,
+    );
+    return;
+  }
+
+  // 4. Development demo users
   const demoUsers = [
     {
       email: 'listener@demo.kathaisolli.local',
@@ -54,36 +113,6 @@ async function main() {
     demoUsers.length
   ) {
     throw new Error('Use a different development password for each demo account.');
-  }
-
-  await prisma.language.upsert({
-    where: { code: 'ta' },
-    update: { name: 'Tamil', nativeName: 'தமிழ்', isActive: true },
-    create: { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்' },
-  });
-
-  const categories = [
-    { slug: 'general', name: 'பொதுவானவை (General)' },
-    { slug: 'romance', name: 'காதல் கதைகள்' },
-    { slug: 'horror', name: 'திகில் கதைகள்' },
-    { slug: 'mystery', name: 'மர்மக் கதைகள்' },
-    { slug: 'family', name: 'குடும்பக் கதைகள்' },
-    { slug: 'history', name: 'வரலாற்றுக் கதைகள்' },
-    { slug: 'children', name: 'சிறுவர் கதைகள்' },
-    { slug: 'inspiration', name: 'ஊக்கமளிக்கும் கதைகள்' },
-    { slug: 'crime-fiction', name: 'குற்றப் புனைகதைகள்' },
-    { slug: 'mythology', name: 'புராணக் கதைகள்' },
-    { slug: 'science-fiction', name: 'அறிவியல் புனைகதைகள்' },
-    { slug: 'comedy', name: 'நகைச்சுவைக் கதைகள்' },
-    { slug: 'biography', name: 'வாழ்க்கை வரலாறுகள்' },
-  ];
-
-  for (const category of categories) {
-    await prisma.category.upsert({
-      where: { slug: category.slug },
-      update: { name: category.name, isActive: true },
-      create: category,
-    });
   }
 
   for (const demoUser of demoUsers) {

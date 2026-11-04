@@ -29,7 +29,7 @@ export class AuthController {
 
   @ApiOperation({ summary: 'Register a new listener account' })
   @Post('register')
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   register(@Body() input: RegisterDto) {
     return this.authService.register(input);
   }
@@ -37,7 +37,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Log in with email and password' })
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   login(@Body() input: LoginDto) {
     return this.authService.login(input);
   }
