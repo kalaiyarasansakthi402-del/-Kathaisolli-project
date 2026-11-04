@@ -24,6 +24,8 @@ import { CreateEpisodeDto } from '../catalog/dto/create-episode.dto';
 import { ModerationDecisionDto } from '../catalog/dto/moderation-decision.dto';
 import { CreateSeasonDto } from '../catalog/dto/create-season.dto';
 import { CreateSeriesDto } from '../catalog/dto/create-series.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 import { AdminService } from './admin.service';
 
 @ApiTags('Administration')
@@ -40,7 +42,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Admin health status check' })
   @Get('status')
   getStatus() {
-    return { status: 'ok' };
+    return this.adminService.getHealthStatus();
   }
 
   @ApiOperation({ summary: 'Platform KPI overview metrics' })
@@ -181,22 +183,17 @@ export class AdminController {
 
   @ApiOperation({ summary: 'Create new category' })
   @Post('categories')
-  createCategory(
-    @Body('name') name: string,
-    @Body('slug') slug: string,
-    @Body('description') description?: string,
-    @Body('isActive') isActive?: boolean,
-  ) {
-    return this.adminService.createCategory({ name, slug, description, isActive });
+  createCategory(@Body() input: CreateCategoryDto) {
+    return this.adminService.createCategory(input);
   }
 
   @ApiOperation({ summary: 'Update existing category' })
   @Patch('categories/:id')
   updateCategory(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() body: { name?: string; slug?: string; description?: string; isActive?: boolean },
+    @Body() input: UpdateCategoryDto,
   ) {
-    return this.adminService.updateCategory(id, body);
+    return this.adminService.updateCategory(id, input);
   }
 
   @ApiOperation({ summary: 'Delete category' })

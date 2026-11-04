@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart3,
   TrendingUp,
@@ -11,16 +11,44 @@ import {
   Calendar,
   Sparkles,
   Layers,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { getAdminMetrics, getStoredBooks, listAdminCategories } from '../services/adminCatalogService';
+import { useAdminAuth } from '../context/AdminAuthContext';
+import type { AdminMetrics } from '@kathaisolli/shared-types';
 
 export const AdminAnalyticsPage: React.FC = () => {
+  const { api } = useAdminAuth();
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | 'all'>('30d');
-  const metrics = getAdminMetrics();
+  const [serverMetrics, setServerMetrics] = useState<AdminMetrics | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
+
+  const localMetrics = getAdminMetrics();
   const books = getStoredBooks();
   const categories = listAdminCategories();
 
-  // Compute playback and streaming stats
+  const fetchServerMetrics = async () => {
+    if (!api?.admin?.getMetrics) return;
+    try {
+      setMetricsLoading(true);
+      const res = await api.admin.getMetrics();
+      setServerMetrics(res);
+      setServerOnline(true);
+    } catch (err: any) {
+      console.warn('[Analytics] API getMetrics notice (backend offline or unauthenticated):', err?.message);
+      setServerOnline(false);
+    } finally {
+      setMetricsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServerMetrics();
+  }, [api]);
+
+  // Compute local playback and streaming duration
   const totalDurationHours = books.reduce((acc, b) => {
     const bookSeconds = b.chapters.reduce((s, c) => s + (c.durationSec || 0), 0);
     return acc + bookSeconds;
@@ -82,6 +110,15 @@ export const AdminAnalyticsPage: React.FC = () => {
           </div>
 
           <button
+            onClick={fetchServerMetrics}
+            disabled={metricsLoading}
+            title="Refresh Metrics"
+            className="p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${metricsLoading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
             onClick={() => alert('அறிக்கை CSV வடிவத்தில் பதிவிறக்கம் செய்யப்படுகிறது... (Downloading Analytics Report)')}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all"
           >
@@ -91,17 +128,39 @@ export const AdminAnalyticsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Backend Status Notice */}
+      {serverOnline === false && (
+        <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-200">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+          <span>
+            நேரடி சேவையகத் தொடர்பு துண்டிக்கப்பட்டுள்ளது. உள்ளூர் தற்காலிகத் தரவு காட்டப்படுகிறது (Backend API currently offline; displaying local catalog metrics).
+          </span>
+        </div>
+      )}
+
       {/* Primary KPI Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="p-5 rounded-2xl bg-white dark:bg-[#10221B] border border-emerald-100 dark:border-emerald-900/40 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-xs uppercase font-bold text-zinc-400">செயலில் உள்ள நேயர்கள்</p>
             <h3 className="text-3xl font-black font-serif text-emerald-700 dark:text-emerald-300 mt-1">
-              1,248
+              {metricsLoading ? (
+                '...'
+              ) : serverMetrics ? (
+                serverMetrics.activeListeners.toLocaleString()
+              ) : (
+                '--'
+              )}
             </h3>
-            <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              <span>+18.4% இந்த மாதம்</span>
+            <p className="text-[11px] text-zinc-500 mt-1 flex items-center gap-1">
+              {serverMetrics ? (
+                <>
+                  <Users className="w-3 h-3 text-emerald-600" />
+                  <span>பதிவு செய்தவர்கள்: {serverMetrics.totalUsers}</span>
+                </>
+              ) : (
+                <span>நேரடித் தரவு கிடைக்கவில்லை</span>
+              )}
             </p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
@@ -113,10 +172,10 @@ export const AdminAnalyticsPage: React.FC = () => {
           <div>
             <p className="text-xs uppercase font-bold text-zinc-400">மொத்த ஆடியோ நேரம்</p>
             <h3 className="text-3xl font-black font-serif text-emerald-700 dark:text-emerald-300 mt-1">
-              {totalDurationHours.toFixed(1)} மணி
+              {serverMetrics ? `${serverMetrics.totalListeningHours} மணி` : `${totalDurationHours.toFixed(1)} மணி`}
             </h3>
             <p className="text-[11px] text-zinc-500 mt-1">
-              {metrics.totalChapters} அத்தியாயங்கள் பதிவு
+              {serverMetrics ? `${serverMetrics.totalEpisodes} அத்தியாயங்கள்` : `${localMetrics.totalChapters} அத்தியாயங்கள் பதிவு`}
             </p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
@@ -126,12 +185,12 @@ export const AdminAnalyticsPage: React.FC = () => {
 
         <div className="p-5 rounded-2xl bg-white dark:bg-[#10221B] border border-emerald-100 dark:border-emerald-900/40 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase font-bold text-zinc-400">வெளியிடப்பட்ட புத்தகங்கள்</p>
+            <p className="text-xs uppercase font-bold text-zinc-400">வெளியிடப்பட்ட கதைகள்</p>
             <h3 className="text-3xl font-black font-serif text-emerald-700 dark:text-emerald-300 mt-1">
-              {metrics.publishedBooks}
+              {serverMetrics ? serverMetrics.publishedStories : localMetrics.publishedBooks}
             </h3>
             <p className="text-[11px] text-zinc-500 mt-1">
-              வரைவு: {metrics.draftBooks} புத்தகங்கள்
+              {serverMetrics ? `மொத்தம்: ${serverMetrics.totalStories}` : `வரைவு: ${localMetrics.draftBooks} புத்தகங்கள்`}
             </p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
@@ -143,7 +202,7 @@ export const AdminAnalyticsPage: React.FC = () => {
           <div>
             <p className="text-xs uppercase font-bold text-zinc-400">சேமிப்பக பயன்பாடு</p>
             <h3 className="text-3xl font-black font-serif text-emerald-700 dark:text-emerald-300 mt-1">
-              {metrics.storageUsage}
+              {localMetrics.storageUsage}
             </h3>
             <p className="text-[11px] text-zinc-500 mt-1">
               Firebase Storage Cloud Bucket
@@ -206,7 +265,7 @@ export const AdminAnalyticsPage: React.FC = () => {
 
             <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#0A1612] border border-zinc-200 dark:border-zinc-800 space-y-1">
               <span className="text-[11px] font-bold text-zinc-400 uppercase">டேட்டாபேஸ் வகை</span>
-              <p className="text-lg font-black text-emerald-700 dark:text-emerald-300 font-mono">{metrics.databaseType}</p>
+              <p className="text-lg font-black text-emerald-700 dark:text-emerald-300 font-mono">{localMetrics.databaseType}</p>
               <p className="text-xs text-zinc-500">உறுதிப்படுத்தப்பட்ட இணைப்பு</p>
             </div>
           </div>

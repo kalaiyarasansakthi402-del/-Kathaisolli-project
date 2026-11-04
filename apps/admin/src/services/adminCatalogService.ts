@@ -629,17 +629,41 @@ export const upsertAdminCategory = (
   return category;
 };
 
-export const deleteAdminCategory = (id: string): boolean => {
+export const deleteAdminCategory = (id: string): { success: boolean; reason?: string } => {
   const categories = getStoredCategories();
   const target = categories.find((c) => c.id === id);
-  if (target?.slug === 'general') {
-    // Cannot delete default General category
-    return false;
+  if (!target) {
+    return { success: false, reason: 'வகை காணப்படவில்லை (Category not found).' };
   }
+  if (target.slug === 'general') {
+    // Cannot delete default General category
+    return {
+      success: false,
+      reason: 'பொதுவானவை (General) முதன்மை வகையை நீக்க முடியாது. இது கணினியின் பிரதான வகையாகும்.',
+    };
+  }
+
+  // Check if any books/stories are assigned to this category
+  const books = getStoredBooks();
+  const associatedBooks = books.filter(
+    (b) =>
+      b.categoryId?.toLowerCase() === target.slug.toLowerCase() ||
+      b.categoryName?.toLowerCase() === target.name.toLowerCase()
+  );
+
+  if (associatedBooks.length > 0) {
+    return {
+      success: false,
+      reason: `இந்த வகையில் ${associatedBooks.length} கதைகள் உள்ளதால் இதனை நீக்க முடியாது (Cannot delete category containing active stories).`,
+    };
+  }
+
   const filtered = categories.filter((c) => c.id !== id);
-  if (filtered.length === categories.length) return false;
+  if (filtered.length === categories.length) {
+    return { success: false, reason: 'வகையை நீக்க முடியவில்லை.' };
+  }
   saveStoredCategories(filtered);
-  return true;
+  return { success: true };
 };
 
 export const toggleCategoryActive = (id: string): AdminCategory | null => {

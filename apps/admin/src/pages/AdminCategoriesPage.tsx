@@ -20,10 +20,14 @@ import {
   toggleCategoryActive,
   type AdminCategory,
 } from '../services/adminCatalogService';
+import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const AdminCategoriesPage: React.FC = () => {
+  const { api } = useAdminAuth();
   const [search, setSearch] = useState('');
   const [categories, setCategories] = useState<AdminCategory[]>(() => listAdminCategories());
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -41,10 +45,40 @@ export const AdminCategoriesPage: React.FC = () => {
   };
 
   useEffect(() => {
+    let mounted = true;
+    const fetchApiCategories = async () => {
+      if (!api?.admin?.listCategories) return;
+      try {
+        setIsLoading(true);
+        const serverCats = await api.admin.listCategories();
+        if (mounted && Array.isArray(serverCats) && serverCats.length > 0) {
+          serverCats.forEach((sc: any) => {
+            upsertAdminCategory({
+              id: sc.id,
+              name: sc.name,
+              tamilName: sc.name,
+              slug: sc.slug,
+              description: sc.description || '',
+              isActive: sc.isActive !== undefined ? sc.isActive : true,
+            });
+          });
+          refreshCategories();
+        }
+      } catch (err: any) {
+        console.warn('API listCategories notice (using cached catalog):', err?.message);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+
+    fetchApiCategories();
     refreshCategories();
     window.addEventListener('kathaisolli:admin-categories-updated', refreshCategories);
-    return () => window.removeEventListener('kathaisolli:admin-categories-updated', refreshCategories);
-  }, [search]);
+    return () => {
+      mounted = false;
+      window.removeEventListener('kathaisolli:admin-categories-updated', refreshCategories);
+    };
+  }, [search, api]);
 
   const openCreateModal = () => {
     setEditingCategory(null);
@@ -80,7 +114,7 @@ export const AdminCategoriesPage: React.FC = () => {
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !slug.trim()) {
       setError('வகை பெயர் மற்றும் Slug உள்ளிடவும் (Name and Slug are required).');
@@ -88,6 +122,28 @@ export const AdminCategoriesPage: React.FC = () => {
     }
 
     try {
+      if (api?.admin?.createCategory && api?.admin?.updateCategory) {
+        try {
+          if (editingCategory && !editingCategory.id.startsWith('cat-')) {
+            await api.admin.updateCategory(editingCategory.id, {
+              name: name.trim(),
+              slug: slug.trim().toLowerCase(),
+              description: description.trim(),
+              isActive,
+            });
+          } else {
+            await api.admin.createCategory({
+              name: name.trim(),
+              slug: slug.trim().toLowerCase(),
+              description: description.trim(),
+              isActive,
+            });
+          }
+        } catch (apiErr: any) {
+          console.warn('Backend category sync fallback to local storage:', apiErr?.message);
+        }
+      }
+
       upsertAdminCategory({
         id: editingCategory?.id,
         name: name.trim(),
@@ -113,23 +169,41 @@ export const AdminCategoriesPage: React.FC = () => {
     refreshCategories();
   };
 
-  const handleDelete = (cat: AdminCategory) => {
+  const handleDelete = async (cat: AdminCategory) => {
+    setError(null);
     if (cat.slug === 'general') {
-      alert('பொதுவானவை (General) வகையை நீக்க முடியாது. இது முதன்மை வகையாகும்.');
+      setError('பொதுவானவை (General) முதன்மை வகையை நீக்க முடியாது. இது கணினியின் பிரதான வகையாகும்.');
+      return;
+    }
+
+    if ((cat.itemCount || 0) > 0) {
+      setError(`"${cat.tamilName || cat.name}" வகையில் ${cat.itemCount} கதைகள் உள்ளதால் இதனை நீக்க முடியாது (Protected: contains active stories).`);
       return;
     }
 
     if (
-      confirm(
+      !confirm(
         `"${cat.tamilName || cat.name}" வகையை நிச்சயமாக நீக்க விரும்புகிறீர்களா? (Delete category?)`
       )
     ) {
-      const ok = deleteAdminCategory(cat.id);
-      if (ok) {
-        refreshCategories();
-      } else {
-        alert('வகையை நீக்க முடியவில்லை.');
+      return;
+    }
+
+    try {
+      if (api?.admin?.deleteCategory && !cat.id.startsWith('cat-')) {
+        await api.admin.deleteCategory(cat.id);
       }
+    } catch (err: any) {
+      console.warn('API category delete note:', err?.message);
+    }
+
+    const res = deleteAdminCategory(cat.id);
+    if (res.success) {
+      setSuccessMessage('வகை வெற்றிகரமாக நீக்கப்பட்டது.');
+      setTimeout(() => setSuccessMessage(null), 3000);
+      refreshCategories();
+    } else {
+      setError(res.reason || 'வகையை நீக்க முடியவில்லை.');
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings,
   Database,
@@ -16,7 +16,30 @@ import {
 import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const AdminSettingsPage: React.FC = () => {
-  const { user } = useAdminAuth();
+  const { user, api } = useAdminAuth();
+  const [dbStatus, setDbStatus] = useState<'checking' | 'healthy' | 'offline'>('checking');
+
+  useEffect(() => {
+    let mounted = true;
+    const checkStatus = async () => {
+      if (!api?.admin?.getStatus) {
+        if (mounted) setDbStatus('offline');
+        return;
+      }
+      try {
+        const res = await api.admin.getStatus();
+        if (mounted) {
+          setDbStatus(res?.database === 'ok' ? 'healthy' : 'offline');
+        }
+      } catch {
+        if (mounted) setDbStatus('offline');
+      }
+    };
+    checkStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [api]);
 
   // Settings State
   const [platformName, setPlatformName] = useState('Kathaisolli (கதைசொல்லி)');
@@ -40,7 +63,7 @@ export const AdminSettingsPage: React.FC = () => {
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
     setPasswordSuccess(null);
@@ -55,11 +78,20 @@ export const AdminSettingsPage: React.FC = () => {
       return;
     }
 
-    setPasswordSuccess('நிர்வாகக் கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது.');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setTimeout(() => setPasswordSuccess(null), 3000);
+    try {
+      if (api?.auth?.changePassword) {
+        await api.auth.changePassword({ currentPassword, newPassword });
+      }
+      setPasswordSuccess('நிர்வாகக் கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setPasswordSuccess(null), 3000);
+    } catch (err: any) {
+      setPasswordError(
+        err?.response?.data?.message || err?.message || 'கடவுச்சொல் மாற்றுவதில் பிழை ஏற்பட்டது.'
+      );
+    }
   };
 
   return (
@@ -185,15 +217,35 @@ export const AdminSettingsPage: React.FC = () => {
         <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-[#0A1612] border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs">
           <div className="space-y-1">
             <span className="font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  dbStatus === 'healthy'
+                    ? 'bg-emerald-500 animate-pulse'
+                    : dbStatus === 'checking'
+                    ? 'bg-amber-500 animate-pulse'
+                    : 'bg-rose-500'
+                }`}
+              />
               <span>PostgreSQL Production Database</span>
             </span>
             <p className="text-zinc-500 font-mono text-[11px]">
-              Active Prisma Client • Schema Migrations Up to Date
+              {dbStatus === 'healthy'
+                ? 'Active Prisma Client • Schema Migrations Up to Date'
+                : dbStatus === 'checking'
+                ? 'Checking backend connection...'
+                : 'Backend API or DB Unreachable (Check API service)'}
             </p>
           </div>
-          <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold text-[10px]">
-            HEALTHY
+          <span
+            className={`px-3 py-1 rounded-full font-bold text-[10px] ${
+              dbStatus === 'healthy'
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                : dbStatus === 'checking'
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+            }`}
+          >
+            {dbStatus === 'healthy' ? 'HEALTHY' : dbStatus === 'checking' ? 'CHECKING' : 'OFFLINE'}
           </span>
         </div>
       </div>

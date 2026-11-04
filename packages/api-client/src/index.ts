@@ -234,7 +234,22 @@ export class KathaisolliApiClient {
 
   // --- Admin ---
   admin = {
+    getStatus: () =>
+      this.client.get<{ status: string; database?: string; timestamp?: string }>('/admin/status').then((r) => r.data),
+
     getMetrics: () => this.client.get<AdminMetrics>('/admin/metrics').then((r) => r.data),
+
+    listCategories: () =>
+      this.client.get<any[]>('/admin/categories').then((r) => r.data),
+
+    createCategory: (data: { name: string; slug: string; description?: string; isActive?: boolean }) =>
+      this.client.post<any>('/admin/categories', data).then((r) => r.data),
+
+    updateCategory: (id: string, data: { name?: string; slug?: string; description?: string; isActive?: boolean }) =>
+      this.client.patch<any>(`/admin/categories/${id}`, data).then((r) => r.data),
+
+    deleteCategory: (id: string) =>
+      this.client.delete<any>(`/admin/categories/${id}`).then((r) => r.data),
 
     listUsers: (params?: { page?: number; pageSize?: number; search?: string }) =>
       this.client.get<{ items: User[]; total: number; totalPages: number }>('/admin/users', { params }).then((r) => r.data),

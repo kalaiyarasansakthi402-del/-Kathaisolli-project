@@ -352,4 +352,18 @@ export class AdminService {
       where: { id },
     });
   }
+
+  async getHealthStatus() {
+    let database = 'ok';
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+    } catch {
+      database = 'offline';
+    }
+    return {
+      status: database === 'ok' ? 'ok' : 'degraded',
+      database,
+      timestamp: new Date().toISOString(),
+    };
+  }
 }

@@ -104,9 +104,8 @@ export const uploadBookCoverImage = async (
             if (onProgress) onProgress(pct);
           },
           (error) => {
-            console.warn('[Admin Firebase] Remote upload failed, creating object URL fallback:', error);
-            const localUrl = URL.createObjectURL(file);
-            resolve({ url: localUrl, storagePath, fileSizeBytes: file.size });
+            console.error('[Admin Firebase] Remote cover upload failed:', error);
+            reject(new Error(`Firebase Storage error: ${error.message || 'Upload failed'}`));
           },
           async () => {
             const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
@@ -190,15 +189,8 @@ export const uploadChapterAudioMp3 = async (
             if (onProgress) onProgress(pct);
           },
           (error) => {
-            console.warn('[Admin Firebase] Remote audio upload failed, creating object URL fallback:', error);
-            const localUrl = URL.createObjectURL(file);
-            resolve({
-              url: localUrl,
-              storagePath,
-              durationSec,
-              fileSizeBytes: file.size,
-              fileName: file.name,
-            });
+            console.error('[Admin Firebase] Remote audio upload failed:', error);
+            reject(new Error(`Firebase Storage error: ${error.message || 'Upload failed'}`));
           },
           async () => {
             const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
