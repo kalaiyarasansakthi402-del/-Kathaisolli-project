@@ -152,6 +152,48 @@ export const CategoriesPage: React.FC = () => {
     setSearchParams(newParams);
   };
 
+  // Fetch dynamic categories from API (cached) to merge admin-created categories
+  const { data: apiCategories = [] } = useQuery({
+    queryKey: ['catalog', 'categories'],
+    queryFn: async () => {
+      try {
+        const res = await api.catalog.getCategories();
+        return Array.isArray(res) ? res : [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
+  // Merge static catalog tabs with dynamic categories from backend
+  const categoryTabs = useMemo(() => {
+    const tabs = [...CATALOG_CATEGORY_TABS];
+    if (Array.isArray(apiCategories) && apiCategories.length > 0) {
+      for (const cat of apiCategories) {
+        const slugLower = (cat.slug || '').toLowerCase();
+        const nameLower = (cat.name || '').toLowerCase();
+        if (
+          !tabs.some(
+            (t) =>
+              t.id.toLowerCase() === slugLower ||
+              t.name.toLowerCase() === nameLower ||
+              t.id.toLowerCase() === nameLower
+          )
+        ) {
+          tabs.push({
+            id: cat.slug || cat.name,
+            name: cat.name,
+            tamilName: cat.name,
+            icon: <BookOpen className="w-4 h-4" />,
+          });
+        }
+      }
+    }
+    return tabs;
+  }, [apiCategories]);
+
   // Fetch API stories if available (progressive enhancement)
   const {
     data: apiStoriesData,
@@ -165,7 +207,7 @@ export const CategoriesPage: React.FC = () => {
       try {
         const catFilter =
           selectedCategory !== 'all' && selectedCategory !== 'Recently Added'
-            ? selectedCategory
+            ? selectedCategory.toLowerCase()
             : undefined;
         return await api.catalog.search({
           category: catFilter,
@@ -360,7 +402,7 @@ export const CategoriesPage: React.FC = () => {
           className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {CATALOG_CATEGORY_TABS.map((tab) => {
+          {categoryTabs.map((tab) => {
             const isSelected =
               selectedCategory.toLowerCase() === tab.id.toLowerCase() ||
               (tab.id === 'all' && (!selectedCategory || selectedCategory === 'all'));
