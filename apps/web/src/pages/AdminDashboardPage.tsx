@@ -175,7 +175,7 @@ export const AdminDashboardPage: React.FC = () => {
             Kathaisolli Admin Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-300">
-            Developer branding: By Anzles · Manage 62 Library books, Firebase Audio, and Cloud Storage.
+            Developer branding: By Anzles · Manage audio books, Firebase Audio, and Cloud Storage.
           </p>
         </div>
 
@@ -205,7 +205,7 @@ export const AdminDashboardPage: React.FC = () => {
             <h3 className="text-3xl font-black font-serif text-[#064E3B] dark:text-[#A7F3D0] mt-1">
               {totalBooks}
             </h3>
-            <p className="text-[11px] text-stone-500 mt-1">All 62 User Folders</p>
+            <p className="text-[11px] text-stone-500 mt-1">Audiobook Catalog</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-[#064E3B] dark:text-[#A7F3D0] flex items-center justify-center">
             <BookOpen className="w-6 h-6" />

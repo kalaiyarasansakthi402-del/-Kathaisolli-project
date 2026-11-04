@@ -195,38 +195,30 @@ export const StoryDetailsPage: React.FC = () => {
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10">
-      {/* Story Hero Header */}
-      <div className="flex flex-col md:flex-row gap-8 items-start bg-white dark:bg-[#14231E] p-6 sm:p-8 rounded-3xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm">
-        {/* Cover Image */}
-        <div className="w-full sm:w-64 md:w-72 shrink-0 aspect-square rounded-2xl overflow-hidden shadow-xl bg-emerald-950 relative">
-          <img
-            src={coverUrl}
-            alt={story.title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute top-3 left-3 bg-emerald-700/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
+      {/* Story Hero Header (Text-First Clean Layout) */}
+      <div className="bg-white dark:bg-[#14231E] p-6 sm:p-10 rounded-3xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-6">
+        {/* Top Badges */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-3 py-1 rounded-full bg-[#064E3B] text-[#A7F3D0] text-xs font-bold shadow-sm">
             100% இலவசம்
-          </div>
+          </span>
+          {story.category?.name && (
+            <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+              {story.category.name}
+            </span>
+          )}
+          <span className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs font-semibold">
+            {story.language?.nativeName || story.language?.name || 'தமிழ்'}
+          </span>
+          <span className="flex items-center gap-1 text-xs font-bold text-amber-500">
+            <Star className="h-3.5 w-3.5 fill-current" />
+            4.9
+          </span>
         </div>
 
         {/* Story Metadata */}
-        <div className="flex-1 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {story.category?.name && (
-              <span className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 text-xs font-semibold">
-                {story.category.name}
-              </span>
-            )}
-            <span className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs">
-              {story.language?.nativeName || story.language?.name || 'தமிழ்'}
-            </span>
-            <span className="flex items-center gap-1 text-xs font-bold text-amber-500">
-              <Star className="h-3.5 w-3.5 fill-current" />
-              4.9
-            </span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif leading-tight">
+        <div className="space-y-4">
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif leading-tight">
             {story.title}
           </h1>
 
@@ -234,30 +226,30 @@ export const StoryDetailsPage: React.FC = () => {
             {story.authorName && (
               <div>
                 <span className="text-zinc-400">எழுத்தாளர்:</span>{' '}
-                <strong className="text-zinc-900 dark:text-zinc-100">{story.authorName}</strong>
+                <strong className="text-zinc-900 dark:text-zinc-100 font-serif">{story.authorName}</strong>
               </div>
             )}
             {story.narratorName && (
               <div>
                 <span className="text-zinc-400">குரல்:</span>{' '}
-                <strong className="text-zinc-900 dark:text-zinc-100">{story.narratorName}</strong>
+                <strong className="text-zinc-900 dark:text-zinc-100 font-serif">{story.narratorName}</strong>
               </div>
             )}
           </div>
 
           <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 font-semibold">
               <Headphones className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               {allEpisodes.length} அத்தியாயங்கள்
             </span>
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 font-semibold">
               <Clock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               {Math.round(allEpisodes.reduce((acc: number, ep: any) => acc + (ep.durationSec || 0), 0) / 60)} நிமிடங்கள்
             </span>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3 pt-3">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             {firstEpisode && (
               <button
                 onClick={() => {

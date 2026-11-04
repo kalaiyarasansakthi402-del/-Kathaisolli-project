@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
-  Headphones,
   LayoutGrid,
   Info,
   Mail,
   Search,
   Moon,
   Sun,
-  Leaf,
   Menu,
   X,
   LogOut,
@@ -46,17 +44,18 @@ export const Navbar: React.FC = () => {
   };
 
   const isHomeActive = location.pathname === '/' || location.pathname === '/home';
-  const isStoriesActive = location.pathname.startsWith('/explore') || location.pathname.startsWith('/stories');
   const isCategoriesActive = location.pathname.startsWith('/categories');
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#FAF7EE]/95 dark:bg-[#04281E]/95 border-b border-[#E8E1CE] dark:border-[#0F4738] transition-colors shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-3 lg:gap-6">
-        {/* Brand Logo with Leaf Badge */}
+        {/* Brand Logo with App Icon */}
         <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
-          <div className="w-11 h-11 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-md shadow-emerald-950/20 group-hover:scale-105 transition-transform border border-[#166534]">
-            <Leaf className="w-6 h-6 text-[#A7F3D0] fill-current" />
-          </div>
+          <img
+            src="/app-icon.png"
+            alt="Kathaisolli Logo"
+            className="w-11 h-11 rounded-xl object-contain shadow-md shadow-emerald-950/20 group-hover:scale-105 transition-transform bg-[#F8F5E9] p-0.5 border border-[#166534]/30"
+          />
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black font-serif tracking-tight text-[#064E3B] dark:text-[#A7F3D0]">
@@ -84,18 +83,6 @@ export const Navbar: React.FC = () => {
           >
             <Home className={`w-4 h-4 ${isHomeActive ? 'text-[#064E3B] dark:text-[#A7F3D0]' : 'text-stone-500 dark:text-stone-400'}`} />
             <span>Home</span>
-          </Link>
-
-          <Link
-            to="/explore"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              isStoriesActive
-                ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
-                : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
-            }`}
-          >
-            <Headphones className={`w-4 h-4 ${isStoriesActive ? 'text-[#064E3B] dark:text-[#A7F3D0]' : 'text-stone-500 dark:text-stone-400'}`} />
-            <span>Stories</span>
           </Link>
 
           <Link
@@ -219,13 +206,6 @@ export const Navbar: React.FC = () => {
               className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
             >
               Home (முகப்பு)
-            </Link>
-            <Link
-              to="/explore"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              Stories (கதைகள்)
             </Link>
             <Link
               to="/categories"

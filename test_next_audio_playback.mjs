@@ -56,22 +56,19 @@ const audioPlayerCode = fs.readFileSync(audioPlayerPath, 'utf8');
 
 // Next and Previous button verification
 assert(audioPlayerCode.includes('onClick={playNext}'), 'AudioPlayer Next button triggers playNext()');
-assert(audioPlayerCode.includes('title="அடுத்த ஆடியோ (Next Audio)"'), 'AudioPlayer Next button has exact Tamil & English title for Next Audio');
-assert(audioPlayerCode.includes('aria-label="Next Audio"'), 'AudioPlayer Next button has accessible label');
-
+assert(audioPlayerCode.includes('disabled={!hasNext}'), 'AudioPlayer Next button disabled at end of playlist');
 assert(audioPlayerCode.includes('onClick={playPrevious}'), 'AudioPlayer Previous button triggers playPrevious()');
-assert(audioPlayerCode.includes('title="முந்தைய ஆடியோ (Previous Audio)"'), 'AudioPlayer Previous button has exact Tamil & English title for Previous Audio');
-assert(audioPlayerCode.includes('aria-label="Previous Audio"'), 'AudioPlayer Previous button has accessible label');
+assert(audioPlayerCode.includes('disabled={!hasPrevious}'), 'AudioPlayer Previous button disabled at beginning of playlist');
 
 // 10-Second Seek Verification (kept separate from next/previous)
 assert(audioPlayerCode.includes('onClick={() => skipForward(10)}'), 'AudioPlayer has separate 10s Forward seek button');
-assert(audioPlayerCode.includes('title="10 விநாடிகள் முன்னே (Forward 10s)"'), 'AudioPlayer 10s forward button has accurate title');
+assert(audioPlayerCode.includes('title="10 விநாடிகள் முன்னே'), 'AudioPlayer 10s forward button has accurate title');
 assert(audioPlayerCode.includes('onClick={() => skipBackward(10)}'), 'AudioPlayer has separate 10s Rewind seek button');
-assert(audioPlayerCode.includes('title="10 விநாடிகள் பின்னே (Rewind 10s)"'), 'AudioPlayer 10s rewind button has accurate title');
+assert(audioPlayerCode.includes('title="10 விநாடிகள் பின்னே'), 'AudioPlayer 10s rewind button has accurate title');
 
-// Repeat and Shuffle
-assert(audioPlayerCode.includes('onClick={toggleRepeat}'), 'AudioPlayer Repeat button triggers toggleRepeat');
-assert(audioPlayerCode.includes('onClick={toggleShuffle}'), 'AudioPlayer Shuffle button triggers toggleShuffle');
+// Shuffle and Repeat must NOT be present in AudioPlayer (Requirement 13)
+assert(!audioPlayerCode.includes('onClick={toggleShuffle}'), 'AudioPlayer does NOT contain Shuffle button (Requirement 13)');
+assert(!audioPlayerCode.includes('onClick={toggleRepeat}'), 'AudioPlayer does NOT contain Repeat button (Requirement 13)');
 
 // ---------------------------------------------------------
 // 3. Inspect FullPlayerPage.tsx Controls Separation
@@ -80,11 +77,12 @@ const fullPlayerPath = path.resolve('apps/web/src/pages/FullPlayerPage.tsx');
 const fullPlayerCode = fs.readFileSync(fullPlayerPath, 'utf8');
 
 assert(fullPlayerCode.includes('onClick={playNext}'), 'FullPlayerPage Next button triggers playNext()');
-assert(fullPlayerCode.includes('title="அடுத்த அத்தியாயம் (Next Chapter)"'), 'FullPlayerPage Next button has exact title');
+assert(fullPlayerCode.includes('disabled={!hasNext}'), 'FullPlayerPage Next button disabled at end of playlist');
 assert(fullPlayerCode.includes('onClick={playPrevious}'), 'FullPlayerPage Previous button triggers playPrevious()');
-assert(fullPlayerCode.includes('title="முந்தைய அத்தியாயம் (Previous Chapter)"'), 'FullPlayerPage Previous button has exact title');
+assert(fullPlayerCode.includes('disabled={!hasPrevious}'), 'FullPlayerPage Previous button disabled at beginning of playlist');
 assert(fullPlayerCode.includes('onClick={() => skipForward(10)}'), 'FullPlayerPage has independent 10s forward seek');
 assert(fullPlayerCode.includes('onClick={() => skipBackward(10)}'), 'FullPlayerPage has independent 10s rewind seek');
+assert(!fullPlayerCode.includes('onClick={toggleRepeat}'), 'FullPlayerPage does NOT contain Repeat button (Requirement 13)');
 
 // ---------------------------------------------------------
 // 4. State Machine Simulation Test

@@ -7,7 +7,6 @@ import {
   SkipForward,
   RotateCcw,
   RotateCw,
-  Repeat,
   Volume2,
   VolumeX,
   Sun,
@@ -50,8 +49,8 @@ export const FullPlayerPage: React.FC = () => {
     playEpisode,
     playNext,
     playPrevious,
-    toggleRepeat,
-    repeatMode,
+    queue,
+    queueIndex,
     pause,
     resume,
     togglePlay,
@@ -70,6 +69,9 @@ export const FullPlayerPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showTranscript, setShowTranscript] = useState<boolean>(false);
   const [isFavorited, setIsFavorited] = useState<boolean>(false);
+
+  const hasPrevious = queueIndex > 0;
+  const hasNext = queueIndex < queue.length - 1;
 
   // If no track is playing on mount, start with Arthashastram Chapter 1 (Real verified MP3)
   useEffect(() => {
@@ -262,20 +264,21 @@ export const FullPlayerPage: React.FC = () => {
               <div className="absolute inset-10 rounded-full border border-white/5 pointer-events-none" />
               <div className="absolute inset-14 rounded-full border border-white/5 pointer-events-none" />
 
-              {/* Rotating Center Artwork Disc */}
+              {/* Rotating Center Vinyl Disc Label */}
               <div
-                className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-[#07241D] shadow-2xl transition-transform duration-700 ${
+                className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-[#07241D] bg-gradient-to-br from-[#064E3B] via-[#0B3D2E] to-[#042419] shadow-2xl flex flex-col items-center justify-center p-3 text-center transition-transform duration-700 ${
                   isPlaying ? 'animate-[spin_12s_linear_infinite]' : ''
                 }`}
               >
-                <img
-                  src={currentTrack?.coverImageUrl || currentTrack?.coverImage || '/images/temple-sunset.jpg'}
-                  alt={currentTrack?.title || 'Story Artwork'}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/images/temple-sunset.jpg';
-                  }}
-                />
+                <div className="w-10 h-10 rounded-full bg-[#032419]/90 border border-[#A7F3D0]/40 flex items-center justify-center mb-1">
+                  <Headphones className="w-5 h-5 text-[#A7F3D0]" />
+                </div>
+                <span className="text-[10px] font-bold font-serif text-[#A7F3D0] uppercase tracking-wider">
+                  கதைசொல்லி
+                </span>
+                <span className="text-[8px] text-white/70 font-mono">
+                  Tamil Audio
+                </span>
               </div>
 
               {/* Center Spindle Hole */}
@@ -325,8 +328,13 @@ export const FullPlayerPage: React.FC = () => {
             {/* Previous Chapter */}
             <button
               onClick={playPrevious}
-              className="p-3 rounded-full text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5 active:scale-95 transition-all"
-              title="முந்தைய அத்தியாயம் (Previous Chapter)"
+              disabled={!hasPrevious}
+              className={`p-3 rounded-full active:scale-95 transition-all ${
+                hasPrevious
+                  ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
+                  : 'text-stone-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasPrevious ? 'முந்தைய அத்தியாயம் (Previous Chapter)' : 'முதல் அத்தியாயம் (First Chapter)'}
               aria-label="Previous Chapter"
             >
               <SkipBack className="w-6 h-6 fill-current" />
@@ -371,34 +379,16 @@ export const FullPlayerPage: React.FC = () => {
             {/* Next Chapter */}
             <button
               onClick={playNext}
-              className="p-3 rounded-full text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5 active:scale-95 transition-all"
-              title="அடுத்த அத்தியாயம் (Next Chapter)"
+              disabled={!hasNext}
+              className={`p-3 rounded-full active:scale-95 transition-all ${
+                hasNext
+                  ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
+                  : 'text-stone-600 opacity-40 cursor-not-allowed'
+              }`}
+              title={hasNext ? 'அடுத்த அத்தியாயம் (Next Chapter)' : 'கடைசி அத்தியாயம் (Last Chapter)'}
               aria-label="Next Chapter"
             >
               <SkipForward className="w-6 h-6 fill-current" />
-            </button>
-
-            {/* Loop / Repeat Toggle */}
-            <button
-              onClick={toggleRepeat}
-              className={`p-2.5 rounded-full transition-all relative ${
-                repeatMode !== 'off' ? 'text-[#10B981] bg-white/10' : 'text-stone-400 hover:text-white'
-              }`}
-              title={
-                repeatMode === 'one'
-                  ? 'தற்போதைய அத்தியாயத்தை மீண்டும் இயக்கு (Repeat One)'
-                  : repeatMode === 'all'
-                  ? 'அனைத்து அத்தியாயங்களையும் மீண்டும் இயக்கு (Repeat All)'
-                  : 'மீண்டும் இயக்கு ஆஃப் (Repeat Off)'
-              }
-              aria-label="Repeat"
-            >
-              <Repeat className="w-5 h-5" />
-              {repeatMode === 'one' && (
-                <span className="absolute -top-1 -right-1 text-[8px] font-black bg-[#10B981] text-[#07241D] rounded-full w-3.5 h-3.5 flex items-center justify-center">
-                  1
-                </span>
-              )}
             </button>
           </div>
 
@@ -505,44 +495,36 @@ export const FullPlayerPage: React.FC = () => {
                 <div
                   key={`${book.id}-${chapter.id}`}
                   onClick={() => handlePlayChapterItem(book, chapter)}
-                  className={`relative aspect-square rounded-2xl overflow-hidden cursor-pointer group shadow-lg border transition-all duration-300 hover:-translate-y-1 ${
+                  className={`p-4 rounded-2xl cursor-pointer group shadow-md border transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between space-y-3 bg-[#08221B] ${
                     isCardPlaying
-                      ? 'border-[#10B981] ring-2 ring-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                      ? 'border-[#10B981] ring-1 ring-[#10B981] shadow-[0_0_15px_rgba(16,185,129,0.3)]'
                       : 'border-white/10 hover:border-[#10B981]/50'
                   }`}
                 >
-                  {/* Card Artwork */}
-                  <img
-                    src={book.coverImageUrl}
-                    alt={book.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-
-                  {/* Dark Gradient Overlay for Typography Contrast */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-85 group-hover:opacity-95 transition-opacity" />
-
-                  {/* Play Indicator Icon */}
-                  <div
-                    className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                      isCardPlaying
-                        ? 'bg-[#10B981] text-[#07241D] scale-100 shadow-md'
-                        : 'bg-black/60 text-white opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100'
-                    }`}
-                  >
-                    {isCardPlaying ? (
-                      <div className="w-2.5 h-2.5 bg-[#07241D] rounded-sm animate-pulse" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                    )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/10 text-[#A7F3D0] truncate max-w-[120px]">
+                      {book.category || 'General'}
+                    </span>
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                        isCardPlaying
+                          ? 'bg-[#10B981] text-[#07241D] scale-100 shadow-md'
+                          : 'bg-white/10 text-white group-hover:bg-[#10B981] group-hover:text-[#07241D]'
+                      }`}
+                    >
+                      {isCardPlaying ? (
+                        <div className="w-2.5 h-2.5 bg-[#07241D] rounded-sm animate-pulse" />
+                      ) : (
+                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                      )}
+                    </div>
                   </div>
 
-                  {/* Bottom Text Content */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3 text-left">
-                    <h3 className="font-bold text-sm text-[#F8F5E9] font-serif line-clamp-1 group-hover:text-[#A7F3D0] transition-colors">
+                  <div>
+                    <h3 className="font-bold text-sm text-[#F8F5E9] font-serif line-clamp-2 group-hover:text-[#A7F3D0] transition-colors">
                       {chapter.tamilTitle || chapter.title}
                     </h3>
-                    <p className="text-[11px] text-stone-300/80 truncate mt-0.5 font-medium">
+                    <p className="text-[11px] text-stone-300/80 truncate mt-1 font-medium">
                       {book.authorName}
                     </p>
                   </div>

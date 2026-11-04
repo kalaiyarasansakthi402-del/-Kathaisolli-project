@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import {
   BookOpen,
   ArrowLeft,
@@ -10,10 +10,11 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { uploadBookCoverImage } from '../services/firebaseAdminStorage';
-import { upsertAdminBook } from '../services/adminCatalogService';
+import { upsertAdminBook, getAdminBook, listAdminCategories } from '../services/adminCatalogService';
 
 export const CreateBookPage: React.FC = () => {
   const navigate = useNavigate();
+  const { bookId } = useParams<{ bookId: string }>();
 
   const [title, setTitle] = useState('');
   const [tamilTitle, setTamilTitle] = useState('');
@@ -30,6 +31,25 @@ export const CreateBookPage: React.FC = () => {
   const [coverUploadProgress, setCoverUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (bookId) {
+      const existing = getAdminBook(bookId);
+      if (existing) {
+        setTitle(existing.title);
+        setTamilTitle(existing.tamilTitle || '');
+        setDescription(existing.description || '');
+        setAuthorName(existing.authorName);
+        setNarratorName(existing.narratorName || 'By Anzles Studio');
+        setCategoryId(existing.categoryId);
+        setLanguageId(existing.languageId || 'ta');
+        setStatus(existing.status);
+        if (existing.coverImageUrl) {
+          setCoverPreview(existing.coverImageUrl);
+        }
+      }
+    }
+  }, [bookId]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -57,14 +77,14 @@ export const CreateBookPage: React.FC = () => {
     setError(null);
 
     try {
-      const bookId = `kb-${Date.now()}`;
+      const targetId = bookId || `kb-${Date.now()}`;
       let coverImageUrl = coverPreview || '/images/temple-sunset.jpg';
       let coverStoragePath: string | undefined;
 
       // Upload cover image if provided
       if (coverFile) {
         const uploadResult = await uploadBookCoverImage(
-          bookId,
+          targetId,
           coverFile,
           (pct) => setCoverUploadProgress(pct)
         );
@@ -74,7 +94,7 @@ export const CreateBookPage: React.FC = () => {
 
       // Save Book Metadata
       upsertAdminBook({
-        id: bookId,
+        id: targetId,
         title: title || tamilTitle,
         tamilTitle: tamilTitle || title,
         description,
@@ -87,7 +107,7 @@ export const CreateBookPage: React.FC = () => {
         status,
       });
 
-      navigate(`/books/${bookId}/chapters`);
+      navigate(`/books/${targetId}/chapters`);
     } catch (err: any) {
       console.error('Failed to create book:', err);
       setError(err?.message || 'புத்தகம் உருவாக்குவதில் பிழை ஏற்பட்டது.');
@@ -250,6 +270,7 @@ export const CreateBookPage: React.FC = () => {
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#0A1612] text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
+              <option value="general">பொதுவானவை (General)</option>
               <option value="history">வரலாறு (History)</option>
               <option value="motivation">சுயமுன்னேற்றம் (Motivation)</option>
               <option value="literature">இலக்கியம் (Literature)</option>

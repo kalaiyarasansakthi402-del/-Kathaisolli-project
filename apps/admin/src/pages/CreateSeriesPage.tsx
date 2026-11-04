@@ -133,6 +133,7 @@ export const CreateSeriesPage: React.FC = () => {
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#0A1612] text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
+              <option value="general">பொதுவானவை (General)</option>
               <option value="history">வரலாற்று புதினம் (Historical Fiction)</option>
               <option value="thriller">திகில் & மர்மம் (Thriller & Mystery)</option>
               <option value="romance">காதல் (Romance)</option>

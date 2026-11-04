@@ -16,6 +16,15 @@ import { useAuth } from '../context/AuthContext';
 
 const CORE_CATEGORIES = [
   {
+    id: 'general',
+    slug: 'General',
+    name: 'General (பொதுவானவை)',
+    tamilName: 'பொதுவான கதைகள் & தொடர்கள்',
+    description: 'அனைத்து நேயர்களுக்கும் உகந்த பொதுவான ஆடியோ கதைகள், சமூக சிந்தனைகள் மற்றும் தொகுப்புகள்.',
+    count: 'General Stories',
+    icon: <BookOpen className="w-6 h-6 text-[#A7F3D0]" />,
+  },
+  {
     id: 'moral-stories',
     slug: 'Moral Stories',
     name: 'Moral Stories (நீதிக்கதைகள்)',
@@ -98,26 +107,18 @@ export const CategoriesPage: React.FC = () => {
             to={`/explore?category=${encodeURIComponent(cat.slug)}`}
             className="group rounded-3xl bg-white dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col"
           >
-            <div className="relative aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-stone-900">
-              <img
-                src={cat.cover}
-                alt={cat.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-[#064E3B]/90 backdrop-blur-md flex items-center justify-center border border-white/20">
-                    {cat.icon}
-                  </div>
-                  <div>
-                    <h3 className="font-bold font-serif text-lg leading-tight">{cat.name}</h3>
-                    <span className="text-xs font-tamil text-[#A7F3D0]">{cat.count}</span>
-                  </div>
+            <div className="relative h-36 bg-gradient-to-br from-[#064E3B] via-[#0B3D2E] to-[#042419] p-5 flex flex-col justify-between text-white overflow-hidden border-b border-[#E3DCBA]/30 dark:border-[#124835]">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 rounded-2xl bg-[#032419]/80 backdrop-blur-md flex items-center justify-center border border-[#A7F3D0]/30 shadow-md group-hover:scale-110 transition-transform">
+                  {cat.icon}
                 </div>
-                <div className="p-2 rounded-full bg-white/20 backdrop-blur-md group-hover:bg-[#064E3B] transition-colors">
-                  <ChevronRight className="w-4 h-4 text-white" />
+                <div className="p-2 rounded-full bg-white/10 backdrop-blur-md group-hover:bg-[#10B981] group-hover:text-[#064E3B] transition-colors">
+                  <ChevronRight className="w-4 h-4 text-white group-hover:text-[#064E3B]" />
                 </div>
+              </div>
+              <div>
+                <h3 className="font-bold font-serif text-lg leading-tight text-white group-hover:text-[#A7F3D0] transition-colors">{cat.name}</h3>
+                <span className="text-xs font-tamil text-[#A7F3D0]/90 font-medium">{cat.count}</span>
               </div>
             </div>
 

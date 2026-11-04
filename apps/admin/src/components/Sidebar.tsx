@@ -15,6 +15,7 @@ import {
   LogOut,
   UploadCloud,
   Layers,
+  Settings,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
@@ -170,6 +171,30 @@ export const Sidebar: React.FC = () => {
               >
                 <BookOpen className="h-4 w-4" />
                 <span>புத்தகங்கள் (Books)</span>
+              </NavLink>
+
+              <NavLink
+                to="/admin/categories"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
+                  }`
+                }
+              >
+                <Layers className="h-4 w-4" />
+                <span>வகைப்பாடுகள் (Categories)</span>
+              </NavLink>
+
+              <NavLink
+                to="/admin/analytics"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
+                  }`
+                }
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>தள பகுப்பாய்வு (Analytics)</span>
               </NavLink>
 
               <NavLink

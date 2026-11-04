@@ -207,7 +207,7 @@ export const getAdminMetrics = () => {
     draftBooks: draftBooks.length,
     totalStorageBytes,
     storageUsage: storageFormatted,
-    databaseType: 'Cloudflare D1 (SQLite)',
+    databaseType: 'PostgreSQL + Prisma',
     storageBucket: 'vaagai-audio-books-36a4e.appspot.com',
   };
 };
@@ -463,4 +463,191 @@ export const getRecentUploads = (limit = 5) => {
 
   uploads.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
   return uploads.slice(0, limit);
+};
+
+export interface AdminCategory {
+  id: string;
+  slug: string;
+  name: string;
+  tamilName?: string;
+  description?: string;
+  isActive: boolean;
+  itemCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const CATEGORIES_STORAGE_KEY = 'kathaisolli_admin_categories_v1';
+
+const INITIAL_CATEGORIES: AdminCategory[] = [
+  {
+    id: 'cat-general',
+    slug: 'general',
+    name: 'General',
+    tamilName: 'பொதுவானவை (General)',
+    description: 'அனைத்து நேயர்களுக்கும் உகந்த பொதுவான கதைகள் மற்றும் தொடர்கள்.',
+    isActive: true,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z',
+  },
+  {
+    id: 'cat-history',
+    slug: 'history',
+    name: 'History',
+    tamilName: 'வரலாற்றுக் கதைகள்',
+    description: 'வரலாற்றுப் புதினங்கள் மற்றும் அரசர்களின் வரலாற்று நிகழ்வுகள்.',
+    isActive: true,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z',
+  },
+  {
+    id: 'cat-motivation',
+    slug: 'motivation',
+    name: 'Motivation',
+    tamilName: 'ஊக்கமளிக்கும் கதைகள்',
+    description: 'தன்னம்பிக்கை மற்றும் வாழ்வியல் வழிகாட்டல் சிந்தனைகள்.',
+    isActive: true,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z',
+  },
+  {
+    id: 'cat-moral',
+    slug: 'moral-stories',
+    name: 'Moral Stories',
+    tamilName: 'நீதிக்கதைகள் & நன்னெறி',
+    description: 'பஞ்சதந்திரக் கதைகள் மற்றும் ஈசாப் நீதிக்கதைகள்.',
+    isActive: true,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z',
+  },
+  {
+    id: 'cat-mythology',
+    slug: 'mythology',
+    name: 'Mythology',
+    tamilName: 'புராணக் கதைகள்',
+    description: 'இதிகாசங்கள் மற்றும் தெய்வக் கதைகள்.',
+    isActive: true,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z',
+  },
+  {
+    id: 'cat-children',
+    slug: 'children',
+    name: 'Children',
+    tamilName: 'சிறுவர் கதைகள்',
+    description: 'குழந்தைகளுக்கான தாலாட்டு மற்றும் பொழுதுபோக்குக் கதைகள்.',
+    isActive: true,
+    createdAt: '2026-10-30T00:00:00.000Z',
+    updatedAt: '2026-10-30T00:00:00.000Z',
+  },
+];
+
+export const getStoredCategories = (): AdminCategory[] => {
+  try {
+    const raw = localStorage.getItem(CATEGORIES_STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(INITIAL_CATEGORIES));
+      return INITIAL_CATEGORIES;
+    }
+    const parsed = JSON.parse(raw);
+    // Ensure 'general' is always included
+    if (!parsed.some((c: AdminCategory) => c.slug === 'general')) {
+      parsed.unshift(INITIAL_CATEGORIES[0]);
+      localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(parsed));
+    }
+    return parsed;
+  } catch {
+    return INITIAL_CATEGORIES;
+  }
+};
+
+export const saveStoredCategories = (categories: AdminCategory[]): void => {
+  try {
+    localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
+    window.dispatchEvent(new CustomEvent('kathaisolli:admin-categories-updated'));
+  } catch (err) {
+    console.error('Failed to save categories:', err);
+  }
+};
+
+export const listAdminCategories = (search?: string): AdminCategory[] => {
+  const categories = getStoredCategories();
+  const books = getStoredBooks();
+
+  const mapped = categories.map((cat) => {
+    const count = books.filter(
+      (b) => b.categoryId?.toLowerCase() === cat.slug?.toLowerCase() || b.categoryName?.toLowerCase() === cat.name?.toLowerCase()
+    ).length;
+    return { ...cat, itemCount: count };
+  });
+
+  if (search && search.trim()) {
+    const q = search.toLowerCase().trim();
+    return mapped.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.tamilName && c.tamilName.toLowerCase().includes(q)) ||
+        c.slug.toLowerCase().includes(q)
+    );
+  }
+
+  return mapped;
+};
+
+export const upsertAdminCategory = (
+  data: Partial<AdminCategory> & { name: string; slug: string }
+): AdminCategory => {
+  const categories = getStoredCategories();
+  const id = data.id || `cat-${Date.now()}`;
+  const now = new Date().toISOString();
+  const existingIdx = categories.findIndex((c) => c.id === id || c.slug === data.slug);
+
+  let category: AdminCategory;
+  if (existingIdx >= 0) {
+    category = {
+      ...categories[existingIdx],
+      ...data,
+      id: categories[existingIdx].id,
+      updatedAt: now,
+    };
+    categories[existingIdx] = category;
+  } else {
+    category = {
+      id,
+      slug: data.slug,
+      name: data.name,
+      tamilName: data.tamilName || data.name,
+      description: data.description || '',
+      isActive: data.isActive !== undefined ? data.isActive : true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    categories.push(category);
+  }
+
+  saveStoredCategories(categories);
+  return category;
+};
+
+export const deleteAdminCategory = (id: string): boolean => {
+  const categories = getStoredCategories();
+  const target = categories.find((c) => c.id === id);
+  if (target?.slug === 'general') {
+    // Cannot delete default General category
+    return false;
+  }
+  const filtered = categories.filter((c) => c.id !== id);
+  if (filtered.length === categories.length) return false;
+  saveStoredCategories(filtered);
+  return true;
+};
+
+export const toggleCategoryActive = (id: string): AdminCategory | null => {
+  const categories = getStoredCategories();
+  const idx = categories.findIndex((c) => c.id === id);
+  if (idx === -1) return null;
+  categories[idx].isActive = !categories[idx].isActive;
+  categories[idx].updatedAt = new Date().toISOString();
+  saveStoredCategories(categories);
+  return categories[idx];
 };

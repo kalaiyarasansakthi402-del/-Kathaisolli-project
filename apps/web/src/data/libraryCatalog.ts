@@ -19,7 +19,7 @@ export interface LibraryBook {
   tamilTitle: string;
   authorName: string;
   narratorName: string;
-  category: 'All' | 'Tamil' | 'English' | 'Mythology' | 'Biography' | 'Literature' | 'Self Help' | 'History' | 'Motivation';
+  category: 'All' | 'General' | 'Tamil' | 'English' | 'Mythology' | 'Biography' | 'Literature' | 'Self Help' | 'History' | 'Motivation';
   language: 'Tamil' | 'English';
   audioAvailable: boolean;
   coverImageUrl: string;
@@ -32,6 +32,7 @@ export interface LibraryBook {
 
 export const LIBRARY_CATEGORIES = [
   'All',
+  'General',
   'Tamil',
   'English',
   'Mythology',

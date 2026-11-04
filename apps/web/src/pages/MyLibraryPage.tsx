@@ -179,19 +179,12 @@ export const MyLibraryPage: React.FC = () => {
                     className="flex flex-col rounded-2xl bg-white dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-md transition-shadow overflow-hidden"
                   >
                     <div className="p-4 flex gap-4">
-                      {/* Book Cover */}
+                      {/* Audio Icon Badge */}
                       <Link
                         to={`/stories/${book.slug || book.id}`}
-                        className="w-24 h-24 rounded-xl overflow-hidden bg-stone-100 dark:bg-stone-800 flex-shrink-0 shadow border border-stone-200 dark:border-stone-700 hover:opacity-90"
+                        className="w-20 h-20 rounded-xl bg-gradient-to-br from-[#064E3B] to-[#0A261D] flex items-center justify-center flex-shrink-0 shadow border border-[#145642] hover:opacity-90"
                       >
-                        <img
-                          src={book.coverImageUrl || '/images/temple-sunset.jpg'}
-                          alt={book.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = '/images/temple-sunset.jpg';
-                          }}
-                        />
+                        <Headphones className="w-8 h-8 text-[#A7F3D0]" />
                       </Link>
 
                       {/* Info */}
@@ -290,11 +283,9 @@ export const MyLibraryPage: React.FC = () => {
         <div className="space-y-4 max-w-3xl">
           <div className="p-4 rounded-2xl bg-white dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-4">
-              <img
-                src="/images/temple-sunset.jpg"
-                alt="Arthashastram"
-                className="w-16 h-16 rounded-xl object-cover"
-              />
+              <div className="w-14 h-14 rounded-xl bg-[#064E3B] flex items-center justify-center flex-shrink-0 border border-[#145642]">
+                <Headphones className="w-6 h-6 text-[#A7F3D0]" />
+              </div>
               <div>
                 <h4 className="font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9]">
                   அர்த்தசாஸ்திரம் - அத்தியாயம் 1

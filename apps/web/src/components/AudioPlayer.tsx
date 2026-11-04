@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Shuffle,
   SkipBack,
   Play,
   Pause,
   SkipForward,
-  Repeat,
+  Headphones,
   Volume2,
   VolumeX,
   Maximize2,
@@ -49,10 +48,8 @@ export const AudioPlayer: React.FC = () => {
     // Queue & Audio Navigation Controls
     playNext,
     playPrevious,
-    toggleRepeat,
-    repeatMode,
-    isShuffle,
-    toggleShuffle,
+    queue,
+    queueIndex,
   } = usePlayer();
 
   const navigate = useNavigate();
@@ -60,6 +57,9 @@ export const AudioPlayer: React.FC = () => {
   const [showTimerMenu, setShowTimerMenu] = useState(false);
 
   if (!currentTrack) return null;
+
+  const hasPrevious = queueIndex > 0;
+  const hasNext = queueIndex < queue.length - 1;
 
   const validDuration = isFinite(duration) && duration > 0 ? duration : (currentTrack.durationSec || 0);
   const progressPercent = validDuration > 0 ? Math.min(100, Math.max(0, (currentTime / validDuration) * 100)) : 0;
@@ -94,15 +94,8 @@ export const AudioPlayer: React.FC = () => {
               onClick={toggleCollapse}
               title="பிளேயரை விரிவாக்கு (Click to expand)"
             >
-              <div className="w-8 h-8 rounded overflow-hidden bg-[#0A261D] flex-shrink-0 border border-[#145642]">
-                <img
-                  src={currentTrack.coverImageUrl || currentTrack.coverImage || '/images/temple-sunset.jpg'}
-                  alt={currentTrack.title}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/images/temple-sunset.jpg';
-                  }}
-                />
+              <div className="w-8 h-8 rounded-lg bg-[#0A261D] flex items-center justify-center flex-shrink-0 border border-[#145642]">
+                <Headphones className="w-4 h-4 text-[#A7F3D0]" />
               </div>
               <div className="min-w-0 flex items-center gap-2">
                 <span className="text-xs font-semibold truncate font-tamil text-white group-hover:text-[#A7F3D0]">
@@ -168,21 +161,8 @@ export const AudioPlayer: React.FC = () => {
               onClick={handleOpenPlayer}
               title="Click to expand player"
             >
-              <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#0A261D] flex-shrink-0 shadow-md border border-[#145642] group-hover:scale-105 transition-transform">
-                {currentTrack.coverImage || currentTrack.coverImageUrl ? (
-                  <img
-                    src={currentTrack.coverImageUrl || currentTrack.coverImage || '/images/temple-sunset.jpg'}
-                    alt={currentTrack.title}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/images/temple-sunset.jpg';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#064E3B] to-[#10B981] text-white text-xs font-bold font-tamil">
-                    கதை
-                  </div>
-                )}
+              <div className="w-12 h-12 rounded-xl bg-[#0A261D] flex items-center justify-center flex-shrink-0 shadow-md border border-[#145642] group-hover:scale-105 transition-transform">
+                <Headphones className="w-6 h-6 text-[#A7F3D0]" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate font-tamil text-white group-hover:text-[#A7F3D0] transition-colors">
@@ -194,43 +174,36 @@ export const AudioPlayer: React.FC = () => {
               </div>
             </div>
 
-            {/* Center: Playback Controls & Scrubber (Matching Screenshot) */}
+            {/* Center: Playback Controls & Scrubber (Matching Section 18) */}
             <div className="flex-1 max-w-xl flex flex-col items-center justify-center gap-1.5">
-              {/* Controls Top Row */}
-              <div className="flex items-center gap-3.5 sm:gap-4 lg:gap-5">
-                {/* 1. Shuffle Button */}
-                <button
-                  onClick={toggleShuffle}
-                  className={`p-1.5 rounded-full transition-colors ${
-                    isShuffle ? 'text-[#A7F3D0]' : 'text-[#86EFAC]/60 hover:text-white'
-                  }`}
-                  title={isShuffle ? 'குழப்பல் ஆன் (Shuffle On)' : 'குழப்பல் ஆஃப் (Shuffle Off)'}
-                  aria-label="Shuffle"
-                >
-                  <Shuffle className="w-4 h-4" />
-                </button>
-
-                {/* 2. Previous Audio / Chapter Button */}
+              {/* Controls Top Row: [Previous] [-10s] [Play/Pause] [+10s] [Next] */}
+              <div className="flex items-center gap-4 sm:gap-5">
+                {/* 1. Previous Chapter Navigation */}
                 <button
                   onClick={playPrevious}
-                  className="p-1.5 text-white hover:text-[#A7F3D0] transition-colors active:scale-95"
-                  title="முந்தைய ஆடியோ (Previous Audio)"
-                  aria-label="Previous Audio"
+                  disabled={!hasPrevious}
+                  className={`p-1.5 transition-colors active:scale-95 ${
+                    hasPrevious
+                      ? 'text-white hover:text-[#A7F3D0]'
+                      : 'text-stone-500 opacity-40 cursor-not-allowed'
+                  }`}
+                  title={hasPrevious ? 'முந்தைய அத்தியாயம் (Previous Chapter)' : 'முதல் அத்தியாயம் (First Chapter)'}
+                  aria-label="Previous Chapter"
                 >
                   <SkipBack className="w-4 h-4 fill-current" />
                 </button>
 
-                {/* 3. Rewind 10 Seconds Button */}
+                {/* 2. 10-Second Backward */}
                 <button
                   onClick={() => skipBackward(10)}
                   className="p-1.5 text-stone-300 hover:text-white transition-colors active:scale-95"
-                  title="10 விநாடிகள் பின்னே (Rewind 10s)"
-                  aria-label="Rewind 10s"
+                  title="10 விநாடிகள் பின்னே (10s Backward)"
+                  aria-label="10s Backward"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
 
-                {/* 4. Circular Mint Play/Pause Button */}
+                {/* 3. Circular Mint Play/Pause */}
                 <button
                   onClick={togglePlay}
                   className="w-10 h-10 rounded-full bg-[#A7F3D0] hover:bg-[#6EE7B7] text-[#064E3B] flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 flex-shrink-0"
@@ -245,47 +218,29 @@ export const AudioPlayer: React.FC = () => {
                   )}
                 </button>
 
-                {/* 5. Forward 10 Seconds Button */}
+                {/* 4. 10-Second Forward */}
                 <button
                   onClick={() => skipForward(10)}
                   className="p-1.5 text-stone-300 hover:text-white transition-colors active:scale-95"
-                  title="10 விநாடிகள் முன்னே (Forward 10s)"
-                  aria-label="Forward 10s"
+                  title="10 விநாடிகள் முன்னே (10s Forward)"
+                  aria-label="10s Forward"
                 >
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
 
-                {/* 6. Next Audio / Chapter Button */}
+                {/* 5. Next Chapter Navigation */}
                 <button
                   onClick={playNext}
-                  className="p-1.5 text-white hover:text-[#A7F3D0] transition-colors active:scale-95"
-                  title="அடுத்த ஆடியோ (Next Audio)"
-                  aria-label="Next Audio"
+                  disabled={!hasNext}
+                  className={`p-1.5 transition-colors active:scale-95 ${
+                    hasNext
+                      ? 'text-white hover:text-[#A7F3D0]'
+                      : 'text-stone-500 opacity-40 cursor-not-allowed'
+                  }`}
+                  title={hasNext ? 'அடுத்த அத்தியாயம் (Next Chapter)' : 'கடைசி அத்தியாயம் (Last Chapter)'}
+                  aria-label="Next Chapter"
                 >
                   <SkipForward className="w-4 h-4 fill-current" />
-                </button>
-
-                {/* 7. Repeat Toggle Button */}
-                <button
-                  onClick={toggleRepeat}
-                  className={`p-1.5 rounded-full transition-colors relative ${
-                    repeatMode !== 'off' ? 'text-[#A7F3D0]' : 'text-[#86EFAC]/60 hover:text-white'
-                  }`}
-                  title={
-                    repeatMode === 'one'
-                      ? 'தற்போதைய ஆடியோவை மீண்டும் இயக்கு (Repeat One)'
-                      : repeatMode === 'all'
-                      ? 'அனைத்து ஆடியோக்களையும் மீண்டும் இயக்கு (Repeat All)'
-                      : 'மீண்டும் இயக்கு ஆஃப் (Repeat Off)'
-                  }
-                  aria-label="Repeat"
-                >
-                  <Repeat className="w-4 h-4" />
-                  {repeatMode === 'one' && (
-                    <span className="absolute -top-1 -right-1 text-[8px] font-black bg-[#10B981] text-[#073224] rounded-full w-3 h-3 flex items-center justify-center">
-                      1
-                    </span>
-                  )}
                 </button>
               </div>
 
@@ -395,18 +350,13 @@ export const AudioPlayer: React.FC = () => {
 
           {/* Center Art */}
           <div className="flex-1 flex flex-col items-center justify-center my-6">
-            <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-2xl overflow-hidden shadow-2xl bg-slate-200 dark:bg-slate-800 border-2 border-emerald-900/10">
-              {currentTrack.coverImage ? (
-                <img
-                  src={currentTrack.coverImage}
-                  alt={currentTrack.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#064E3B] to-[#10B981] text-white text-3xl font-bold font-tamil">
-                  கதைசொல்லி
-                </div>
-              )}
+            <div className="w-64 h-64 sm:w-80 sm:h-80 rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-[#064E3B] via-[#093A2D] to-[#032319] border-2 border-emerald-900/40 flex flex-col items-center justify-center text-center p-6 space-y-3">
+              <div className="w-24 h-24 rounded-full bg-[#032419]/80 border border-[#A7F3D0]/30 flex items-center justify-center shadow-lg">
+                <Headphones className="w-12 h-12 text-[#A7F3D0]" />
+              </div>
+              <span className="text-xs uppercase font-bold tracking-widest text-[#A7F3D0]/80">
+                கதைசொல்லி தமிழ் ஆடியோ
+              </span>
             </div>
             <div className="mt-8 text-center max-w-lg px-4">
               <h2 className="text-2xl sm:text-3xl font-extrabold font-tamil tracking-tight text-slate-900 dark:text-white">
@@ -436,12 +386,26 @@ export const AudioPlayer: React.FC = () => {
               </div>
             </div>
 
-            {/* Playback Buttons */}
-            <div className="flex items-center justify-center gap-6 sm:gap-10">
+            {/* Playback Buttons: [Previous] [-10s] [Play/Pause] [+10s] [Next] */}
+            <div className="flex items-center justify-center gap-4 sm:gap-7">
+              <button
+                onClick={playPrevious}
+                disabled={!hasPrevious}
+                className={`p-3 transition-colors active:scale-95 ${
+                  hasPrevious
+                    ? 'text-slate-600 dark:text-slate-300 hover:text-[#10B981]'
+                    : 'text-slate-400 dark:text-slate-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={hasPrevious ? 'முந்தைய அத்தியாயம் (Previous)' : 'முதல் அத்தியாயம் (First Chapter)'}
+                aria-label="Previous Chapter"
+              >
+                <SkipBack className="w-6 h-6 fill-current" />
+              </button>
               <button
                 onClick={() => skipBackward(10)}
-                className="p-3 text-slate-600 dark:text-slate-300 hover:text-[#10B981] transition-colors"
+                className="p-3 text-slate-600 dark:text-slate-300 hover:text-[#10B981] transition-colors active:scale-95"
                 title="-10s"
+                aria-label="Reverse 10 seconds"
               >
                 <RotateCcw className="w-6 h-6" />
               </button>
@@ -459,10 +423,24 @@ export const AudioPlayer: React.FC = () => {
               </button>
               <button
                 onClick={() => skipForward(10)}
-                className="p-3 text-slate-600 dark:text-slate-300 hover:text-[#10B981] transition-colors"
+                className="p-3 text-slate-600 dark:text-slate-300 hover:text-[#10B981] transition-colors active:scale-95"
                 title="+10s"
+                aria-label="Forward 10 seconds"
               >
                 <RotateCw className="w-6 h-6" />
+              </button>
+              <button
+                onClick={playNext}
+                disabled={!hasNext}
+                className={`p-3 transition-colors active:scale-95 ${
+                  hasNext
+                    ? 'text-slate-600 dark:text-slate-300 hover:text-[#10B981]'
+                    : 'text-slate-400 dark:text-slate-600 opacity-40 cursor-not-allowed'
+                }`}
+                title={hasNext ? 'அடுத்த அத்தியாயம் (Next)' : 'கடைசி அத்தியாயம் (Last Chapter)'}
+                aria-label="Next Chapter"
+              >
+                <SkipForward className="w-6 h-6 fill-current" />
               </button>
             </div>
 

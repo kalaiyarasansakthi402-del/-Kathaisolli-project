@@ -185,39 +185,30 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Hero Storybook Artwork (Generated to match reference) */}
+          {/* Right Column: Hero Audio Showcase Card (Text & Audio Branding) */}
           <div className="lg:col-span-6 flex justify-center">
             <div className="relative group max-w-md lg:max-w-none w-full">
-              {/* Botanical glow backing */}
-              <div className="absolute -inset-2 bg-gradient-to-tr from-[#064E3B]/20 to-[#D6A83F]/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all" />
-
-              <div className="relative rounded-3xl overflow-hidden border-4 border-white/90 dark:border-[#124835] shadow-2xl shadow-emerald-950/20 bg-white dark:bg-[#083325]">
-                <img
-                  src="/images/hero-art.jpg"
-                  alt="Boy reading glowing magical Tamil storybook under tree with castle"
-                  className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700 aspect-square sm:aspect-auto"
-                />
-
-                {/* Floating pill badge */}
-                <div className="absolute bottom-4 left-4 right-4 p-3.5 rounded-2xl bg-white/95 dark:bg-[#083325]/95 backdrop-blur-md border border-[#E3DCBA] dark:border-[#124835] flex items-center justify-between shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#064E3B] text-white flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-[#A7F3D0]" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold font-serif text-[#064E3B] dark:text-[#A7F3D0]">
-                        மாயம் நிறைந்த தமிழ் கதைகள்
-                      </h4>
-                      <p className="text-xs text-stone-500 dark:text-stone-300">
-                        A magical world of stories awaits you
-                      </p>
-                    </div>
+              <div className="relative rounded-3xl overflow-hidden border-2 border-[#E3DCBA] dark:border-[#124835] bg-gradient-to-br from-[#064E3B] via-[#083325] to-[#032419] p-7 sm:p-10 text-white shadow-2xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-[#A7F3D0] border border-white/15">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>மாயம் நிறைந்த தமிழ் கதைகள்</span>
                   </div>
+                  <h3 className="text-2xl sm:text-3xl font-black font-serif text-[#F8F5E9] leading-snug">
+                    "ஒவ்வொரு கதைக்கும் ஒரு குரல். ஒவ்வொரு குரலிலும் ஒரு புதிய உலகம்."
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[#A7F3D0]/80 leading-relaxed font-tamil">
+                    செந்தமிழ் இலக்கியங்கள், வரலாற்றுப் புதினங்கள், தன்னம்பிக்கைப் பாடங்கள் மற்றும் குழந்தைகளின் நீதிக்கதைகள் — அனைத்தும் உங்கள் விரல் நுனியில் 100% இலவசம்.
+                  </p>
+                </div>
+
+                <div className="pt-6 mt-6 border-t border-white/10 flex items-center justify-between text-xs text-[#E8F0E2]/80">
+                  <span>By Anzles Studio</span>
                   <Link
                     to="/explore"
-                    className="p-2 rounded-full bg-[#E8F0E2] dark:bg-[#033B2B] text-[#064E3B] dark:text-[#A7F3D0] hover:scale-110 transition-transform"
+                    className="inline-flex items-center gap-1.5 font-bold text-[#A7F3D0] hover:underline"
                   >
-                    <ArrowRight className="w-4 h-4" />
+                    <span>ஆடியோ கேட்க →</span>
                   </Link>
                 </div>
               </div>
@@ -315,13 +306,18 @@ export const LandingPage: React.FC = () => {
               key={story.id}
               className="bg-white dark:bg-[#083325] rounded-2xl border border-[#E3DCBA] dark:border-[#124835] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group"
             >
-              {/* Cover Image */}
-              <div className="relative aspect-square overflow-hidden bg-stone-100 dark:bg-stone-900">
-                <img
-                  src={story.cover}
-                  alt={story.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+              {/* Audio Card Header */}
+              <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-[#064E3B] via-[#093A2D] to-[#032319] p-4 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full bg-[#032419]/90 backdrop-blur-md px-2.5 py-0.5 text-[11px] font-bold text-[#A7F3D0] shadow-sm">
+                    {story.category}
+                  </span>
+                </div>
+                <div className="flex items-center justify-center my-auto">
+                  <div className="w-12 h-12 rounded-full bg-[#042117]/80 border border-[#A7F3D0]/30 flex items-center justify-center shadow-lg">
+                    <Headphones className="w-6 h-6 text-[#A7F3D0]" />
+                  </div>
+                </div>
                 {/* Play Button Overlay */}
                 <button
                   onClick={() =>
@@ -587,13 +583,12 @@ export const LandingPage: React.FC = () => {
                 <span className="text-[#064E3B] font-bold">1.0x</span>
               </div>
 
-              {/* Story Artwork (Clever Crow) */}
-              <div className="rounded-2xl overflow-hidden aspect-square border-2 border-white shadow-md relative group">
-                <img
-                  src="/images/story-clever-crow.jpg"
-                  alt="The Clever Crow"
-                  className="w-full h-full object-cover"
-                />
+              {/* Story Audio Emblem */}
+              <div className="rounded-2xl overflow-hidden aspect-square border-2 border-[#145642] shadow-md bg-gradient-to-br from-[#064E3B] via-[#093A2D] to-[#032319] flex flex-col items-center justify-center p-4 relative group">
+                <div className="w-16 h-16 rounded-full bg-[#032419]/90 border border-[#A7F3D0]/30 flex items-center justify-center shadow-lg mb-2">
+                  <Headphones className="w-8 h-8 text-[#A7F3D0]" />
+                </div>
+                <span className="text-[11px] font-bold text-[#A7F3D0]">The Clever Crow</span>
                 <button
                   onClick={handlePlayCleverCrow}
                   className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

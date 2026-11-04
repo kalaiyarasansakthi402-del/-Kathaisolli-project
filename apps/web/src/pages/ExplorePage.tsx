@@ -436,11 +436,6 @@ export const ExplorePage: React.FC = () => {
               </button>
             )}
           </div>
-
-          {/* Stories Count Badge */}
-          <div className="text-xs font-bold text-stone-500 dark:text-stone-300 self-end sm:self-auto">
-            {filteredStories.length} கதைகள் கண்டறியப்பட்டன
-          </div>
         </div>
       </div>
 
@@ -516,9 +511,7 @@ export const ExplorePage: React.FC = () => {
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#064E3B] hover:bg-[#075C45] text-white font-bold text-sm shadow-md hover:scale-105 active:scale-95 transition-all"
           >
             <Sparkles className="w-4 h-4 text-[#A7F3D0]" />
-            <span>
-              மேலும் கதைகளைக் காட்டு ({visibleStories.length} / {filteredStories.length})
-            </span>
+            <span>மேலும் கதைகளைக் காட்டு (Load More Stories)</span>
           </button>
         </div>
       )}

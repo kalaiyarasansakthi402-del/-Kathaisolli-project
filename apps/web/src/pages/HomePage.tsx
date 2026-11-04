@@ -224,42 +224,26 @@ const CarouselRow: React.FC<{
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex-shrink-0 w-36 sm:w-44 md:w-48 group cursor-pointer"
+              className="flex-shrink-0 w-44 sm:w-52 p-4 rounded-2xl bg-white dark:bg-[#073224] border border-[#E3DCBA] dark:border-[#0F4738] shadow-sm hover:shadow-md hover:border-[#064E3B] flex flex-col justify-between group cursor-pointer transition-all duration-300"
               onClick={() => onPlay(item)}
             >
-              {/* Cover Card */}
-              <div className="relative aspect-[16/10] sm:aspect-[4/3] rounded-2xl overflow-hidden bg-stone-200 dark:bg-[#0A261D] shadow-sm group-hover:shadow-lg transition-all duration-300 border border-[#E3DCBA]/60 dark:border-[#0F4738]">
-                <img
-                  src={item.coverImage}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/images/story-panchatantra.jpg';
-                  }}
-                />
-
-                {/* Floating Play Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPlay(item);
-                  }}
-                  className="absolute bottom-2.5 right-2.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/60 hover:bg-[#064E3B] text-white flex items-center justify-center shadow-md backdrop-blur-sm border border-white/20 transition-all group-hover:scale-110"
-                  aria-label={`Play ${item.title}`}
-                >
-                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                </button>
-              </div>
-
-              {/* Title & Author */}
-              <div className="mt-2 text-left">
-                <p className="font-bold font-tamil text-xs sm:text-sm text-[#064E3B] dark:text-[#F8F5E9] truncate group-hover:text-[#166534] transition-colors">
+              <div className="space-y-1.5">
+                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-[#E8F0E2] dark:bg-[#064E3B] text-[#064E3B] dark:text-[#A7F3D0]">
+                  {(item as any).category || 'General'}
+                </span>
+                <p className="font-bold font-tamil text-sm text-[#064E3B] dark:text-[#F8F5E9] line-clamp-2 group-hover:text-[#166534] transition-colors">
                   {item.title}
                 </p>
-                <p className="text-[11px] text-stone-500 dark:text-stone-400 font-tamil truncate">
+                <p className="text-xs text-stone-500 dark:text-stone-400 font-tamil truncate">
                   {item.author}
                 </p>
+              </div>
+
+              <div className="pt-3 mt-3 border-t border-[#E3DCBA]/60 dark:border-[#0F4738] flex items-center justify-between">
+                <span className="text-[11px] font-bold text-[#064E3B] dark:text-[#A7F3D0]">▶ Listen</span>
+                <div className="w-7 h-7 rounded-full bg-[#064E3B] text-[#A7F3D0] flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                </div>
               </div>
             </div>
           ))}
@@ -486,15 +470,26 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Hero Storybook Artwork (Rounded 32px matching screenshot) */}
+          {/* Right Column: Hero Audio Showcase Card (Text & Audio Branding) */}
           <div className="lg:col-span-6 flex justify-center">
-            <div className="relative w-full max-w-lg lg:max-w-none rounded-[32px] overflow-hidden border-4 border-white dark:border-[#0F4738] shadow-2xl aspect-[16/10] sm:aspect-[16/9] lg:aspect-[16/10] group">
-              <img
-                src="/images/hero-art.jpg"
-                alt="Enchanted Storybook in Tamil Forest"
-                className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+            <div className="relative w-full max-w-lg lg:max-w-none rounded-[32px] overflow-hidden border-2 border-[#E3DCBA] dark:border-[#0F4738] bg-gradient-to-br from-[#064E3B] via-[#083325] to-[#032419] p-7 sm:p-10 text-white shadow-2xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-[#A7F3D0] border border-white/15">
+                  <Headphones className="w-3.5 h-3.5" />
+                  <span>கதைசொல்லி நேரலை ஆடியோ</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-black font-serif text-[#F8F5E9] leading-snug">
+                  "ஒவ்வொரு கதைக்கும் ஒரு குரல். ஒவ்வொரு குரலிலும் ஒரு புதிய உலகம்."
+                </h3>
+                <p className="text-xs sm:text-sm text-[#A7F3D0]/80 leading-relaxed font-tamil">
+                  செந்தமிழ் இலக்கியங்கள், வரலாற்றுப் புதினங்கள், தன்னம்பிக்கைப் பாடங்கள் மற்றும் குழந்தைகளின் நீதிக்கதைகள் — அனைத்தும் உங்கள் விரல் நுனியில்.
+                </p>
+              </div>
+
+              <div className="pt-6 mt-6 border-t border-white/10 flex items-center justify-between text-xs text-[#E8F0E2]/80">
+                <span>By Anzles Studio</span>
+                <span className="font-bold text-[#A7F3D0]">100% இலவச தமிழ் ஆடியோ தளம்</span>
+              </div>
             </div>
           </div>
         </section>
@@ -531,16 +526,9 @@ export const HomePage: React.FC = () => {
                 onClick={() => handlePlayStory(card)}
                 className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white dark:bg-[#073224] border border-[#E3DCBA] dark:border-[#0F4738] shadow-sm hover:shadow-md hover:border-[#064E3B] transition-all cursor-pointer group"
               >
-                {/* Left Thumbnail */}
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden bg-stone-200 dark:bg-[#0A261D] flex-shrink-0 shadow-sm border border-[#E3DCBA]/60 dark:border-[#0F4738]">
-                  <img
-                    src={card.coverImage}
-                    alt={card.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = '/images/story-panchatantra.jpg';
-                    }}
-                  />
+                {/* Left Emblem */}
+                <div className="w-12 h-12 rounded-xl bg-[#E8F0E2] dark:bg-[#064E3B] flex-shrink-0 flex items-center justify-center text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B]/15 group-hover:scale-105 transition-transform">
+                  <Headphones className="w-6 h-6" />
                 </div>
 
                 {/* Middle Info + Progress */}
