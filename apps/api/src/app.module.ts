@@ -9,6 +9,7 @@ import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { CatalogController } from './catalog/catalog.controller';
 import { CatalogService } from './catalog/catalog.service';
+import { CatalogCacheService } from './catalog/catalog-cache.service';
 import { CreatorController } from './creator/creator.controller';
 import { CreatorService } from './creator/creator.service';
 import { LibraryModule } from './library/library.module';
@@ -24,7 +25,7 @@ import { PrismaModule } from './prisma/prisma.module';
       isGlobal: true,
       envFilePath: ['../../.env', '.env'],
     }),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 30 }]),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule,
     AuthModule,
     MediaModule,
@@ -42,6 +43,7 @@ import { PrismaModule } from './prisma/prisma.module';
   ],
   providers: [
     CatalogService,
+    CatalogCacheService,
     AdminService,
     CreatorService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
