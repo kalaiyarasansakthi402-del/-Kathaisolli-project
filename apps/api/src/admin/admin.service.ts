@@ -3,13 +3,18 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ApplicationStatus, ContentStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CatalogCacheService } from '../catalog/catalog-cache.service';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly cache?: CatalogCacheService,
+  ) {}
 
   async getMetrics() {
     const [
@@ -303,7 +308,7 @@ export class AdminService {
     description?: string;
     isActive?: boolean;
   }) {
-    return this.prisma.category.create({
+    const res = await this.prisma.category.create({
       data: {
         name: input.name,
         slug: input.slug,
@@ -311,6 +316,8 @@ export class AdminService {
         isActive: input.isActive !== undefined ? input.isActive : true,
       },
     });
+    await this.cache?.invalidateCatalog();
+    return res;
   }
 
   async updateCategory(
@@ -322,10 +329,12 @@ export class AdminService {
       isActive?: boolean;
     },
   ) {
-    return this.prisma.category.update({
+    const res = await this.prisma.category.update({
       where: { id },
       data: input,
     });
+    await this.cache?.invalidateCatalog();
+    return res;
   }
 
   async deleteCategory(id: string) {
@@ -348,9 +357,11 @@ export class AdminService {
       throw new BadRequestException('Cannot delete category with associated series.');
     }
 
-    return this.prisma.category.delete({
+    const res = await this.prisma.category.delete({
       where: { id },
     });
+    await this.cache?.invalidateCatalog();
+    return res;
   }
 
   async getHealthStatus() {
