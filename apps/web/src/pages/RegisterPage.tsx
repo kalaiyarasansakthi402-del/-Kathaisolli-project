@@ -5,7 +5,14 @@ import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, user, isLoading } = useAuth();
+
+  // If already authenticated, redirect away from register
+  React.useEffect(() => {
+    if (user && !isLoading) {
+      navigate('/', { replace: true });
+    }
+  }, [user, isLoading, navigate]);
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -100,7 +107,7 @@ export const RegisterPage: React.FC = () => {
         displayName: displayName.trim(),
         role: 'LISTENER',
       });
-      navigate('/explore');
+      navigate('/');
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||

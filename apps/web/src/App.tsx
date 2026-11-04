@@ -7,6 +7,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AudioPlayer } from './components/AudioPlayer';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Primary entry page (eager for fast initial FCP/LCP)
 import { LandingPage } from './pages/LandingPage';
@@ -67,57 +68,66 @@ const queryClient = new QueryClient({
 const AppContent: React.FC = () => {
   const location = useLocation();
   const isDedicatedPlayerPage = location.pathname === '/player';
+  const isHomePage = location.pathname === '/' || location.pathname === '/home';
+  const isAuthPage =
+    location.pathname === '/login' ||
+    location.pathname === '/register' ||
+    location.pathname === '/signup';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
       {!isDedicatedPlayerPage && <Navbar />}
 
-      <main className={`flex-1 ${isDedicatedPlayerPage ? 'pb-0' : 'pb-28'}`}>
+      <main className={`flex-1 ${isDedicatedPlayerPage || isHomePage || isAuthPage ? 'pb-0' : 'pb-28'}`}>
         <ErrorBoundary>
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<HomePage />} />
-              <Route path="/home" element={<HomePage />} />
-              <Route path="/landing" element={<LandingPage />} />
-              <Route path="/explore" element={<ExplorePage />} />
-              <Route path="/search" element={<SearchPage />} />
-              <Route path="/categories" element={<CategoriesPage />} />
-              <Route path="/languages" element={<LanguagesPage />} />
-              <Route path="/stories/:slug" element={<StoryDetailsPage />} />
-              <Route path="/series/:slug" element={<StoryDetailsPage />} />
-              <Route path="/episodes/:episodeId" element={<EpisodeDetailsPage />} />
-              <Route path="/player" element={<FullPlayerPage />} />
-
-              {/* Auth routes */}
+              {/* Public Auth routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/signup" element={<Navigate to="/register" replace />} />
 
-              {/* Stories alias */}
-              <Route path="/stories" element={<Navigate to="/explore" replace />} />
-
-              {/* Public Website Isolation: Admin is hosted completely separately on Private Admin Website */}
-              <Route path="/admin/*" element={<Navigate to="/" replace />} />
-
-              {/* User Library and Profile */}
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/library" element={<Navigate to="/explore" replace />} />
-              <Route path="/my-library" element={<MyLibraryPage />} />
-              <Route path="/favorites" element={<Navigate to="/my-library?tab=favorites" replace />} />
-              <Route path="/history" element={<Navigate to="/my-library?tab=history" replace />} />
-              <Route path="/playlists" element={<PlaylistsPage />} />
-              <Route path="/playlists/:id" element={<PlaylistsPage />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
-
-              {/* Creator Apply */}
-              <Route path="/creator/apply" element={<CreatorApplyPage />} />
-
-              {/* Settings and Legal */}
-              <Route path="/settings" element={<SettingsPage />} />
+              {/* Public Informational & Legal routes */}
+              <Route path="/landing" element={<LandingPage />} />
               <Route path="/help" element={<HelpSupportPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsConditionsPage />} />
+
+              {/* Protected Main Website routes (Requires authenticated user) */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/home" element={<HomePage />} />
+                <Route path="/explore" element={<ExplorePage />} />
+                <Route path="/search" element={<SearchPage />} />
+                <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/languages" element={<LanguagesPage />} />
+                <Route path="/stories/:slug" element={<StoryDetailsPage />} />
+                <Route path="/series/:slug" element={<StoryDetailsPage />} />
+                <Route path="/episodes/:episodeId" element={<EpisodeDetailsPage />} />
+                <Route path="/player" element={<FullPlayerPage />} />
+
+                {/* User Library and Profile */}
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/library" element={<Navigate to="/categories" replace />} />
+                <Route path="/my-library" element={<MyLibraryPage />} />
+                <Route path="/favorites" element={<Navigate to="/my-library?tab=favorites" replace />} />
+                <Route path="/history" element={<Navigate to="/my-library?tab=history" replace />} />
+                <Route path="/playlists" element={<PlaylistsPage />} />
+                <Route path="/playlists/:id" element={<PlaylistsPage />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
+
+                {/* Creator Apply */}
+                <Route path="/creator/apply" element={<CreatorApplyPage />} />
+
+                {/* Settings */}
+                <Route path="/settings" element={<SettingsPage />} />
+              </Route>
+
+              {/* Stories alias */}
+              <Route path="/stories" element={<Navigate to="/categories" replace />} />
+
+              {/* Public Website Isolation: Admin is hosted completely separately on Private Admin Website */}
+              <Route path="/admin/*" element={<Navigate to="/" replace />} />
 
               {/* 404 Catch-All */}
               <Route path="*" element={<NotFoundPage />} />
@@ -126,8 +136,8 @@ const AppContent: React.FC = () => {
         </ErrorBoundary>
       </main>
 
-      {/* Global Mini Player docked at the bottom (except on dedicated player page) */}
-      {!isDedicatedPlayerPage && <AudioPlayer />}
+      {/* Global Mini Player docked at the bottom (hidden on dedicated player page, home page, and auth pages) */}
+      {!isDedicatedPlayerPage && !isHomePage && !isAuthPage && <AudioPlayer />}
 
       {!isDedicatedPlayerPage && <Footer />}
     </div>

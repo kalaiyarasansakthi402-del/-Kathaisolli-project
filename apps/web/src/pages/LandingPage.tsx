@@ -153,7 +153,7 @@ export const LandingPage: React.FC = () => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
               <Link
-                to="/explore"
+                to="/categories"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-base shadow-xl shadow-emerald-950/20 hover:scale-[1.02] transition-all"
               >
                 <span>Get Started</span>
@@ -205,7 +205,7 @@ export const LandingPage: React.FC = () => {
                 <div className="pt-6 mt-6 border-t border-white/10 flex items-center justify-between text-xs text-[#E8F0E2]/80">
                   <span>By Anzles Studio</span>
                   <Link
-                    to="/explore"
+                    to="/categories"
                     className="inline-flex items-center gap-1.5 font-bold text-[#A7F3D0] hover:underline"
                   >
                     <span>ஆடியோ கேட்க →</span>
@@ -291,7 +291,7 @@ export const LandingPage: React.FC = () => {
             </h2>
           </div>
           <Link
-            to="/explore"
+            to="/categories?category=all"
             className="inline-flex items-center gap-1.5 text-sm font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:text-[#166534] hover:underline"
           >
             <span>View All Stories</span>
@@ -361,7 +361,7 @@ export const LandingPage: React.FC = () => {
                 <div className="pt-4 mt-3 border-t border-[#E3DCBA]/60 dark:border-[#124835] flex items-center justify-between text-xs font-medium text-stone-500 dark:text-stone-400">
                   <span>{story.count}</span>
                   <Link
-                    to={`/explore?category=${encodeURIComponent(story.category)}`}
+                    to={`/categories?category=${encodeURIComponent(story.category)}`}
                     className="text-[#064E3B] dark:text-[#A7F3D0] font-bold hover:underline"
                   >
                     Open →
@@ -420,7 +420,7 @@ export const LandingPage: React.FC = () => {
               {/* Bottom Buttons */}
               <div className="space-y-2 pt-4">
                 <Link
-                  to="/explore"
+                  to="/categories"
                   className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534]"
                 >
                   Explore Stories

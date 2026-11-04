@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, user, isLoading } = useAuth();
 
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   const [email, setEmail] = useState('');
@@ -21,7 +21,14 @@ export const LoginPage: React.FC = () => {
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const from = (location.state as any)?.from?.pathname || '/explore';
+  const from = (location.state as any)?.from?.pathname || '/';
+
+  // If already authenticated, redirect away from login
+  React.useEffect(() => {
+    if (user && !isLoading) {
+      navigate(from, { replace: true });
+    }
+  }, [user, isLoading, navigate, from]);
 
   const handleOtpChange = (index: number, value: string) => {
     const cleaned = value.replace(/\D/g, '');
@@ -47,16 +54,33 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasteData) return;
+
+    const newOtp = [...otp];
+    for (let i = 0; i < pasteData.length; i++) {
+      newOtp[i] = pasteData[i];
+    }
+    setOtp(newOtp);
+    const focusIdx = Math.min(pasteData.length, 5);
+    otpInputRefs.current[focusIdx]?.focus();
+  };
+
   const handleSendOtp = (e: React.MouseEvent) => {
     e.preventDefault();
     setError(null);
-    if (!phoneNumber.trim()) {
-      setError('தயவுசெய்து தொலைபேசி எண்ணை உள்ளிடவும் (Please enter phone number)');
+    const cleaned = phoneNumber.replace(/\D/g, '');
+    if (cleaned.length < 10) {
+      setError('சரியான 10 இலக்க தொலைபேசி எண்ணை உள்ளிடவும் (Please enter a valid 10-digit phone number)');
       return;
     }
     setOtpSent(true);
     setInfoMessage(`OTP குறியீடு அனுப்பப்பட்டது (OTP sent to ${phoneNumber})`);
   };
+
+  const isOtpComplete = otp.every((d) => d.trim().length === 1);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,6 +301,7 @@ export const LoginPage: React.FC = () => {
                         value={digit}
                         onChange={(e) => handleOtpChange(idx, e.target.value)}
                         onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                        onPaste={handleOtpPaste}
                         aria-label={`OTP Digit ${idx + 1}`}
                         className="w-10 h-12 sm:w-11 sm:h-12 text-center text-lg font-bold rounded-xl border border-[#D5CEBA] dark:border-[#124835] bg-white dark:bg-[#083325] text-[#064E3B] dark:text-[#A7F3D0] focus:outline-none focus:ring-2 focus:ring-[#064E3B] shadow-inner"
                       />
@@ -289,7 +314,7 @@ export const LoginPage: React.FC = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (loginMethod === 'otp' && (!otpSent || !isOtpComplete))}
             className="w-full py-3.5 px-4 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-sm shadow-xl shadow-emerald-950/20 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50 mt-2"
           >
             {loading ? 'சரிபார்க்கிறது...' : loginMethod === 'otp' ? 'Verify & Sign In' : 'Sign In'}

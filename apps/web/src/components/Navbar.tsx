@@ -43,6 +43,12 @@ export const Navbar: React.FC = () => {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    setMobileMenuOpen(false);
+  };
+
   const isHomeActive = location.pathname === '/' || location.pathname === '/home';
   const isCategoriesActive = location.pathname.startsWith('/categories');
 
@@ -150,7 +156,7 @@ export const Navbar: React.FC = () => {
                 </span>
               </Link>
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 title="Logout"
                 className="p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-950/40 text-stone-500 hover:text-red-600 transition-colors"
               >
@@ -216,7 +222,26 @@ export const Navbar: React.FC = () => {
             </Link>
           </nav>
 
-          {!user && (
+          {user ? (
+            <div className="flex items-center justify-between pt-2 border-t border-[#E3DCBA] dark:border-[#124835]">
+              <Link
+                to="/profile"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-sm font-semibold text-[#173D2E] dark:text-[#F8F5E9]"
+              >
+                <div className="w-7 h-7 rounded-full bg-[#064E3B] text-[#A7F3D0] flex items-center justify-center text-xs font-bold uppercase">
+                  {user.displayName?.slice(0, 1) || 'K'}
+                </div>
+                <span>{user.displayName || 'Profile'}</span>
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
             <div className="flex gap-2 pt-2 border-t border-[#E3DCBA] dark:border-[#124835]">
               <Link
                 to="/login"
