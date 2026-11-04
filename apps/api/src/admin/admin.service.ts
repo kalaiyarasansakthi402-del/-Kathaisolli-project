@@ -288,6 +288,7 @@ export class AdminService {
       }),
     ]);
 
+    await this.cache?.invalidateCatalog();
     return { success: true, publishedAt: now };
   }
 
