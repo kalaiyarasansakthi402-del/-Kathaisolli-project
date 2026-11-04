@@ -71,6 +71,12 @@ export class CatalogService {
   }
 
   async getSeries(slug: string) {
+    const cacheKey = `catalog:series:${slug.toLowerCase()}`;
+    if (this.cache) {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    }
+
     const series = await this.prisma.series.findFirst({
       where: { slug, ...publiclyAccessibleSeries },
       select: {
@@ -116,10 +122,19 @@ export class CatalogService {
     if (!series) {
       throw new NotFoundException('Story series not found.');
     }
+    if (this.cache) {
+      await this.cache.set(cacheKey, series, 300);
+    }
     return series;
   }
 
   async listEpisodes(slug: string) {
+    const cacheKey = `catalog:episodes:${slug.toLowerCase()}`;
+    if (this.cache) {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    }
+
     const series = await this.prisma.series.findFirst({
       where: { slug, ...publiclyAccessibleSeries },
       select: { id: true },
@@ -128,7 +143,7 @@ export class CatalogService {
       throw new NotFoundException('Story series not found.');
     }
 
-    return this.prisma.season.findMany({
+    const episodes = await this.prisma.season.findMany({
       where: {
         seriesId: series.id,
         episodes: {
@@ -162,6 +177,10 @@ export class CatalogService {
         },
       },
     });
+    if (this.cache) {
+      await this.cache.set(cacheKey, episodes, 300);
+    }
+    return episodes;
   }
 
   async getHome() {
@@ -654,7 +673,7 @@ export class CatalogService {
       ...publiclyAccessibleSeries,
     };
     if (query.category) {
-      where.category = { is: { slug: query.category, isActive: true } };
+      where.category = { is: { slug: query.category.toLowerCase(), isActive: true } };
     }
     if (query.language) {
       where.language = { is: { code: query.language, isActive: true } };
