@@ -4,9 +4,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { ContentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { CatalogCacheService } from './catalog-cache.service';
 import type { AuthPrincipal } from '../auth/auth.types';
 import { CatalogQueryDto } from './dto/catalog-query.dto';
 import { CreateEpisodeDto } from './dto/create-episode.dto';
@@ -47,7 +49,10 @@ const publiclyAccessibleSeries: Prisma.SeriesWhereInput = {
 
 @Injectable()
 export class CatalogService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly cache?: CatalogCacheService,
+  ) {}
 
   async listSeries(query: CatalogQueryDto) {
     const where = this.buildPublicSeriesFilter(query);
@@ -160,6 +165,12 @@ export class CatalogService {
   }
 
   async getHome() {
+    const cacheKey = 'catalog:home';
+    if (this.cache) {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    }
+
     const [featured, latest, categories] = await Promise.all([
       this.prisma.series.findMany({
         where: { ...publiclyAccessibleSeries, featuredFlag: true },
@@ -182,23 +193,47 @@ export class CatalogService {
         select: { slug: true, name: true },
       }),
     ]);
-    return { featured, latest, categories };
+    const homeData = { featured, latest, categories };
+    if (this.cache) {
+      await this.cache.set(cacheKey, homeData, 180);
+    }
+    return homeData;
   }
 
   async listCategories() {
-    return this.prisma.category.findMany({
+    const cacheKey = 'catalog:categories';
+    if (this.cache) {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    }
+
+    const categories = await this.prisma.category.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
       select: { id: true, slug: true, name: true, description: true },
     });
+    if (this.cache) {
+      await this.cache.set(cacheKey, categories, 300);
+    }
+    return categories;
   }
 
   async listLanguages() {
-    return this.prisma.language.findMany({
+    const cacheKey = 'catalog:languages';
+    if (this.cache) {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    }
+
+    const languages = await this.prisma.language.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' },
       select: { id: true, code: true, name: true, nativeName: true },
     });
+    if (this.cache) {
+      await this.cache.set(cacheKey, languages, 600);
+    }
+    return languages;
   }
 
   async createSeries(input: CreateSeriesDto, actor: AuthPrincipal) {
