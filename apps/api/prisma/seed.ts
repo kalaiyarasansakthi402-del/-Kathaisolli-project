@@ -63,6 +63,7 @@ async function main() {
   });
 
   const categories = [
+    { slug: 'general', name: 'பொதுவானவை (General)' },
     { slug: 'romance', name: 'காதல் கதைகள்' },
     { slug: 'horror', name: 'திகில் கதைகள்' },
     { slug: 'mystery', name: 'மர்மக் கதைகள்' },

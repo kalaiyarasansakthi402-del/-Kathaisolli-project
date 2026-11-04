@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseBoolPipe,
@@ -170,5 +171,37 @@ export class AdminController {
       input.moderationNote,
       actor.id,
     );
+  }
+
+  @ApiOperation({ summary: 'List all categories with statistics' })
+  @Get('categories')
+  listCategories() {
+    return this.adminService.listCategories();
+  }
+
+  @ApiOperation({ summary: 'Create new category' })
+  @Post('categories')
+  createCategory(
+    @Body('name') name: string,
+    @Body('slug') slug: string,
+    @Body('description') description?: string,
+    @Body('isActive') isActive?: boolean,
+  ) {
+    return this.adminService.createCategory({ name, slug, description, isActive });
+  }
+
+  @ApiOperation({ summary: 'Update existing category' })
+  @Patch('categories/:id')
+  updateCategory(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() body: { name?: string; slug?: string; description?: string; isActive?: boolean },
+  ) {
+    return this.adminService.updateCategory(id, body);
+  }
+
+  @ApiOperation({ summary: 'Delete category' })
+  @Delete('categories/:id')
+  deleteCategory(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.adminService.deleteCategory(id);
   }
 }

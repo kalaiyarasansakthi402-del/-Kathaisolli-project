@@ -285,4 +285,71 @@ export class AdminService {
 
     return { success: true, publishedAt: now };
   }
+
+  async listCategories() {
+    return this.prisma.category.findMany({
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: { series: true },
+        },
+      },
+    });
+  }
+
+  async createCategory(input: {
+    name: string;
+    slug: string;
+    description?: string;
+    isActive?: boolean;
+  }) {
+    return this.prisma.category.create({
+      data: {
+        name: input.name,
+        slug: input.slug,
+        description: input.description,
+        isActive: input.isActive !== undefined ? input.isActive : true,
+      },
+    });
+  }
+
+  async updateCategory(
+    id: string,
+    input: {
+      name?: string;
+      slug?: string;
+      description?: string;
+      isActive?: boolean;
+    },
+  ) {
+    return this.prisma.category.update({
+      where: { id },
+      data: input,
+    });
+  }
+
+  async deleteCategory(id: string) {
+    const category = await this.prisma.category.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { series: true } },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Category not found.');
+    }
+
+    if (category.slug === 'general') {
+      throw new BadRequestException('Cannot delete default General category.');
+    }
+
+    if (category._count.series > 0) {
+      throw new BadRequestException('Cannot delete category with associated series.');
+    }
+
+    return this.prisma.category.delete({
+      where: { id },
+    });
+  }
 }

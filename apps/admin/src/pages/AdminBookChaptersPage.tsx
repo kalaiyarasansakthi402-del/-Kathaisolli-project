@@ -50,6 +50,23 @@ export const AdminBookChaptersPage: React.FC = () => {
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null);
   const [activePreviewTitle, setActivePreviewTitle] = useState<string>('');
 
+  // Bulk upload state
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkFiles, setBulkFiles] = useState<
+    Array<{
+      file: File;
+      chapterNumber: number;
+      title: string;
+      tamilTitle: string;
+      durationSec: number;
+      progress: number;
+      status: 'pending' | 'uploading' | 'completed' | 'error';
+      isDuplicate: boolean;
+      error?: string;
+    }>
+  >([]);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+
   useEffect(() => {
     if (bookId) {
       const b = getAdminBook(bookId);
@@ -172,6 +189,88 @@ export const AdminBookChaptersPage: React.FC = () => {
     }
   };
 
+  const handleBulkFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !book) return;
+
+    let baseNumber = book.chapters.length + 1;
+    const prepared = files.map((file, idx) => {
+      // Auto-extract number from filename (e.g. 01.mp3 -> 1, Chapter_05.mp3 -> 5)
+      const numMatch = file.name.match(/\d+/);
+      const parsedNum = numMatch ? parseInt(numMatch[0], 10) : baseNumber + idx;
+      const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+
+      // Duplicate detection against existing book chapters
+      const isDuplicate = book.chapters.some(
+        (c) => c.number === parsedNum || c.fileName?.toLowerCase() === file.name.toLowerCase()
+      );
+
+      return {
+        file,
+        chapterNumber: parsedNum,
+        title: cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1),
+        tamilTitle: `அத்தியாயம் ${parsedNum}`,
+        durationSec: 300,
+        progress: 0,
+        status: 'pending' as const,
+        isDuplicate,
+      };
+    });
+
+    setBulkFiles(prepared);
+    setShowBulkModal(true);
+  };
+
+  const startBulkUpload = async () => {
+    if (!book || !bulkFiles.length) return;
+    setIsBulkUploading(true);
+
+    const updatedFiles = [...bulkFiles];
+
+    for (let i = 0; i < updatedFiles.length; i++) {
+      const item = updatedFiles[i];
+      item.status = 'uploading';
+      setBulkFiles([...updatedFiles]);
+
+      try {
+        const chapterId = `ch-${book.id}-${Date.now()}-${i}`;
+        const uploadRes = await uploadChapterAudioMp3(
+          book.id,
+          chapterId,
+          item.file,
+          (pct) => {
+            item.progress = pct;
+            setBulkFiles([...updatedFiles]);
+          }
+        );
+
+        upsertAdminChapter(book.id, {
+          id: chapterId,
+          number: item.chapterNumber,
+          title: item.title,
+          tamilTitle: item.tamilTitle,
+          audioUrl: uploadRes.url,
+          storagePath: uploadRes.storagePath,
+          durationSec: uploadRes.durationSec || item.durationSec,
+          fileSizeBytes: uploadRes.fileSizeBytes,
+          fileName: item.file.name,
+          status: 'PUBLISHED',
+        });
+
+        item.status = 'completed';
+        item.progress = 100;
+      } catch (err: any) {
+        item.status = 'error';
+        item.error = err?.message || 'Upload failed';
+      }
+
+      setBulkFiles([...updatedFiles]);
+    }
+
+    setIsBulkUploading(false);
+    refreshBook();
+  };
+
   if (!book) {
     return (
       <div className="p-8 text-center space-y-4">
@@ -228,16 +327,30 @@ export const AdminBookChaptersPage: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setShowModal(true);
-            setError(null);
-          }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-all hover:scale-105 shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>புதிய அத்தியாயம் சேர்க்க (Upload MP3)</span>
-        </button>
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-600 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer">
+            <Upload className="w-4 h-4" />
+            <span>மொத்தப் பதிவேற்றம் (Bulk MP3)</span>
+            <input
+              type="file"
+              multiple
+              accept="audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/x-m4a"
+              onChange={handleBulkFilesSelect}
+              className="hidden"
+            />
+          </label>
+
+          <button
+            onClick={() => {
+              setShowModal(true);
+              setError(null);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-all hover:scale-105 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>புதிய அத்தியாயம் சேர்க்க (Upload MP3)</span>
+          </button>
+        </div>
       </div>
 
       {/* Active Audio Preview Bar */}
@@ -533,6 +646,132 @@ export const AdminBookChaptersPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Chapter Upload Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-3xl rounded-3xl bg-white dark:bg-[#10221B] border border-emerald-100 dark:border-emerald-900/60 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold font-serif text-zinc-900 dark:text-zinc-100">
+                  மொத்த ஆடியோ அத்தியாயங்கள் பதிவேற்றம் (Bulk Audio Upload)
+                </h3>
+                <p className="text-xs text-zinc-500 mt-1">
+                  தேர்ந்தெடுக்கப்பட்ட கோப்புகள்: {bulkFiles.length} • தானியங்கி அத்தியாய எண் கண்டறிதல் & நகல் சரிபார்ப்பு
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  if (!isBulkUploading) setShowBulkModal(false);
+                }}
+                disabled={isBulkUploading}
+                className="text-zinc-400 hover:text-zinc-600 text-sm font-bold disabled:opacity-50"
+              >
+                ✕ மூடு
+              </button>
+            </div>
+
+            {/* File List Table */}
+            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden text-xs">
+              <table className="w-full text-left">
+                <thead className="bg-zinc-50 dark:bg-[#0A1612] text-zinc-500 uppercase font-bold border-b border-zinc-200 dark:border-zinc-800">
+                  <tr>
+                    <th className="px-4 py-3">கோப்பு பெயர்</th>
+                    <th className="px-4 py-3 text-center">அத்தியாயம் #</th>
+                    <th className="px-4 py-3">பரிந்துரைக்கப்பட்ட தலைப்பு</th>
+                    <th className="px-4 py-3 text-center">நகல் சரிபார்ப்பு</th>
+                    <th className="px-4 py-3 text-center">நிலை / முன்னேற்றம்</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {bulkFiles.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-zinc-50 dark:hover:bg-[#081813]">
+                      <td className="px-4 py-3 font-mono font-semibold truncate max-w-[160px]">
+                        {item.file.name}
+                      </td>
+                      <td className="px-4 py-3 text-center font-bold text-emerald-700 dark:text-emerald-400">
+                        #{item.chapterNumber}
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={item.title}
+                          disabled={isBulkUploading}
+                          onChange={(e) => {
+                            const newFiles = [...bulkFiles];
+                            newFiles[idx].title = e.target.value;
+                            setBulkFiles(newFiles);
+                          }}
+                          className="w-full px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#0A1612] text-xs font-medium"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {item.isDuplicate ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                            நகல் எச்சரிக்கை
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                            புதியது
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {item.status === 'pending' && <span className="text-zinc-400">காத்திருக்கிறது</span>}
+                        {item.status === 'uploading' && (
+                          <div className="w-20 mx-auto space-y-1">
+                            <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                              <div
+                                className="h-full bg-emerald-500 rounded-full transition-all"
+                                style={{ width: `${item.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-emerald-600">{item.progress}%</span>
+                          </div>
+                        )}
+                        {item.status === 'completed' && (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>வெற்றி</span>
+                          </span>
+                        )}
+                        {item.status === 'error' && (
+                          <span className="text-rose-600 font-bold">{item.error || 'தோல்வி'}</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
+              <span className="text-xs text-zinc-500">
+                Firebase Storage: <code className="font-mono text-emerald-600">vaagai-audio-books-36a4e.appspot.com</code>
+              </span>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkModal(false)}
+                  disabled={isBulkUploading}
+                  className="px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-100 disabled:opacity-50"
+                >
+                  ரத்து செய்
+                </button>
+                <button
+                  type="button"
+                  onClick={startBulkUpload}
+                  disabled={isBulkUploading || bulkFiles.length === 0}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isBulkUploading ? 'பதிவேற்றப்படுகிறது...' : `அனைத்தையும் பதிவேற்று (${bulkFiles.length} கோப்புகள்)`}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
