@@ -12,6 +12,8 @@
     "test:api": "pnpm --filter @kathaisolli/api test -- --runInBand",
     "dev:web": "pnpm --filter @kathaisolli/web dev",
     "build:web": "pnpm --filter @kathaisolli/web... build",
+    "dev:admin": "pnpm --filter @kathaisolli/admin dev",
+    "build:admin": "pnpm --filter @kathaisolli/admin build",
     "build:all": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "db:generate": "pnpm --filter @kathaisolli/api prisma:generate",
