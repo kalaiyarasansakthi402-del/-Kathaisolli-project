@@ -67,15 +67,26 @@ export const RegisterPage: React.FC = () => {
         password,
         displayName: trimmedName,
         role: 'LISTENER',
+        autoLogin: false,
       });
 
-      setSuccess('கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது! (Account created successfully!)');
+      setSuccess(
+        'கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது! உள்நுழைவு பக்கத்திற்கு செல்கிறது... (Account created successfully! Redirecting to login...)',
+      );
       setTimeout(() => {
-        navigate('/');
+        navigate('/login', {
+          replace: true,
+          state: {
+            registeredEmail: trimmedEmail,
+            successMessage:
+              'கணக்கு வெற்றிகரமாக உருவாக்கப்பட்டது! உங்கள் விவரங்களை உள்ளிட்டு உள்நுழையவும். (Account created successfully! Please sign in with your email and password.)',
+          },
+        });
       }, 1000);
     } catch (err: any) {
       setError(
-        err?.response?.data?.message ||
+        err?.message ||
+          err?.response?.data?.message ||
           'பதிவு செய்வதில் பிழை ஏற்பட்டது. மின்னஞ்சல் ஏற்கனவே பயன்பாட்டில் உள்ளதா என சரிபார்க்கவும் (Registration failed. Please check if this email already exists).',
       );
     } finally {

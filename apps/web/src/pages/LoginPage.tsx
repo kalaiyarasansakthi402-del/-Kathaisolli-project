@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -8,10 +8,14 @@ export const LoginPage: React.FC = () => {
   const location = useLocation();
   const { login, user, isLoading } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const registeredEmail = (location.state as any)?.registeredEmail || '';
+  const initialSuccessMessage = (location.state as any)?.successMessage || null;
+
+  const [email, setEmail] = useState(registeredEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(initialSuccessMessage);
   const [loading, setLoading] = useState(false);
 
   const from = (location.state as any)?.from?.pathname || '/';
@@ -23,9 +27,20 @@ export const LoginPage: React.FC = () => {
     }
   }, [user, isLoading, navigate, from]);
 
+  // Pre-fill email if passed from RegisterPage
+  useEffect(() => {
+    if (registeredEmail && !email) {
+      setEmail(registeredEmail);
+    }
+    if (initialSuccessMessage) {
+      setSuccess(initialSuccessMessage);
+    }
+  }, [registeredEmail, initialSuccessMessage]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
 
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
@@ -45,7 +60,8 @@ export const LoginPage: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(
-        err?.response?.data?.message ||
+        err?.message ||
+          err?.response?.data?.message ||
           'மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது (Invalid email or password)',
       );
     } finally {
@@ -75,6 +91,13 @@ export const LoginPage: React.FC = () => {
             Sign in with your email and password to continue.
           </p>
         </div>
+
+        {success && (
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 flex items-center gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs relative z-10">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            <span className="font-medium">{success}</span>
+          </div>
+        )}
 
         {error && (
           <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-center gap-2.5 text-rose-700 dark:text-rose-300 text-xs relative z-10">
