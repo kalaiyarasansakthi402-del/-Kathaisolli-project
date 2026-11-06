@@ -6,6 +6,7 @@ services:
     region: oregon
     branch: main
     buildCommand: corepack pnpm install --frozen-lockfile && corepack pnpm --filter @kathaisolli/api build
+    preDeployCommand: corepack pnpm db:deploy
     startCommand: node apps/api/dist/main.js
     healthCheckPath: /api/v1/health
     envVars:

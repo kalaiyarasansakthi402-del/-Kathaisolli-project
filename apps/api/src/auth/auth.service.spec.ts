@@ -13,6 +13,9 @@ describe('AuthService', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
     },
+    authSession: {
+      updateMany: jest.fn(),
+    },
   };
   const jwt = {
     signAsync: jest.fn().mockResolvedValue('signed-access-token'),
@@ -180,6 +183,25 @@ describe('AuthService', () => {
         }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
       expect(jwt.signAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('logout', () => {
+    it('revokes active auth sessions for the user and returns success', async () => {
+      prisma.authSession.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.logout('user-123');
+
+      expect(prisma.authSession.updateMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-123',
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: expect.any(Date),
+        },
+      });
+      expect(result).toEqual({ success: true, message: 'Logged out successfully.' });
     });
   });
 });

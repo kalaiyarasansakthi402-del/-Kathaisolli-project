@@ -167,6 +167,7 @@ export interface PlayerContextType {
   play: () => void;
   resume: () => void;
   pause: () => void;
+  stop: () => void;
   togglePlay: () => void;
   seek: (seconds: number) => void;
   skipForward: (seconds?: number) => void;
@@ -918,6 +919,23 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const pause = () => audioRef.current?.pause();
+
+  const stop = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.removeAttribute('src');
+      audioRef.current.load();
+    }
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+    setQueue([]);
+    setQueueIndex(-1);
+    setIsFullPlayerOpen(false);
+  }, []);
+
   const resume = () => audioRef.current?.play().catch(console.error);
   const play = resume;
 
@@ -1010,6 +1028,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         play,
         resume,
         pause,
+        stop,
         togglePlay,
         seek,
         skipForward,

@@ -21,7 +21,7 @@ interface AuthContextType {
     name?: string,
     autoLogin?: boolean,
   ) => Promise<AuthSessionResponse>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (data: { displayName?: string; avatarUrl?: string }) => Promise<void>;
   refreshProfile: () => Promise<void>;
   api: KathaisolliApiClient;
@@ -178,11 +178,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('kathaisolli_token');
-    localStorage.removeItem('kathaisolli_user');
+  const logout = async () => {
+    try {
+      if (token) {
+        await api.auth.logout().catch(() => {});
+      }
+    } catch {
+      // Graceful fallback if network is unreachable
+    } finally {
+      setToken(null);
+      setUser(null);
+      localStorage.removeItem('kathaisolli_token');
+      localStorage.removeItem('kathaisolli_user');
+      localStorage.removeItem('kathaisolli_favorites');
+      localStorage.removeItem('kathaisolli_history');
+      localStorage.removeItem('kathaisolli_playlists');
+      localStorage.removeItem('kathaisolli_progress');
+      sessionStorage.clear();
+    }
   };
 
   const updateProfile = async (data: { displayName?: string; avatarUrl?: string }) => {

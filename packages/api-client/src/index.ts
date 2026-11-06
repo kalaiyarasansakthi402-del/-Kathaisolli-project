@@ -72,6 +72,11 @@ export class KathaisolliApiClient {
 
     deleteAccount: () =>
       this.client.delete<{ success: boolean }>('/auth/account').then((r) => r.data),
+
+    logout: () =>
+      this.client
+        .post<{ success: boolean; message?: string }>('/auth/logout')
+        .then((r) => r.data),
   };
 
 

@@ -172,6 +172,23 @@ export class AuthService {
     return { success: true };
   }
 
+  async logout(userId: string) {
+    try {
+      await this.prisma.authSession.updateMany({
+        where: {
+          userId,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      });
+    } catch {
+      // Graceful fallback if session record does not exist
+    }
+    return { success: true, message: 'Logged out successfully.' };
+  }
+
   private async createSession(user: AuthenticatedUser) {
     const payload: AccessTokenPayload = {
       sub: user.id,

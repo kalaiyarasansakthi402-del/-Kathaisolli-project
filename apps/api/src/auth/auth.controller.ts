@@ -76,6 +76,15 @@ export class AuthController {
     return this.authService.changePassword(user.id, input);
   }
 
+  @ApiOperation({ summary: 'Log out current user and revoke session' })
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async logout(@CurrentUser() user: AuthPrincipal) {
+    return this.authService.logout(user.id);
+  }
+
   @ApiOperation({ summary: 'Delete user account' })
   @Delete('account')
   @ApiBearerAuth()
