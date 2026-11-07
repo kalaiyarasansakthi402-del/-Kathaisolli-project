@@ -136,13 +136,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       }
-      if (err?.response?.data?.message) {
-        const msg = err.response.data.message;
-        throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+      if (err?.response) {
+        const status = err.response.status;
+        const msg = err.response.data?.message;
+        const formatted = Array.isArray(msg) ? msg.join(', ') : msg;
+        throw new Error(`[HTTP ${status}] ${formatted || err.response.statusText || 'Authentication error'}`);
       }
       if (err?.message === 'Network Error' || !err?.response) {
         throw new Error(
-          'சேவையகத்தை / தரவுத்தளத்தை இணைக்க முடியவில்லை (Unable to reach authentication server. Please check your network connection or server status).',
+          'சேவையகத்தை இணைக்க முடியவில்லை (Unable to reach authentication server: Network/CORS error or Vercel Deployment Protection redirect). Backend: https://api-kalai21.vercel.app',
         );
       }
       throw err;
@@ -232,13 +234,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       }
-      if (err?.response?.data?.message) {
-        const msg = err.response.data.message;
-        throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
+      if (err?.response) {
+        const status = err.response.status;
+        const msg = err.response.data?.message;
+        const formatted = Array.isArray(msg) ? msg.join(', ') : msg;
+        throw new Error(`[HTTP ${status}] ${formatted || err.response.statusText || 'Authentication error'}`);
       }
       if (err?.message === 'Network Error' || !err?.response) {
         throw new Error(
-          'சேவையகத்தை / தரவுத்தளத்தை இணைக்க முடியவில்லை (Unable to reach authentication server. Please check your network connection or server status).',
+          'சேவையகத்தை இணைக்க முடியவில்லை (Unable to reach authentication server: Network/CORS error or Vercel Deployment Protection redirect). Backend: https://api-kalai21.vercel.app',
         );
       }
       throw err;

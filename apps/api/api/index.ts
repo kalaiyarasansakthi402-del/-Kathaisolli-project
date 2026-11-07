@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import path from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
@@ -7,25 +8,35 @@ import type { Request, Response } from 'express';
 let cachedHandler: ((req: Request, res: Response) => void) | null = null;
 let bootstrapPromise: Promise<void> | null = null;
 
-async function bootstrap(): Promise<void> {
-  const adapter = new ExpressAdapter();
+async function getAppModule(): Promise<any> {
+  const candidatePaths = [
+    '../dist/app.module',
+    './dist/app.module',
+    path.join(process.cwd(), 'dist/app.module'),
+    path.join(process.cwd(), 'apps/api/dist/app.module'),
+    '../src/app.module',
+  ];
 
-  // Load pre-compiled AppModule from dist to ensure complete decorator metadata preservation,
-  // avoiding esbuild runtime stripping of parameter types in serverless mode.
-  let AppModule: any;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    AppModule = require('../dist/app.module').AppModule;
-  } catch (distErr) {
-    console.warn('[NestServerless] Failed to load ../dist/app.module, attempting fallback:', distErr);
+  for (const candidate of candidatePaths) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      AppModule = require('./dist/app.module').AppModule;
+      const mod = require(candidate);
+      if (mod && mod.AppModule) {
+        return mod.AppModule;
+      }
     } catch {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      AppModule = require('../src/app.module').AppModule;
+      // Try next candidate path
     }
   }
+
+  throw new Error(
+    'Unable to load AppModule. Checked candidate paths: ' + candidatePaths.join(', '),
+  );
+}
+
+async function bootstrap(): Promise<void> {
+  const adapter = new ExpressAdapter();
+  const AppModule = await getAppModule();
 
   const app = await NestFactory.create(AppModule, adapter, {
     logger:
