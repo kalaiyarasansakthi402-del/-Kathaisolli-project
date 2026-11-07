@@ -132,16 +132,12 @@ export const LoginPage: React.FC = () => {
               <label className="block text-xs font-bold uppercase tracking-wider text-[#173D2E] dark:text-stone-200 font-sans">
                 Password (கடவுச்சொல்)
               </label>
-              <a
-                href="#forgot"
-                onClick={(e) => {
-                  e.preventDefault();
-                  alert('கடவுச்சொல் மீட்டெடுப்பு மின்னஞ்சல் அனுப்பப்பட்டுள்ளது (Password reset link sent to your email).');
-                }}
+              <Link
+                to="/forgot-password"
                 className="text-[11px] font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
               >
                 Forgot Password?
-              </a>
+              </Link>
             </div>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#166534]/60 dark:text-emerald-300/60" />

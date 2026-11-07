@@ -36,6 +36,10 @@ const EpisodeDetailsPage = lazyWithRetry(() => import('./pages/EpisodeDetailsPag
 const FullPlayerPage = lazyWithRetry(() => import('./pages/FullPlayerPage').then((m) => ({ default: m.FullPlayerPage })));
 const LoginPage = lazyWithRetry(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazyWithRetry(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazyWithRetry(() => import('./pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
+const AboutPage = lazyWithRetry(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
+const ContactPage = lazyWithRetry(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const PlaylistsPage = lazyWithRetry(() => import('./pages/PlaylistsPage').then((m) => ({ default: m.PlaylistsPage })));
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
@@ -70,7 +74,9 @@ const AppContent: React.FC = () => {
   const isAuthPage =
     location.pathname === '/login' ||
     location.pathname === '/register' ||
-    location.pathname === '/signup';
+    location.pathname === '/signup' ||
+    location.pathname === '/forgot-password' ||
+    location.pathname === '/reset-password';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
@@ -84,9 +90,13 @@ const AppContent: React.FC = () => {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/signup" element={<Navigate to="/register" replace />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Public Informational & Legal routes */}
               <Route path="/landing" element={<LandingPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
               <Route path="/help" element={<HelpSupportPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsConditionsPage />} />

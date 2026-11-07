@@ -21,6 +21,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, UpdateProfileDto } from './dto/update-profile.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
 @Controller('auth')
 @ApiTags('Authentication')
@@ -83,6 +84,31 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async logout(@CurrentUser() user: AuthPrincipal) {
     return this.authService.logout(user.id);
+  }
+
+  @ApiOperation({ summary: 'Request password reset instructions' })
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  forgotPassword(@Body() input: ForgotPasswordDto) {
+    return this.authService.forgotPassword(input);
+  }
+
+  @ApiOperation({ summary: 'Reset password with token' })
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  resetPassword(@Body() input: ResetPasswordDto) {
+    return this.authService.resetPassword(input);
+  }
+
+  @ApiOperation({ summary: 'Refresh access token' })
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  refreshToken(@CurrentUser() user: AuthPrincipal) {
+    return this.authService.refreshToken(user.id);
   }
 
   @ApiOperation({ summary: 'Delete user account' })

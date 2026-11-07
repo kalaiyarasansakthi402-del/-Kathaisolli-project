@@ -72,6 +72,16 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-sm font-medium">
               <li>
+                <Link to="/about" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
+                  About Us (எங்களை பற்றி)
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
+                  Contact Us (தொடர்புக்கு)
+                </Link>
+              </li>
+              <li>
                 <Link to="/help" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
                   Help & Support (உதவி மையம்)
                 </Link>

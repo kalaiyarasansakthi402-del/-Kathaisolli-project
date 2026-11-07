@@ -163,18 +163,26 @@ export const Navbar: React.FC = () => {
             </Link>
 
             <Link
-              to="/terms"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0] transition-colors"
+              to="/about"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                location.pathname === '/about'
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
+              }`}
             >
-              <Info className="w-4 h-4 text-stone-500 dark:text-stone-400" />
+              <Info className="w-4 h-4" />
               <span>About</span>
             </Link>
 
             <Link
-              to="/help"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0] transition-colors"
+              to="/contact"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                location.pathname === '/contact'
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
+              }`}
             >
-              <Mail className="w-4 h-4 text-stone-500 dark:text-stone-400" />
+              <Mail className="w-4 h-4" />
               <span>Contact</span>
             </Link>
           </nav>
@@ -347,6 +355,20 @@ export const Navbar: React.FC = () => {
                 className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
               >
                 Categories (வகைகள்)
+              </Link>
+              <Link
+                to="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+              >
+                About (எங்களை பற்றி)
+              </Link>
+              <Link
+                to="/contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+              >
+                Contact (தொடர்புக்கு)
               </Link>
             </nav>
 

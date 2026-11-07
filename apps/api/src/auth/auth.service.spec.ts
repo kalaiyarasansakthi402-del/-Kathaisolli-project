@@ -12,6 +12,7 @@ describe('AuthService', () => {
     user: {
       findUnique: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
     authSession: {
       updateMany: jest.fn(),
@@ -19,6 +20,7 @@ describe('AuthService', () => {
   };
   const jwt = {
     signAsync: jest.fn().mockResolvedValue('signed-access-token'),
+    verifyAsync: jest.fn(),
   };
   let service: AuthService;
 
@@ -202,6 +204,94 @@ describe('AuthService', () => {
         },
       });
       expect(result).toEqual({ success: true, message: 'Logged out successfully.' });
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('returns success and generates reset token for valid user', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-123',
+        email: 'listener@example.com',
+        disabledAt: null,
+      });
+
+      const result = await service.forgotPassword({ email: 'listener@example.com' });
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'listener@example.com' },
+      });
+      expect(jwt.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ sub: 'user-123', type: 'password_reset' }),
+        { expiresIn: 3600 },
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it('returns success even if email does not exist to prevent enumeration', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      const result = await service.forgotPassword({ email: 'unknown@example.com' });
+
+      expect(result.success).toBe(true);
+      expect(jwt.signAsync).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('updates password hash when token is valid', async () => {
+      jwt.verifyAsync.mockResolvedValue({ sub: 'user-123', type: 'password_reset' });
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-123',
+        disabledAt: null,
+      });
+      prisma.user.update.mockResolvedValue({ id: 'user-123' });
+      prisma.authSession.updateMany.mockResolvedValue({ count: 1 });
+
+      const result = await service.resetPassword({
+        token: 'valid-token',
+        newPassword: 'newSecurePassword123',
+      });
+
+      expect(jwt.verifyAsync).toHaveBeenCalledWith('valid-token');
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'user-123' },
+          data: expect.objectContaining({
+            passwordHash: expect.stringMatching(/^\$argon2id\$/),
+          }),
+        }),
+      );
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects invalid or expired token with BadRequestException', async () => {
+      jwt.verifyAsync.mockRejectedValue(new Error('jwt expired'));
+
+      await expect(
+        service.resetPassword({
+          token: 'expired-token',
+          newPassword: 'newSecurePassword123',
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('generates a fresh session token for valid user', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-123',
+        email: 'listener@example.com',
+        displayName: 'Listener',
+        role: UserRole.LISTENER,
+      });
+
+      const result = await service.refreshToken('user-123');
+
+      expect(result).toMatchObject({
+        accessToken: 'signed-access-token',
+        tokenType: 'Bearer',
+        user: { id: 'user-123' },
+      });
     });
   });
 });

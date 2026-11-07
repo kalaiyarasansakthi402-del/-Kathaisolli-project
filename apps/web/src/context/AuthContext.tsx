@@ -30,6 +30,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (data: { displayName?: string; avatarUrl?: string }) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string; resetToken?: string }>;
+  resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
   api: KathaisolliApiClient;
 }
 
@@ -317,6 +319,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('kathaisolli_user', JSON.stringify(updated));
   };
 
+  const forgotPassword = async (email: string) => {
+    return api.auth.forgotPassword(email);
+  };
+
+  const resetPassword = async (resetToken: string, newPass: string) => {
+    return api.auth.resetPassword({ token: resetToken, newPassword: newPass });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -328,6 +338,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateProfile,
         refreshProfile,
+        forgotPassword,
+        resetPassword,
         api,
       }}
     >

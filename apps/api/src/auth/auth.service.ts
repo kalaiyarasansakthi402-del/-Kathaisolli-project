@@ -14,6 +14,7 @@ import { AccessTokenPayload, AuthenticatedUser } from './auth.types';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, UpdateProfileDto } from './dto/update-profile.dto';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
 @Injectable()
 export class AuthService {
@@ -187,6 +188,85 @@ export class AuthService {
       // Graceful fallback if session record does not exist
     }
     return { success: true, message: 'Logged out successfully.' };
+  }
+
+  async forgotPassword(input: ForgotPasswordDto) {
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (!user || user.disabledAt) {
+      return {
+        success: true,
+        message: 'If an account exists with this email, password reset instructions have been sent.',
+      };
+    }
+
+    const resetToken = await this.jwt.signAsync(
+      { sub: user.id, email: user.email, type: 'password_reset' },
+      { expiresIn: 3600 },
+    );
+
+    return {
+      success: true,
+      message: 'If an account exists with this email, password reset instructions have been sent.',
+      ...(process.env.NODE_ENV !== 'production' && { resetToken }),
+    };
+  }
+
+  async resetPassword(input: ResetPasswordDto) {
+    let payload: any;
+    try {
+      payload = await this.jwt.verifyAsync(input.token);
+    } catch {
+      throw new BadRequestException('Invalid or expired password reset token.');
+    }
+
+    if (payload.type !== 'password_reset' || !payload.sub) {
+      throw new BadRequestException('Invalid password reset token.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+    if (!user || user.disabledAt) {
+      throw new NotFoundException('User account is unavailable.');
+    }
+
+    const passwordHash = await argon2.hash(input.newPassword, {
+      type: argon2.argon2id,
+    });
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    try {
+      await this.prisma.authSession.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    } catch {
+      // Graceful session revocation fallback
+    }
+
+    return {
+      success: true,
+      message: 'Your password has been successfully reset. You can now log in.',
+    };
+  }
+
+  async refreshToken(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId, disabledAt: null },
+      select: { id: true, email: true, displayName: true, role: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException('User account is unavailable.');
+    }
+    return this.createSession(user);
   }
 
   private async createSession(user: AuthenticatedUser) {

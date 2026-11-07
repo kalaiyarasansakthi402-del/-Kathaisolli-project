@@ -90,6 +90,19 @@ export class KathaisolliApiClient {
     deleteAccount: () =>
       this.client.delete<{ success: boolean }>('/auth/account').then((r) => r.data),
 
+    forgotPassword: (email: string) =>
+      this.client
+        .post<{ success: boolean; message: string; resetToken?: string }>('/auth/forgot-password', { email })
+        .then((r) => r.data),
+
+    resetPassword: (data: { token: string; newPassword: string }) =>
+      this.client
+        .post<{ success: boolean; message: string }>('/auth/reset-password', data)
+        .then((r) => r.data),
+
+    refreshToken: () =>
+      this.client.post<AuthSessionResponse>('/auth/refresh').then((r) => r.data),
+
     logout: () =>
       this.client
         .post<{ success: boolean; message?: string }>('/auth/logout')
