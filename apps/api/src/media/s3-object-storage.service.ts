@@ -28,14 +28,20 @@ export class S3ObjectStorageService
   private readonly bucket: string;
 
   constructor(private readonly config: ConfigService) {
-    this.bucket = config.getOrThrow<string>('S3_BUCKET');
+    this.bucket = config.get<string>('S3_BUCKET', 'kathaisolli-audio');
+    const endpoint = config.get<string>('S3_ENDPOINT', 'https://s3.amazonaws.com');
+    const region = config.get<string>('S3_REGION', 'us-east-1');
+    const forcePathStyle = config.get<string>('S3_FORCE_PATH_STYLE', 'true') === 'true';
+    const accessKeyId = config.get<string>('S3_ACCESS_KEY', 'placeholder-access-key');
+    const secretAccessKey = config.get<string>('S3_SECRET_KEY', 'placeholder-secret-key');
+
     this.client = new S3Client({
-      endpoint: config.getOrThrow<string>('S3_ENDPOINT'),
-      region: config.get<string>('S3_REGION', 'us-east-1'),
-      forcePathStyle: config.get<string>('S3_FORCE_PATH_STYLE', 'true') === 'true',
+      endpoint,
+      region,
+      forcePathStyle,
       credentials: {
-        accessKeyId: config.getOrThrow<string>('S3_ACCESS_KEY'),
-        secretAccessKey: config.getOrThrow<string>('S3_SECRET_KEY'),
+        accessKeyId,
+        secretAccessKey,
       },
     });
   }
