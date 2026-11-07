@@ -138,11 +138,21 @@ export class S3ObjectStorageService
     objectKey: string,
     expiresInSeconds: number,
   ): Promise<string> {
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({ Bucket: this.bucket, Key: objectKey }),
-      { expiresIn: expiresInSeconds },
-    );
+    if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) {
+      return objectKey;
+    }
+    try {
+      return await getSignedUrl(
+        this.client,
+        new GetObjectCommand({ Bucket: this.bucket, Key: objectKey }),
+        { expiresIn: expiresInSeconds },
+      );
+    } catch {
+      const endpoint = (
+        this.config.get<string>('S3_ENDPOINT') || 'https://s3.amazonaws.com'
+      ).replace(/\/+$/, '');
+      return `${endpoint}/${this.bucket}/${encodeURIComponent(objectKey)}`;
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
