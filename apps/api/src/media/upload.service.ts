@@ -60,12 +60,17 @@ export class UploadService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit(): void {
-    void this.requeuePendingJobs();
-    this.recoveryTimer = setInterval(
+    const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+    if (!isServerless) {
+      void this.requeuePendingJobs();
+    }
+    if (!isServerless) {
+      this.recoveryTimer = setInterval(
       () => void this.requeuePendingJobs(),
       60_000,
     );
-    this.recoveryTimer.unref();
+      this.recoveryTimer.unref();
+    }
   }
 
   onModuleDestroy(): void {

@@ -8,11 +8,12 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
-  const secret = config.get<string>(
-    'JWT_ACCESS_SECRET',
-    'bZlGr7AxTdFWwNjQ5Jh2HzgfeDECKqncvY98sPoBV3pMtym6',
-  );
-  if (secret.length < 32) {
+  const secret = config.get<string>('JWT_ACCESS_SECRET');
+  if (!secret) {
+    if (config.get('NODE_ENV') === 'production') {
+      throw new Error('JWT_ACCESS_SECRET must be configured in production environment variables.');
+    }
+  } else if (secret.length < 32) {
     throw new Error('JWT_ACCESS_SECRET must be at least 32 characters long.');
   }
   const port = Number(config.get<string>('PORT', '3000'));

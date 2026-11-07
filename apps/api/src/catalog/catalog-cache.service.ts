@@ -15,7 +15,14 @@ export class CatalogCacheService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     try {
       const redisUrl = this.config.get<string>('REDIS_URL');
-      if (redisUrl && (redisUrl.startsWith('redis://') || redisUrl.startsWith('rediss://'))) {
+      const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+      const isLocalhostRedis = redisUrl?.includes('localhost') || redisUrl?.includes('127.0.0.1');
+
+      if (
+        redisUrl &&
+        (redisUrl.startsWith('redis://') || redisUrl.startsWith('rediss://')) &&
+        !(isServerless && isLocalhostRedis)
+      ) {
         const opts = getRedisConnectionOptions(this.config);
         this.redis = new Redis({
           ...opts,
@@ -29,12 +36,14 @@ export class CatalogCacheService implements OnModuleInit, OnModuleDestroy {
           this.logger.log('Redis connected for catalog caching.');
         });
 
-        this.redis.on('error', () => {
+        this.redis.on('error', (err) => {
           this.isRedisHealthy = false;
+          this.logger.warn(`[CatalogCacheService] Redis error (non-fatal): ${err.message}`);
         });
 
-        this.redis.connect().catch(() => {
+        this.redis.connect().catch((err) => {
           this.isRedisHealthy = false;
+          this.logger.warn(`[CatalogCacheService] Redis connect error (non-fatal): ${err.message}`);
         });
       }
     } catch {

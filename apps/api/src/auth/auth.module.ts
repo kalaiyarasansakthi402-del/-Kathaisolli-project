@@ -12,13 +12,22 @@ import { RolesGuard } from './roles.guard';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>(
-          'JWT_ACCESS_SECRET',
-          'bZlGr7AxTdFWwNjQ5Jh2HzgfeDECKqncvY98sPoBV3pMtym6',
-        ),
-        signOptions: { expiresIn: 900 },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_ACCESS_SECRET');
+        if (!secret) {
+          if (config.get('NODE_ENV') === 'production' || process.env.VERCEL) {
+            throw new Error('JWT_ACCESS_SECRET must be configured in production environment variables.');
+          }
+          return {
+            secret: 'dev-local-jwt-access-secret-minimum-32-chars-long-12345',
+            signOptions: { expiresIn: 900 },
+          };
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: 900 },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
