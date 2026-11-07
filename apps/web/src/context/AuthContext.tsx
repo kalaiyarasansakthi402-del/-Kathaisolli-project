@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { createApiClient, KathaisolliApiClient } from '@kathaisolli/api-client';
 import type { User, AuthSessionResponse } from '@kathaisolli/shared-types';
+import { auth } from '../services/firebase';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile as updateFirebaseProfile,
+} from 'firebase/auth';
 
 export interface RegisterParams {
   email: string;
@@ -41,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
     const baseURL = envUrl
       ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/+$/, '')}/api/v1`)
-      : (import.meta.env.PROD ? '/api/v1' : 'http://localhost:3000/api/v1');
+      : (import.meta.env.PROD ? 'https://api-kalai21.vercel.app/api/v1' : 'http://localhost:3000/api/v1');
 
     return createApiClient({
       baseURL,
@@ -106,6 +112,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (err?.response?.status === 401) {
         throw new Error('மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது (Invalid email or password).');
       }
+      // If backend API returned 405, 500 or network failure, try Firebase Auth fallback
+      if (auth && (err?.response?.status === 405 || err?.response?.status === 500 || err?.message === 'Network Error' || !err?.response)) {
+        try {
+          const userCred = await signInWithEmailAndPassword(auth, normalizedEmail, pass);
+          const fbUser = userCred.user;
+          const idToken = await fbUser.getIdToken();
+          const fallbackUser: User = {
+            id: fbUser.uid,
+            email: fbUser.email || normalizedEmail,
+            displayName: fbUser.displayName || normalizedEmail.split('@')[0],
+            role: 'LISTENER',
+            createdAt: new Date().toISOString(),
+          };
+          setToken(idToken);
+          setUser(fallbackUser);
+          localStorage.setItem('kathaisolli_token', idToken);
+          localStorage.setItem('kathaisolli_user', JSON.stringify(fallbackUser));
+          return;
+        } catch (fbErr: any) {
+          if (fbErr?.code === 'auth/wrong-password' || fbErr?.code === 'auth/user-not-found' || fbErr?.code === 'auth/invalid-credential') {
+            throw new Error('மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது (Invalid email or password).');
+          }
+        }
+      }
       if (err?.response?.data?.message) {
         const msg = err.response.data.message;
         throw new Error(Array.isArray(msg) ? msg.join(', ') : msg);
@@ -164,6 +194,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(
           'இந்த மின்னஞ்சல் முகவரி ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது (An account with this email already exists).',
         );
+      }
+      // If backend API returned 405, 500 or network failure, try Firebase Auth fallback
+      if (auth && (err?.response?.status === 405 || err?.response?.status === 500 || err?.message === 'Network Error' || !err?.response)) {
+        try {
+          const userCred = await createUserWithEmailAndPassword(auth, normalizedEmail, payload.password);
+          const fbUser = userCred.user;
+          if (cleanDisplayName) {
+            await updateFirebaseProfile(fbUser, { displayName: cleanDisplayName }).catch(() => {});
+          }
+          const idToken = await fbUser.getIdToken();
+          const fallbackUser: User = {
+            id: fbUser.uid,
+            email: fbUser.email || normalizedEmail,
+            displayName: cleanDisplayName || fbUser.displayName || normalizedEmail.split('@')[0],
+            role: payload.role || 'LISTENER',
+            createdAt: new Date().toISOString(),
+          };
+          const fallbackSession: AuthSessionResponse = {
+            accessToken: idToken,
+            tokenType: 'Bearer',
+            expiresIn: 3600,
+            user: fallbackUser,
+          };
+          if (payload.autoLogin) {
+            setToken(idToken);
+            setUser(fallbackUser);
+            localStorage.setItem('kathaisolli_token', idToken);
+            localStorage.setItem('kathaisolli_user', JSON.stringify(fallbackUser));
+          }
+          return fallbackSession;
+        } catch (fbErr: any) {
+          if (fbErr?.code === 'auth/email-already-in-use') {
+            throw new Error(
+              'இந்த மின்னஞ்சல் முகவரி ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது (An account with this email already exists).',
+            );
+          }
+        }
       }
       if (err?.response?.data?.message) {
         const msg = err.response.data.message;

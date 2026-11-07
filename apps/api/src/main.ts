@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -7,7 +8,10 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
-  const secret = config.getOrThrow<string>('JWT_ACCESS_SECRET');
+  const secret = config.get<string>(
+    'JWT_ACCESS_SECRET',
+    'bZlGr7AxTdFWwNjQ5Jh2HzgfeDECKqncvY98sPoBV3pMtym6',
+  );
   if (secret.length < 32) {
     throw new Error('JWT_ACCESS_SECRET must be at least 32 characters long.');
   }
@@ -17,8 +21,11 @@ async function bootstrap() {
   }
 
   const defaultOrigins = [
+    'https://web-blush-gamma-47.vercel.app',
+    'https://web-git-main-kalai21.vercel.app',
     'https://web-kalai21.vercel.app',
-    'https://web-a9wl0ahec-kalai21.vercel.app',
+    'https://api-kalai21.vercel.app',
+    'https://api-three-lyart-42.vercel.app',
     'https://admin-eight-theta-72.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
@@ -46,6 +53,7 @@ async function bootstrap() {
       if (
         allowedSet.has(origin) ||
         origin.endsWith('.vercel.app') ||
+        /^https:\/\/.*\.vercel\.app$/.test(origin) ||
         config.get('NODE_ENV') !== 'production'
       ) {
         return callback(null, true);

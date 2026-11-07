@@ -36,7 +36,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
     const baseURL = envUrl
       ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/+$/, '')}/api/v1`)
-      : (import.meta.env.PROD ? '/api/v1' : 'http://localhost:3000/api/v1');
+      : (import.meta.env.PROD ? 'https://api-kalai21.vercel.app/api/v1' : 'http://localhost:3000/api/v1');
 
     return createApiClient({
       baseURL,

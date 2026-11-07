@@ -26,8 +26,16 @@ export class KathaisolliApiClient {
   private client: AxiosInstance;
 
   constructor(config: ApiClientConfig = {}) {
+    const defaultBaseUrl =
+      typeof window !== 'undefined' &&
+      window.location &&
+      window.location.hostname !== 'localhost' &&
+      window.location.hostname !== '127.0.0.1'
+        ? 'https://api-kalai21.vercel.app/api/v1'
+        : 'http://localhost:3000/api/v1';
+
     this.client = axios.create({
-      baseURL: config.baseURL || 'http://localhost:3000/api/v1',
+      baseURL: config.baseURL || defaultBaseUrl,
       headers: {
         'Content-Type': 'application/json',
       },
