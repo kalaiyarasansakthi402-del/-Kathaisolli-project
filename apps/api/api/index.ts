@@ -41,6 +41,7 @@ async function bootstrap() {
     app.setGlobalPrefix('api/v1');
 
     const defaultOrigins = [
+      'https://web-aa868kxzt-kalai21.vercel.app',
       'https://web-blush-gamma-47.vercel.app',
       'https://web-git-main-kalai21.vercel.app',
       'https://web-kalai21.vercel.app',
