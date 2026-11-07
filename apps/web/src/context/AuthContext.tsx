@@ -152,6 +152,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const status = err.response.status;
         const msg = err.response.data?.message;
         const formatted = Array.isArray(msg) ? msg.join(', ') : msg;
+        if (status === 409) {
+          throw new Error('இந்த மின்னஞ்சல் முகவரி ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது (An account with this email already exists).');
+        }
+        if (status === 401) {
+          throw new Error('மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது (Invalid email or password).');
+        }
+        if (status === 403) {
+          throw new Error('அணுகல் மறுக்கப்பட்டது (Access denied / Account disabled).');
+        }
+        if (status === 404) {
+          throw new Error('பயனர் கணக்கு காணப்படவில்லை (User account not found).');
+        }
+        if (status === 500 || status === 502 || status === 503) {
+          throw new Error('சேவையகம் தற்காலிகமாக கிடைக்கவில்லை அல்லது தரவுத்தள இணைப்பு தோல்வி (Server unavailable or database connection failed).');
+        }
         throw new Error(`[HTTP ${status}] ${formatted || err.response.statusText || 'Authentication error'}`);
       }
       if (err?.message === 'Network Error' || !err?.response) {
@@ -250,6 +265,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const status = err.response.status;
         const msg = err.response.data?.message;
         const formatted = Array.isArray(msg) ? msg.join(', ') : msg;
+        if (status === 409) {
+          throw new Error('இந்த மின்னஞ்சல் முகவரி ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது (An account with this email already exists).');
+        }
+        if (status === 401) {
+          throw new Error('மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது (Invalid email or password).');
+        }
+        if (status === 403) {
+          throw new Error('அணுகல் மறுக்கப்பட்டது (Access denied / Account disabled).');
+        }
+        if (status === 404) {
+          throw new Error('பயனர் கணக்கு காணப்படவில்லை (User account not found).');
+        }
+        if (status === 500 || status === 502 || status === 503) {
+          throw new Error('சேவையகம் தற்காலிகமாக கிடைக்கவில்லை அல்லது தரவுத்தள இணைப்பு தோல்வி (Server unavailable or database connection failed).');
+        }
         throw new Error(`[HTTP ${status}] ${formatted || err.response.statusText || 'Authentication error'}`);
       }
       if (err?.message === 'Network Error' || !err?.response) {
