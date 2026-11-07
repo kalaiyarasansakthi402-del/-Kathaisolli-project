@@ -33,10 +33,22 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [activeMode, setActiveMode] = useState<'creator' | 'admin'>('admin');
 
   const api = React.useMemo(() => {
-    const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
-    const baseURL = envUrl
-      ? (envUrl.endsWith('/api/v1') ? envUrl : `${envUrl.replace(/\/+$/, '')}/api/v1`)
-      : (import.meta.env.PROD ? 'https://api-kalai21.vercel.app/api/v1' : 'http://localhost:3000/api/v1');
+    const rawEnv = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+    let baseURL: string;
+    if (rawEnv) {
+      const stripped = rawEnv.replace(/\/+$/, '');
+      if (stripped.endsWith('/api/v1')) {
+        baseURL = stripped;
+      } else if (stripped.endsWith('/api')) {
+        baseURL = `${stripped}/v1`;
+      } else {
+        baseURL = `${stripped}/api/v1`;
+      }
+    } else {
+      baseURL = import.meta.env.PROD
+        ? 'https://api-kalai21.vercel.app/api/v1'
+        : 'http://localhost:3000/api/v1';
+    }
 
     return createApiClient({
       baseURL,

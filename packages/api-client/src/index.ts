@@ -34,8 +34,17 @@ export class KathaisolliApiClient {
         ? 'https://api-kalai21.vercel.app/api/v1'
         : 'http://localhost:3000/api/v1';
 
+    let resolvedBaseUrl = (config.baseURL || defaultBaseUrl).trim().replace(/\/+$/, '');
+    if (resolvedBaseUrl.endsWith('/api/v1')) {
+      // correctly suffixed
+    } else if (resolvedBaseUrl.endsWith('/api')) {
+      resolvedBaseUrl = `${resolvedBaseUrl}/v1`;
+    } else {
+      resolvedBaseUrl = `${resolvedBaseUrl}/api/v1`;
+    }
+
     this.client = axios.create({
-      baseURL: config.baseURL || defaultBaseUrl,
+      baseURL: resolvedBaseUrl,
       headers: {
         'Content-Type': 'application/json',
       },

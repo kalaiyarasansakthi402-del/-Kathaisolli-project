@@ -8,6 +8,27 @@ import type { Request, Response } from 'express';
 let cachedHandler: ((req: Request, res: Response) => void) | null = null;
 let bootstrapPromise: Promise<void> | null = null;
 
+const allowedOrigins = [
+  'https://web-kalai21.vercel.app',
+  'https://web-blush-gamma-47.vercel.app',
+  'https://web-aa868kxzt-kalai21.vercel.app',
+  'https://admin-eight-theta-72.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:5173',
+  'http://localhost:5174',
+];
+
+function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (/^https:\/\/web(-[a-z0-9-]+)?-kalai21\.vercel\.app$/.test(origin)) return true;
+  if (/^https:\/\/web(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
+  if (/^https:\/\/admin(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
+
 async function getAppModule(): Promise<any> {
   const candidatePaths = [
     '../dist/app.module',
@@ -47,37 +68,26 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix('api/v1');
 
-  const defaultOrigins = [
-    'https://web-aa868kxzt-kalai21.vercel.app',
-    'https://web-blush-gamma-47.vercel.app',
-    'https://web-git-main-kalai21.vercel.app',
-    'https://web-kalai21.vercel.app',
-    'https://api-kalai21.vercel.app',
-    'https://api-three-lyart-42.vercel.app',
-    'https://admin-eight-theta-72.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3002',
-    'http://localhost:5173',
-    'http://localhost:5174',
-  ];
-
   app.enableCors({
     origin: (
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      if (!origin) return callback(null, true);
-      if (
-        defaultOrigins.includes(origin) ||
-        origin.endsWith('.vercel.app') ||
-        /^https:\/\/.*\.vercel\.app$/.test(origin) ||
-        process.env.NODE_ENV !== 'production'
-      ) {
+      if (!origin || isOriginAllowed(origin)) {
         return callback(null, true);
       }
-      return callback(null, true);
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'X-CSRF-Token',
+      'X-Api-Version',
+    ],
     credentials: true,
   });
 
@@ -99,6 +109,27 @@ export default async function handler(req: Request, res: Response) {
   const matchedPath = req.headers['x-matched-path'] as string | undefined;
   if (matchedPath) {
     req.url = matchedPath;
+  }
+
+  // Handle CORS headers at edge entry
+  const origin = req.headers.origin as string | undefined;
+  if (origin && isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader(
+      'Access-Control-Allow-Methods',
+      'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    );
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRF-Token, X-Api-Version',
+    );
+    res.setHeader('Vary', 'Origin');
+  }
+
+  // Handle CORS preflight early without waiting for NestJS cold start
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
 
   const rawUrl = (req.url || '').split('?')[0];
