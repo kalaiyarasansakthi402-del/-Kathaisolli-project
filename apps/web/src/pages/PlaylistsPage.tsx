@@ -71,13 +71,13 @@ export const PlaylistsPage: React.FC = () => {
           பிளேலிஸ்ட்கள் (Playlists)
         </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          உங்களுக்குப் பிடித்த கதைகளை தனித்தனி தொகுப்பாக உருவாக்க உங்கள் இலவச கணக்கில் உள்நுழையவும்.
+          உங்களுக்குப் பிடித்த கதைகளைச் சேமித்து எந்த நேரத்திலும் கேட்க உங்கள் தனிப்பட்ட நூலகத்தைப் பயன்படுத்தலாம்.
         </p>
         <button
-          onClick={() => navigate('/login')}
+          onClick={() => navigate('/my-library')}
           className="px-6 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm shadow-md transition-colors"
         >
-          உள்நுழைக (Sign In)
+          எனது நூலகத்திற்குச் செல் (Go to My Library)
         </button>
       </div>
     );

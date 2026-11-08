@@ -423,19 +423,13 @@ export const LandingPage: React.FC = () => {
                   to="/categories"
                   className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534]"
                 >
-                  Explore Stories
-                </Link>
-                <Link
-                  to="/login"
-                  className="block w-full py-2.5 rounded-full border border-[#064E3B] text-[#064E3B] font-bold text-xs text-center hover:bg-[#E8F0E2]"
-                >
-                  Log In
+                  Explore Stories (கதைகளை காண்க)
                 </Link>
               </div>
             </div>
           </div>
 
-          {/* PHONE 2: Login Screen */}
+          {/* PHONE 2: Categories Screen */}
           <div className="bg-[#1A2621] p-3 rounded-[40px] shadow-2xl border-4 border-[#334D40] max-w-xs mx-auto w-full">
             <div className="bg-[#F8F5E9] text-[#173D2E] rounded-[32px] overflow-hidden h-[540px] flex flex-col justify-between p-5 relative border border-stone-300">
               {/* Dynamic Island */}
@@ -449,58 +443,50 @@ export const LandingPage: React.FC = () => {
                   <span className="font-bold font-serif text-sm text-[#064E3B]">Kathaisolli</span>
                 </div>
 
-                <h4 className="text-xl font-black font-serif text-[#064E3B] mb-1">Welcome Back</h4>
-                <p className="text-[11px] text-stone-600 mb-5">
-                  Sign in to access your saved library & listening history.
+                <h4 className="text-xl font-black font-serif text-[#064E3B] mb-1">கதைக் களஞ்சியம்</h4>
+                <p className="text-[11px] text-stone-600 mb-4">
+                  வரலாறு, பஞ்சதந்திரம், நன்னெறி மற்றும் நவீன கதைகள்.
                 </p>
 
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-stone-600 mb-1">
-                      Email Address
-                    </label>
-                    <div className="flex items-center bg-white rounded-xl px-3 py-2 border border-stone-300 text-xs">
-                      <Mail className="w-3.5 h-3.5 text-stone-400 mr-2" />
-                      <span className="text-stone-500">listener@kathaisolli.com</span>
+                <div className="space-y-2.5">
+                  <div className="p-3 bg-white rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-[#064E3B]">வரலாற்று காவியங்கள்</div>
+                      <div className="text-[10px] text-stone-500">பொன்னியின் செல்வன், பார்த்திபன் கனவு</div>
                     </div>
+                    <span className="text-xs font-bold text-[#064E3B]">70+ பகுதிகள்</span>
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase text-stone-600 mb-1">
-                      Password
-                    </label>
-                    <div className="flex items-center bg-white rounded-xl px-3 py-2 border border-stone-300 text-xs">
-                      <Lock className="w-3.5 h-3.5 text-stone-400 mr-2" />
-                      <span className="text-stone-400">••••••••••••</span>
+                  <div className="p-3 bg-white rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-[#064E3B]">பஞ்சதந்திரக் கதைகள்</div>
+                      <div className="text-[10px] text-stone-500">நீதி மற்றும் அறிவுரை கதைகள்</div>
                     </div>
+                    <span className="text-xs font-bold text-[#064E3B]">25+ பகுதிகள்</span>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] font-bold text-[#064E3B] hover:underline cursor-pointer">
-                      Forgot Password?
-                    </span>
+                  <div className="p-3 bg-white rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-[#064E3B]">நாடோடிக் கதைகள்</div>
+                      <div className="text-[10px] text-stone-500">கிராமிய சுவாரசிய கதைகள்</div>
+                    </div>
+                    <span className="text-xs font-bold text-[#064E3B]">30+ பகுதிகள்</span>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2 pt-4">
+              <div className="pt-3">
                 <Link
-                  to="/login"
-                  className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534]"
+                  to="/categories"
+                  className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534] transition-all"
                 >
-                  Sign In
+                  அனைத்து பகுப்புகளையும் காண்க
                 </Link>
-                <p className="text-center text-[10px] text-stone-600">
-                  Don't have an account?{' '}
-                  <Link to="/register" className="font-bold text-[#064E3B] underline">
-                    Sign Up
-                  </Link>
-                </p>
               </div>
             </div>
           </div>
 
-          {/* PHONE 3: Sign Up Screen */}
+          {/* PHONE 3: My Library Screen */}
           <div className="bg-[#1A2621] p-3 rounded-[40px] shadow-2xl border-4 border-[#334D40] max-w-xs mx-auto w-full">
             <div className="bg-[#F8F5E9] text-[#173D2E] rounded-[32px] overflow-hidden h-[540px] flex flex-col justify-between p-5 relative border border-stone-300">
               {/* Dynamic Island */}
@@ -515,62 +501,55 @@ export const LandingPage: React.FC = () => {
                 </div>
 
                 <h4 className="text-xl font-black font-serif text-[#064E3B] mb-1">
-                  Create Account
+                  எனது நூலகம்
                 </h4>
                 <p className="text-[11px] text-stone-600 mb-4">
-                  Join thousands of Tamil audio story lovers. 100% Free.
+                  உலாவியிலேயே தானாக சேமிக்கப்படும் கதைத் தொகுப்பு.
                 </p>
 
                 <div className="space-y-2.5">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-stone-600 mb-0.5">
-                      Full Name
-                    </label>
-                    <div className="flex items-center bg-white rounded-xl px-3 py-1.5 border border-stone-300 text-xs">
-                      <User className="w-3.5 h-3.5 text-stone-400 mr-2" />
-                      <span className="text-stone-500">Anzles Kumar</span>
+                  <div className="p-2.5 bg-white rounded-2xl border border-stone-200 shadow-sm flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800 text-xs font-bold">
+                      01
+                    </div>
+                    <div className="overflow-hidden flex-1">
+                      <div className="text-xs font-bold text-[#064E3B] truncate">அப்புசாமியும் ஆப்பிரிக்க அழகியும்</div>
+                      <div className="text-[10px] text-stone-500">தொடர்ந்து கேட்க · 12 நிமிடம் மீதம்</div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-stone-600 mb-0.5">
-                      Email Address
-                    </label>
-                    <div className="flex items-center bg-white rounded-xl px-3 py-1.5 border border-stone-300 text-xs">
-                      <Mail className="w-3.5 h-3.5 text-stone-400 mr-2" />
-                      <span className="text-stone-500">anzles@gmail.com</span>
+                  <div className="p-2.5 bg-white rounded-2xl border border-stone-200 shadow-sm flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800 text-xs font-bold">
+                      02
+                    </div>
+                    <div className="overflow-hidden flex-1">
+                      <div className="text-xs font-bold text-[#064E3B] truncate">அர்த்தசாஸ்திரம்</div>
+                      <div className="text-[10px] text-stone-500">அத்தியாயம் 1 · சேமிக்கப்பட்டது</div>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase text-stone-600 mb-0.5">
-                      Password
-                    </label>
-                    <div className="flex items-center bg-white rounded-xl px-3 py-1.5 border border-stone-300 text-xs">
-                      <Lock className="w-3.5 h-3.5 text-stone-400 mr-2" />
-                      <span className="text-stone-400">••••••••••••</span>
+                  <div className="p-2.5 bg-white rounded-2xl border border-stone-200 shadow-sm flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800 text-xs font-bold">
+                      03
+                    </div>
+                    <div className="overflow-hidden flex-1">
+                      <div className="text-xs font-bold text-[#064E3B] truncate">பார்த்திபன் கனவு</div>
+                      <div className="text-[10px] text-stone-500">அத்தியாயம் 1 · சேமிக்கப்பட்டது</div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2 pt-3">
+              <div className="pt-3">
                 <Link
-                  to="/register"
-                  className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534]"
+                  to="/my-library"
+                  className="block w-full py-2.5 rounded-full bg-[#064E3B] text-white font-bold text-xs text-center shadow-md hover:bg-[#166534] transition-all"
                 >
-                  Create Free Account
+                  நூலகத்திற்குச் செல் (Open Library)
                 </Link>
-                <p className="text-center text-[10px] text-stone-600">
-                  Already registered?{' '}
-                  <Link to="/login" className="font-bold text-[#064E3B] underline">
-                    Log In
-                  </Link>
-                </p>
               </div>
             </div>
           </div>
-
           {/* PHONE 4: Story Player Screen ("The Clever Crow") */}
           <div className="bg-[#1A2621] p-3 rounded-[40px] shadow-2xl border-4 border-[#334D40] max-w-xs mx-auto w-full">
             <div className="bg-[#F8F5E9] text-[#173D2E] rounded-[32px] overflow-hidden h-[540px] flex flex-col justify-between p-5 relative border border-stone-300">
