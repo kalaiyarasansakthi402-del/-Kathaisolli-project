@@ -126,6 +126,7 @@ describe('AuthService', () => {
           email: 'listener@example.com',
           displayName: 'கதை கேட்பவர்',
           role: UserRole.LISTENER,
+          publicId: 'KTH-47872',
         },
       });
       expect(jwt.signAsync).toHaveBeenCalled();

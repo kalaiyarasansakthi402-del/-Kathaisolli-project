@@ -53,6 +53,7 @@ export interface User {
   disabledAt?: string | null;
   creatorProfile?: CreatorProfile | null;
   createdAt: string;
+  publicId?: string;
 }
 
 export interface CreatorProfile {

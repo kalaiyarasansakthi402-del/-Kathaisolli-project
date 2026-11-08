@@ -5,6 +5,7 @@ export interface AuthenticatedUser {
   email: string;
   role: UserRole;
   displayName: string;
+  publicId?: string;
 }
 
 export type AuthPrincipal = Pick<AuthenticatedUser, 'id' | 'email' | 'role'>;

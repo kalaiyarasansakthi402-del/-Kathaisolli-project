@@ -16,6 +16,16 @@ import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, UpdateProfileDto } from './dto/update-profile.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
+export function formatUserId(id: string): string {
+  if (!id) return 'KTH-10001';
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  }
+  const num = Math.abs(hash % 90000) + 10000;
+  return "KTH-" + String(num);
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -89,7 +99,7 @@ export class AuthService {
   }
 
   async getProfile(userId: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId, disabledAt: null },
       select: {
         id: true,
@@ -108,6 +118,11 @@ export class AuthService {
         createdAt: true,
       },
     });
+    if (!user) return null;
+    return {
+      ...user,
+      publicId: formatUserId(user.id),
+    };
   }
 
   async updateProfile(userId: string, input: UpdateProfileDto) {
@@ -280,7 +295,10 @@ export class AuthService {
       accessToken,
       tokenType: 'Bearer',
       expiresIn: 900,
-      user,
+      user: {
+        ...user,
+        publicId: formatUserId(user.id),
+      },
     };
   }
 }

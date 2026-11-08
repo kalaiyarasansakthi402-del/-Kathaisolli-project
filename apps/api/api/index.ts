@@ -26,6 +26,7 @@ function isOriginAllowed(origin: string | undefined): boolean {
   if (/^https:\/\/web(-[a-z0-9-]+)?-kalai21\.vercel\.app$/.test(origin)) return true;
   if (/^https:\/\/web(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
   if (/^https:\/\/admin(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
+  if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) return true;
   return false;
 }
 
@@ -33,8 +34,11 @@ async function getAppModule(): Promise<any> {
   const candidatePaths = [
     '../dist/app.module',
     './dist/app.module',
-    path.join(process.cwd(), 'dist/app.module'),
     path.join(process.cwd(), 'apps/api/dist/app.module'),
+    path.join(process.cwd(), 'dist/app.module'),
+    path.join(__dirname, '../apps/api/dist/app.module'),
+    path.join(__dirname, 'apps/api/dist/app.module'),
+    path.join(__dirname, '../dist/app.module'),
     '../src/app.module',
   ];
 

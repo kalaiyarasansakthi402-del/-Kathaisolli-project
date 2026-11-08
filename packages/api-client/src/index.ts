@@ -31,7 +31,7 @@ export class KathaisolliApiClient {
       window.location &&
       window.location.hostname !== 'localhost' &&
       window.location.hostname !== '127.0.0.1'
-        ? 'https://api-kalai21.vercel.app/api/v1'
+        ? '/api/v1'
         : 'http://localhost:3000/api/v1';
 
     let resolvedBaseUrl = (config.baseURL || defaultBaseUrl).trim().replace(/\/+$/, '');

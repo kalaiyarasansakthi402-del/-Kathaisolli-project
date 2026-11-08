@@ -105,7 +105,7 @@ const ProtectedLayout: React.FC = () => {
   const { user } = useAdminAuth();
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return (
@@ -129,9 +129,17 @@ export const App: React.FC = () => {
       <AdminAuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Login Route */}
+            {/* Public Login Routes */}
             <Route
               path="/login"
+              element={
+                <Suspense fallback={<RouteLoadingFallback />}>
+                  <AdminLoginPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/admin/login"
               element={
                 <Suspense fallback={<RouteLoadingFallback />}>
                   <AdminLoginPage />
@@ -143,7 +151,8 @@ export const App: React.FC = () => {
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<Navigate to="/admin" replace />} />
               <Route path="/admin" element={<AdminOverviewPage />} />
-              <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+              <Route path="/admin/dashboard" element={<AdminOverviewPage />} />
+              <Route path="/admin/stories" element={<AdminBooksPage />} />
               <Route path="/admin/books" element={<AdminBooksPage />} />
               <Route path="/books" element={<Navigate to="/admin/books" replace />} />
               <Route path="/admin/books/new" element={<CreateBookPage />} />
@@ -156,6 +165,7 @@ export const App: React.FC = () => {
               <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
               <Route path="/admin/settings" element={<AdminSettingsPage />} />
               <Route path="/admin/audio" element={<Navigate to="/admin/audio-upload" replace />} />
+              <Route path="/admin/uploads" element={<AdminAudioUploadPage />} />
               <Route path="/admin/audio-upload" element={<AdminAudioUploadPage />} />
               <Route path="/audio-upload" element={<Navigate to="/admin/audio-upload" replace />} />
 

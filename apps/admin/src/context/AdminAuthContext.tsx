@@ -46,7 +46,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     } else {
       baseURL = import.meta.env.PROD
-        ? 'https://api-kalai21.vercel.app/api/v1'
+        ? '/api/v1'
         : 'http://localhost:3000/api/v1';
     }
 
