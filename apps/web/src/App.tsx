@@ -32,6 +32,14 @@ const LanguagesPage = lazyWithRetry(() => import('./pages/LanguagesPage').then((
 const StoryDetailsPage = lazyWithRetry(() => import('./pages/StoryDetailsPage').then((m) => ({ default: m.StoryDetailsPage })));
 const EpisodeDetailsPage = lazyWithRetry(() => import('./pages/EpisodeDetailsPage').then((m) => ({ default: m.EpisodeDetailsPage })));
 const FullPlayerPage = lazyWithRetry(() => import('./pages/FullPlayerPage').then((m) => ({ default: m.FullPlayerPage })));
+
+// Authentication Pages
+const LoginPage = lazyWithRetry(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazyWithRetry(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const ForgotPasswordPage = lazyWithRetry(() => import('./pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazyWithRetry(() => import('./pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
+
+// Content & Community
 const AboutPage = lazyWithRetry(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 const ContactPage = lazyWithRetry(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
 const PlaylistsPage = lazyWithRetry(() => import('./pages/PlaylistsPage').then((m) => ({ default: m.PlaylistsPage })));
@@ -64,16 +72,29 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const isDedicatedPlayerPage = location.pathname === '/player';
   const isHomePage = location.pathname === '/' || location.pathname === '/home';
+  const isAuthPage =
+    location.pathname === '/login' ||
+    location.pathname === '/register' ||
+    location.pathname === '/signup' ||
+    location.pathname === '/forgot-password' ||
+    location.pathname === '/reset-password';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
       {!isDedicatedPlayerPage && <Navbar />}
 
-      <main className={`flex-1 ${isDedicatedPlayerPage || isHomePage ? 'pb-0' : 'pb-28'}`}>
+      <main className={`flex-1 ${isDedicatedPlayerPage || isHomePage || isAuthPage ? 'pb-0' : 'pb-28'}`}>
         <ErrorBoundary>
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
-              {/* Public Main Website routes (100% Free & Open - No Authentication Required) */}
+              {/* Authentication Routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/signup" element={<Navigate to="/register" replace />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+              {/* Public Main Website routes (Open & Accessible) */}
               <Route path="/" element={<HomePage />} />
               <Route path="/home" element={<HomePage />} />
               <Route path="/landing" element={<LandingPage />} />
@@ -93,7 +114,7 @@ const AppContent: React.FC = () => {
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsConditionsPage />} />
 
-              {/* Personal Library & Settings (Stored locally in browser) */}
+              {/* Personal Library & Settings */}
               <Route path="/my-library" element={<MyLibraryPage />} />
               <Route path="/library" element={<Navigate to="/my-library" replace />} />
               <Route path="/favorites" element={<Navigate to="/my-library?tab=favorites" replace />} />
@@ -108,13 +129,6 @@ const AppContent: React.FC = () => {
               {/* Stories alias */}
               <Route path="/stories" element={<Navigate to="/categories" replace />} />
 
-              {/* Redirect old authentication routes seamlessly to Home */}
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="/register" element={<Navigate to="/" replace />} />
-              <Route path="/signup" element={<Navigate to="/" replace />} />
-              <Route path="/forgot-password" element={<Navigate to="/" replace />} />
-              <Route path="/reset-password" element={<Navigate to="/" replace />} />
-
               {/* Public Website Isolation: Admin is hosted completely separately on Private Admin Website */}
               <Route path="/admin/*" element={<Navigate to="/" replace />} />
 
@@ -125,10 +139,10 @@ const AppContent: React.FC = () => {
         </ErrorBoundary>
       </main>
 
-      {/* Global Mini Player docked at the bottom (hidden on dedicated player page and home page) */}
-      {!isDedicatedPlayerPage && !isHomePage && <AudioPlayer />}
+      {/* Global Mini Player docked at the bottom (hidden on dedicated player page, home page, and auth pages) */}
+      {!isDedicatedPlayerPage && !isHomePage && !isAuthPage && <AudioPlayer />}
 
-      {!isDedicatedPlayerPage && <Footer />}
+      {!isDedicatedPlayerPage && !isAuthPage && <Footer />}
     </div>
   );
 };
