@@ -1,6 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {
+  AdminDashboardStats,
   AdminMetrics,
+  AdminReportsData,
+  AdminStaffMember,
+  AdminStorageFile,
+  AdminStorageOverview,
+  AdminStoryListItem,
+  AdminSystemHealth,
   AuthSessionResponse,
   Category,
   ContinueListeningItem,
@@ -108,7 +115,6 @@ export class KathaisolliApiClient {
         .post<{ success: boolean; message?: string }>('/auth/logout')
         .then((r) => r.data),
   };
-
 
   // --- Public Catalog ---
   catalog = {
@@ -228,7 +234,6 @@ export class KathaisolliApiClient {
     apply: (data: { bio: string; sampleAudioUrl?: string; experience?: string; portfolioUrl?: string }) =>
       this.client.post('/creator/apply', data).then((r) => r.data),
 
-
     getStatus: () =>
       this.client.get<{ isCreator: boolean; creatorProfile: any; latestApplication: any }>('/creator/status').then((r) => r.data),
 
@@ -267,13 +272,72 @@ export class KathaisolliApiClient {
       this.client.get(`/uploads/${uploadJobId}/status`).then((r) => r.data),
   };
 
-  // --- Admin ---
+  // --- Admin (Full Admin API) ---
   admin = {
     getStatus: () =>
-      this.client.get<{ status: string; database?: string; timestamp?: string }>('/admin/status').then((r) => r.data),
+      this.client.get<AdminSystemHealth>('/admin/status').then((r) => r.data),
 
-    getMetrics: () => this.client.get<AdminMetrics>('/admin/metrics').then((r) => r.data),
+    getSystemHealth: () =>
+      this.client.get<AdminSystemHealth>('/admin/system/health').then((r) => r.data),
 
+    getDashboard: () =>
+      this.client.get<AdminDashboardStats>('/admin/dashboard').then((r) => r.data),
+
+    getMetrics: () =>
+      this.client.get<AdminDashboardStats>('/admin/metrics').then((r) => r.data),
+
+    // Stories CRUD
+    listStories: (params?: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      categoryId?: string;
+      status?: string;
+      languageId?: string;
+    }) =>
+      this.client.get<{
+        items: AdminStoryListItem[];
+        total: number;
+        page: number;
+        pageSize: number;
+        totalPages: number;
+      }>('/admin/stories', { params }).then((r) => r.data),
+
+    getStory: (id: string) =>
+      this.client.get<any>(`/admin/stories/${id}`).then((r) => r.data),
+
+    createStory: (data: any) =>
+      this.client.post<any>('/admin/stories', data).then((r) => r.data),
+
+    updateStory: (id: string, data: any) =>
+      this.client.patch<any>(`/admin/stories/${id}`, data).then((r) => r.data),
+
+    deleteStory: (id: string) =>
+      this.client.delete<{ success: boolean; message?: string }>(`/admin/stories/${id}`).then((r) => r.data),
+
+    togglePublishStory: (id: string) =>
+      this.client.post<{ success: boolean; id: string; status: string }>(`/admin/stories/${id}/publish`).then((r) => r.data),
+
+    unpublishStory: (id: string) =>
+      this.client.post<any>(`/admin/stories/${id}/unpublish`).then((r) => r.data),
+
+    // Chapters & Audio
+    createChapter: (storyId: string, data: any) =>
+      this.client.post<any>(`/admin/stories/${storyId}/chapters`, data).then((r) => r.data),
+
+    updateChapter: (storyId: string, chapterId: string, data: any) =>
+      this.client.patch<any>(`/admin/stories/${storyId}/chapters/${chapterId}`, data).then((r) => r.data),
+
+    deleteChapter: (storyId: string, chapterId: string) =>
+      this.client.delete<any>(`/admin/stories/${storyId}/chapters/${chapterId}`).then((r) => r.data),
+
+    saveChapterAudio: (storyId: string, chapterId: string, data: { audioUrl: string; storagePath?: string; durationSec?: number; fileSizeBytes?: number; fileName?: string }) =>
+      this.client.post<any>(`/admin/stories/${storyId}/chapters/${chapterId}/audio`, data).then((r) => r.data),
+
+    deleteChapterAudio: (storyId: string, chapterId: string) =>
+      this.client.delete<any>(`/admin/stories/${storyId}/chapters/${chapterId}/audio`).then((r) => r.data),
+
+    // Categories
     listCategories: () =>
       this.client.get<any[]>('/admin/categories').then((r) => r.data),
 
@@ -286,29 +350,32 @@ export class KathaisolliApiClient {
     deleteCategory: (id: string) =>
       this.client.delete<any>(`/admin/categories/${id}`).then((r) => r.data),
 
-    listUsers: (params?: { page?: number; pageSize?: number; search?: string }) =>
-      this.client.get<{ items: User[]; total: number; totalPages: number }>('/admin/users', { params }).then((r) => r.data),
+    // Audio Storage
+    getStorageOverview: () =>
+      this.client.get<AdminStorageOverview>('/admin/storage/overview').then((r) => r.data),
 
-    setUserStatus: (id: string, disabled: boolean) =>
-      this.client.patch(`/admin/users/${id}/status`, { disabled }).then((r) => r.data),
+    listStorageFiles: (params?: { page?: number; pageSize?: number; search?: string; type?: string }) =>
+      this.client.get<{ items: AdminStorageFile[]; total: number; page: number; pageSize: number; totalPages: number }>('/admin/storage/files', { params }).then((r) => r.data),
 
-    listCreatorApplications: () =>
-      this.client.get<any[]>('/admin/creators/applications').then((r) => r.data),
+    deleteStorageFile: (id: string) =>
+      this.client.delete<any>(`/admin/storage/files/${id}`).then((r) => r.data),
 
-    reviewCreatorApplication: (id: string, decision: 'APPROVE' | 'REJECT', reviewNote?: string) =>
-      this.client.post(`/admin/creators/applications/${id}/review`, { decision, reviewNote }).then((r) => r.data),
+    // Reports & Analytics
+    getReports: (params?: { timeframe?: string; startDate?: string; endDate?: string }) =>
+      this.client.get<AdminReportsData>('/admin/reports', { params }).then((r) => r.data),
 
-    listPendingModeration: () =>
-      this.client.get<{ series: Series[]; episodes: Episode[] }>('/admin/moderation/pending').then((r) => r.data),
+    // Staff & Roles
+    listStaff: () =>
+      this.client.get<AdminStaffMember[]>('/admin/staff').then((r) => r.data),
 
-    publishSeries: (seriesId: string) =>
-      this.client.post(`/admin/series/${seriesId}/publish`).then((r) => r.data),
+    createStaff: (data: { email: string; password: string; displayName: string; role: string }) =>
+      this.client.post<any>('/admin/staff', data).then((r) => r.data),
 
-    reviewSeries: (seriesId: string, decision: 'APPROVE' | 'REJECT', moderationNote?: string) =>
-      this.client.post(`/admin/series/${seriesId}/review`, { decision, moderationNote }).then((r) => r.data),
+    updateStaffRole: (id: string, role: string) =>
+      this.client.patch<any>(`/admin/staff/${id}/role`, { role }).then((r) => r.data),
 
-    reviewEpisode: (episodeId: string, decision: 'APPROVE' | 'REJECT', moderationNote?: string) =>
-      this.client.post(`/admin/episodes/${episodeId}/review`, { decision, moderationNote }).then((r) => r.data),
+    deleteStaff: (id: string) =>
+      this.client.delete<any>(`/admin/staff/${id}`).then((r) => r.data),
   };
 
   // --- Notifications ---
@@ -342,4 +409,3 @@ export const createApiClient = (config?: ApiClientConfig) =>
   new KathaisolliApiClient(config);
 
 export const apiClient = createApiClient();
-

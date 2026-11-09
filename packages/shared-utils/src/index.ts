@@ -55,3 +55,14 @@ export function truncate(text: string | null | undefined, maxLen: number): strin
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen).trim() + '...';
 }
+
+export function formatFileSize(bytes: number | null | undefined): string {
+  if (!bytes || bytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+export const formatBytes = formatFileSize;
+

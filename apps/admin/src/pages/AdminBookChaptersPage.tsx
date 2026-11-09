@@ -5,93 +5,96 @@ import {
   Plus,
   Headphones,
   Upload,
-  CheckCircle,
+  CheckCircle2,
   Clock,
   Trash2,
   AlertCircle,
   Volume2,
   FileAudio,
+  Play,
+  Pause,
+  RefreshCw,
+  X,
+  Edit,
+  FolderOpen,
 } from 'lucide-react';
-import {
-  getAdminBook,
-  upsertAdminChapter,
-  deleteAdminChapter,
-  type AdminBook,
-  type AdminChapter,
-} from '../services/adminCatalogService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAdminAuth } from '../context/AdminAuthContext';
 import {
   uploadChapterAudioMp3,
   formatFileSize,
+  detectAudioDuration,
 } from '../services/firebaseAdminStorage';
 import { formatDuration } from '@kathaisolli/shared-utils';
 import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
 
 export const AdminBookChaptersPage: React.FC = () => {
   const { bookId } = useParams<{ bookId: string }>();
-  const [book, setBook] = useState<AdminBook | null>(() => (bookId ? getAdminBook(bookId) : null));
+  const { api, permissions } = useAdminAuth();
+  const queryClient = useQueryClient();
 
-  // Add chapter modal state
+  // Active playing preview
+  const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null);
+  const [activePreviewTitle, setActivePreviewTitle] = useState<string>('');
+
+  // Add/Edit Chapter Modal
   const [showModal, setShowModal] = useState(false);
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
   const [chapterNumber, setChapterNumber] = useState<number>(1);
   const [title, setTitle] = useState('');
   const [tamilTitle, setTamilTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED');
 
-  // File upload state
+  // File upload state for single chapter
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
   const [detectedDuration, setDetectedDuration] = useState<number>(0);
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  // Active playing preview
-  const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null);
-  const [activePreviewTitle, setActivePreviewTitle] = useState<string>('');
-
-  // Bulk upload state
+  // Bulk Upload Modal state
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkFiles, setBulkFiles] = useState<
     Array<{
       file: File;
       chapterNumber: number;
       title: string;
-      tamilTitle: string;
       durationSec: number;
       progress: number;
       status: 'pending' | 'uploading' | 'completed' | 'error';
-      isDuplicate: boolean;
       error?: string;
     }>
   >([]);
   const [isBulkUploading, setIsBulkUploading] = useState(false);
 
-  useEffect(() => {
-    if (bookId) {
-      const b = getAdminBook(bookId);
-      setBook(b);
-      if (b) {
-        setChapterNumber(b.chapters.length + 1);
-      }
-    }
-  }, [bookId]);
+  // Fetch story details with chapters from real database
+  const {
+    data: story,
+    isLoading,
+    isError,
+    error: storyError,
+    refetch,
+  } = useQuery({
+    queryKey: ['admin', 'story', bookId],
+    queryFn: () => api.admin.getStory(bookId!),
+    enabled: !!bookId,
+  });
 
-  const refreshBook = () => {
-    if (bookId) {
-      const b = getAdminBook(bookId);
-      setBook(b);
-      if (b) {
-        setChapterNumber(b.chapters.length + 1);
-      }
+  const chapters: any[] = story?.chapters || [];
+
+  useEffect(() => {
+    if (chapters.length > 0 && !editingChapterId) {
+      setChapterNumber(chapters.length + 1);
     }
-  };
+  }, [chapters.length, editingChapterId]);
 
   const handleAudioSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate MP3
     const isMp3 =
       file.type === 'audio/mpeg' ||
       file.type === 'audio/mp3' ||
@@ -109,17 +112,49 @@ export const AdminBookChaptersPage: React.FC = () => {
     const localUrl = URL.createObjectURL(file);
     setPreviewAudioUrl(localUrl);
 
-    // Detect duration using Audio element
-    const audio = new Audio();
-    audio.src = localUrl;
-    audio.onloadedmetadata = () => {
-      setDetectedDuration(Math.round(audio.duration || 0));
-    };
+    try {
+      const dur = await detectAudioDuration(file);
+      setDetectedDuration(dur);
+    } catch {
+      setDetectedDuration(180);
+    }
+  };
+
+  const openAddModal = () => {
+    setEditingChapterId(null);
+    setChapterNumber(chapters.length + 1);
+    setTitle(`Chapter ${chapters.length + 1}`);
+    setTamilTitle(`அத்தியாயம் ${chapters.length + 1}`);
+    setDescription('');
+    setStatus('PUBLISHED');
+    setSelectedFile(null);
+    setPreviewAudioUrl('');
+    setDetectedDuration(0);
+    setError(null);
+    setSuccess(null);
+    setShowModal(true);
+  };
+
+  const openEditModal = (ch: any) => {
+    setEditingChapterId(ch.id);
+    setChapterNumber(ch.number);
+    setTitle(ch.title);
+    setTamilTitle(ch.title);
+    setDescription(ch.description || '');
+    setStatus(ch.status || 'PUBLISHED');
+    setSelectedFile(null);
+    setPreviewAudioUrl(ch.audioUrl || '');
+    setDetectedDuration(ch.durationSec || 0);
+    setError(null);
+    setSuccess(null);
+    setShowModal(true);
   };
 
   const handleSaveChapter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!book || !title.trim() && !tamilTitle.trim()) {
+    if (!bookId) return;
+
+    if (!title.trim() && !tamilTitle.trim()) {
       setError('தயவுசெய்து அத்தியாயத்தின் தலைப்பை உள்ளிடவும்.');
       return;
     }
@@ -128,239 +163,291 @@ export const AdminBookChaptersPage: React.FC = () => {
     setError(null);
 
     try {
-      const chapterId = `ch-${book.id}-${Date.now()}`;
-      let audioUrl = previewAudioUrl || '/audio/arthashastram_01.mp3';
-      let storagePath: string | undefined;
-      let finalDuration = detectedDuration || 300;
-      let fileSizeBytes = selectedFile?.size || 2866408;
+      const displayTitle = tamilTitle.trim() && title.trim() && tamilTitle.trim() !== title.trim()
+        ? `${tamilTitle.trim()} (${title.trim()})`
+        : tamilTitle.trim() || title.trim();
 
-      // Upload MP3 to Firebase Storage if a real file was selected
-      if (selectedFile) {
-        const uploadRes = await uploadChapterAudioMp3(
-          book.id,
-          chapterId,
-          selectedFile,
-          (pct) => setUploadProgress(pct)
-        );
-        audioUrl = uploadRes.url;
-        storagePath = uploadRes.storagePath;
-        finalDuration = uploadRes.durationSec || finalDuration;
-        fileSizeBytes = uploadRes.fileSizeBytes;
+      let chapterId = editingChapterId;
+
+      if (!chapterId) {
+        // Create chapter in database
+        const created = await api.admin.createChapter(bookId, {
+          title: displayTitle,
+          episodeNumber: chapterNumber,
+          description: description.trim() || undefined,
+          durationSec: detectedDuration || 0,
+          status,
+        });
+        chapterId = created.id;
+      } else {
+        // Update chapter in database
+        await api.admin.updateChapter(bookId, chapterId, {
+          title: displayTitle,
+          episodeNumber: chapterNumber,
+          description: description.trim() || undefined,
+          durationSec: detectedDuration || undefined,
+          status,
+        });
       }
 
-      // Save Chapter to database
-      upsertAdminChapter(book.id, {
-        id: chapterId,
-        number: chapterNumber,
-        title: title || tamilTitle,
-        tamilTitle: tamilTitle || title,
-        description,
-        audioUrl,
-        storagePath,
-        durationSec: finalDuration,
-        fileSizeBytes,
-        fileName: selectedFile?.name || `${chapterNumber}.mp3`,
-        status,
-      });
+      // If an audio file was selected, upload it to Firebase Storage and save URL to DB
+      if (selectedFile && chapterId) {
+        const uploadRes = await uploadChapterAudioMp3(
+          bookId,
+          chapterId,
+          selectedFile,
+          (pct) => setUploadProgress(pct),
+        );
 
-      // Reset modal
-      setShowModal(false);
-      setSelectedFile(null);
-      setPreviewAudioUrl('');
-      setTitle('');
-      setTamilTitle('');
-      setDescription('');
-      setUploadProgress(0);
-      setDetectedDuration(0);
-      refreshBook();
+        await api.admin.saveChapterAudio(bookId, chapterId, {
+          audioUrl: uploadRes.url,
+          storagePath: uploadRes.storagePath,
+          durationSec: uploadRes.durationSec,
+          fileSizeBytes: uploadRes.fileSizeBytes,
+          fileName: uploadRes.fileName,
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['admin', 'story', bookId] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stories'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+
+      setSuccess('அத்தியாயம் வெற்றிகரமாகச் சேமிக்கப்பட்டது!');
+      setTimeout(() => {
+        setShowModal(false);
+      }, 1000);
     } catch (err: any) {
-      console.error('Failed to save chapter:', err);
-      setError(err?.message || 'அத்தியாயம் சேமிப்பதில் பிழை ஏற்பட்டது.');
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'அத்தியாயத்தைச் சேமிப்பதில் பிழை ஏற்பட்டது.',
+      );
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleDeleteChapter = (chId: string, chTitle: string) => {
-    if (!book) return;
-    if (confirm(`"${chTitle}" அத்தியாயத்தை நிச்சயமாக நீக்க விரும்புகிறீர்களா?`)) {
-      deleteAdminChapter(book.id, chId);
-      refreshBook();
+  const handleDeleteChapter = async (ch: any) => {
+    if (!bookId) return;
+    if (
+      confirm(
+        `"${ch.title}" அத்தியாயத்தை நிச்சயமாக நீக்க விரும்புகிறீர்களா? (Delete chapter?)`,
+      )
+    ) {
+      try {
+        await api.admin.deleteChapter(bookId, ch.id);
+        queryClient.invalidateQueries({ queryKey: ['admin', 'story', bookId] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
+      } catch (err: any) {
+        alert(err?.response?.data?.message || 'நீக்குவதில் பிழை ஏற்பட்டது.');
+      }
     }
   };
 
-  const handleBulkFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDeleteAudioOnly = async (ch: any) => {
+    if (!bookId) return;
+    if (confirm(`இந்த அத்தியாயத்தின் ஆடியோவை மட்டும் நீக்கவா?`)) {
+      try {
+        await api.admin.deleteChapterAudio(bookId, ch.id);
+        queryClient.invalidateQueries({ queryKey: ['admin', 'story', bookId] });
+      } catch (err: any) {
+        alert(err?.response?.data?.message || 'ஆடியோ நீக்குவதில் பிழை.');
+      }
+    }
+  };
+
+  // Bulk Upload File Handlers
+  const handleBulkFilesSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (!files.length || !book) return;
+    if (files.length === 0) return;
 
-    let baseNumber = book.chapters.length + 1;
-    const prepared = files.map((file, idx) => {
-      // Auto-extract number from filename (e.g. 01.mp3 -> 1, Chapter_05.mp3 -> 5)
-      const numMatch = file.name.match(/\d+/);
-      const parsedNum = numMatch ? parseInt(numMatch[0], 10) : baseNumber + idx;
-      const cleanTitle = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+    // Filter only MP3 files and sort alphabetically
+    const mp3Files = files.filter(
+      (f) =>
+        f.type === 'audio/mpeg' ||
+        f.type === 'audio/mp3' ||
+        f.name.toLowerCase().endsWith('.mp3'),
+    );
 
-      // Duplicate detection against existing book chapters
-      const isDuplicate = book.chapters.some(
-        (c) => c.number === parsedNum || c.fileName?.toLowerCase() === file.name.toLowerCase()
-      );
+    mp3Files.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
+    );
 
-      return {
-        file,
-        chapterNumber: parsedNum,
-        title: cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1),
-        tamilTitle: `அத்தியாயம் ${parsedNum}`,
-        durationSec: 300,
-        progress: 0,
-        status: 'pending' as const,
-        isDuplicate,
-      };
-    });
+    const startNum = chapters.length + 1;
+    const initialList = await Promise.all(
+      mp3Files.map(async (file, idx) => {
+        const num = startNum + idx;
+        const cleanName = file.name.replace(/\.mp3$/i, '').replace(/[_-]/g, ' ');
+        let durationSec = 180;
+        try {
+          durationSec = await detectAudioDuration(file);
+        } catch {
+          // fallback
+        }
+        return {
+          file,
+          chapterNumber: num,
+          title: `Chapter ${num} - ${cleanName}`,
+          durationSec,
+          progress: 0,
+          status: 'pending' as const,
+        };
+      }),
+    );
 
-    setBulkFiles(prepared);
+    setBulkFiles(initialList);
     setShowBulkModal(true);
   };
 
   const startBulkUpload = async () => {
-    if (!book || !bulkFiles.length) return;
+    if (!bookId || bulkFiles.length === 0) return;
     setIsBulkUploading(true);
 
-    const updatedFiles = [...bulkFiles];
+    for (let i = 0; i < bulkFiles.length; i++) {
+      const item = bulkFiles[i];
+      if (item.status === 'completed') continue;
 
-    for (let i = 0; i < updatedFiles.length; i++) {
-      const item = updatedFiles[i];
-      item.status = 'uploading';
-      setBulkFiles([...updatedFiles]);
+      // Update state to uploading
+      setBulkFiles((prev) =>
+        prev.map((it, idx) => (idx === i ? { ...it, status: 'uploading' } : it)),
+      );
 
       try {
-        const chapterId = `ch-${book.id}-${Date.now()}-${i}`;
-        const uploadRes = await uploadChapterAudioMp3(
-          book.id,
-          chapterId,
-          item.file,
-          (pct) => {
-            item.progress = pct;
-            setBulkFiles([...updatedFiles]);
-          }
-        );
-
-        upsertAdminChapter(book.id, {
-          id: chapterId,
-          number: item.chapterNumber,
+        // 1. Create chapter
+        const chapter = await api.admin.createChapter(bookId, {
           title: item.title,
-          tamilTitle: item.tamilTitle,
-          audioUrl: uploadRes.url,
-          storagePath: uploadRes.storagePath,
-          durationSec: uploadRes.durationSec || item.durationSec,
-          fileSizeBytes: uploadRes.fileSizeBytes,
-          fileName: item.file.name,
+          episodeNumber: item.chapterNumber,
+          durationSec: item.durationSec,
           status: 'PUBLISHED',
         });
 
-        item.status = 'completed';
-        item.progress = 100;
-      } catch (err: any) {
-        item.status = 'error';
-        item.error = err?.message || 'Upload failed';
-      }
+        // 2. Upload MP3 to Firebase
+        const uploadRes = await uploadChapterAudioMp3(
+          bookId,
+          chapter.id,
+          item.file,
+          (pct) => {
+            setBulkFiles((prev) =>
+              prev.map((it, idx) => (idx === i ? { ...it, progress: pct } : it)),
+            );
+          },
+        );
 
-      setBulkFiles([...updatedFiles]);
+        // 3. Save audio link to database
+        await api.admin.saveChapterAudio(bookId, chapter.id, {
+          audioUrl: uploadRes.url,
+          storagePath: uploadRes.storagePath,
+          durationSec: uploadRes.durationSec,
+          fileSizeBytes: uploadRes.fileSizeBytes,
+          fileName: uploadRes.fileName,
+        });
+
+        setBulkFiles((prev) =>
+          prev.map((it, idx) =>
+            idx === i ? { ...it, status: 'completed', progress: 100 } : it,
+          ),
+        );
+      } catch (err: any) {
+        setBulkFiles((prev) =>
+          prev.map((it, idx) =>
+            idx === i ? { ...it, status: 'error', error: err?.message || 'Upload failed' } : it,
+          ),
+        );
+      }
     }
 
     setIsBulkUploading(false);
-    refreshBook();
+    queryClient.invalidateQueries({ queryKey: ['admin', 'story', bookId] });
+    queryClient.invalidateQueries({ queryKey: ['admin', 'stories'] });
+    queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
   };
 
-  if (!book) {
+  if (isLoading) {
     return (
-      <div className="p-8 text-center space-y-4">
-        <p className="text-zinc-500">புத்தகம் கிடைக்கவில்லை (Book not found).</p>
-        <Link to="/books" className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs">
-          புத்தகங்கள் பட்டியலுக்குச் செல்
-        </Link>
+      <div className="p-8 max-w-7xl mx-auto flex flex-col items-center justify-center space-y-4">
+        <div className="w-8 h-8 border-2 border-[#064E3B] border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-bold text-gray-500 font-tamil">அத்தியாயங்கள் ஏற்றப்படுகின்றன...</p>
+      </div>
+    );
+  }
+
+  if (isError || !story) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto">
+        <div className="p-6 rounded-3xl bg-rose-50 border border-rose-200 text-rose-800 space-y-3">
+          <div className="flex items-center gap-2 font-bold text-sm">
+            <AlertCircle className="w-5 h-5 text-rose-600" />
+            <span>கதை விவரங்களை ஏற்றுவதில் பிழை</span>
+          </div>
+          <p className="text-xs">{(storyError as any)?.message || 'கதை காணப்படவில்லை.'}</p>
+          <Link
+            to="/admin/stories"
+            className="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-bold inline-block"
+          >
+            கதைகள் பட்டியலுக்குத் திரும்பு
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 sm:p-8 max-w-6xl mx-auto space-y-8">
-      {/* Back button */}
-      <Link
-        to="/books"
-        className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>புத்தகங்கள் மேலாண்மைக்குத் திரும்பு</span>
-      </Link>
-
-      {/* Book Banner */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-[#10221B] border border-emerald-100 dark:border-emerald-900/40 shadow-sm flex flex-col sm:flex-row gap-6 items-start justify-between">
-        <div className="flex gap-4 items-center">
-          <div className="w-20 h-24 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-            <img
-              src={book.coverImageUrl || '/images/temple-sunset.jpg'}
-              alt={book.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = '/images/temple-sunset.jpg';
-              }}
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  book.status === 'PUBLISHED'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                }`}
-              >
-                {book.status === 'PUBLISHED' ? 'வெளியிடப்பட்டது (Published)' : 'வரைவு (Draft)'}
-              </span>
-              <span className="text-xs text-zinc-400 font-mono">ID: {book.id}</span>
-            </div>
-            <h1 className="text-2xl font-black font-serif text-zinc-900 dark:text-zinc-100">
-              {book.tamilTitle || book.title}
-            </h1>
-            <p className="text-xs text-zinc-500">{book.title} • {book.authorName}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-600 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-all cursor-pointer">
-            <Upload className="w-4 h-4" />
-            <span>மொத்தப் பதிவேற்றம் (Bulk MP3)</span>
-            <input
-              type="file"
-              multiple
-              accept="audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/x-m4a"
-              onChange={handleBulkFilesSelect}
-              className="hidden"
-            />
-          </label>
-
-          <button
-            onClick={() => {
-              setShowModal(true);
-              setError(null);
-            }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition-all hover:scale-105 shrink-0"
+    <div className="p-6 sm:p-8 max-w-7xl mx-auto space-y-8">
+      {/* Top Breadcrumb & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <Link
+            to="/admin/stories"
+            className="inline-flex items-center gap-2 text-xs font-bold text-gray-500 hover:text-[#064E3B] transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            <span>புதிய அத்தியாயம் சேர்க்க (Upload MP3)</span>
-          </button>
+            <ArrowLeft className="w-4 h-4" />
+            <span>கதைகள் பட்டியலுக்குத் திரும்பு (Back)</span>
+          </Link>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 font-serif">
+            {story.title}
+          </h1>
+          <p className="text-xs sm:text-sm text-gray-500">
+            எழுத்தாளர்: <span className="font-semibold text-gray-700">{story.authorName}</span> • மொத்தம்{' '}
+            {chapters.length} அத்தியாயங்கள்
+          </p>
         </div>
+
+        {/* Action Buttons */}
+        {permissions.canUploadAudio && (
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Bulk Upload Button */}
+            <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs cursor-pointer transition-colors shadow-sm">
+              <FolderOpen className="w-4 h-4 text-[#064E3B]" />
+              <span>மொத்த MP3 பதிவேற்றம் (Bulk Upload)</span>
+              <input
+                type="file"
+                multiple
+                accept="audio/mpeg,audio/mp3,.mp3"
+                onChange={handleBulkFilesSelect}
+                className="hidden"
+              />
+            </label>
+
+            {/* Single Chapter Modal Button */}
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#064E3B] hover:bg-[#047857] text-white font-bold text-xs shadow-md transition-all active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              <span>புதிய அத்தியாயம் சேர் (Add Chapter)</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Active Audio Preview Bar */}
       {activePreviewUrl && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
-            <span>ஆடியோ பின்னணி முன்னோட்டம் (Live Audio Preview)</span>
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-[#064E3B]">
+            <span>நேரடி ஆடியோ முன்னோட்டம்: {activePreviewTitle}</span>
             <button
               onClick={() => setActivePreviewUrl(null)}
-              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              className="text-gray-400 hover:text-gray-600"
             >
               ✕ மூடு
             </button>
@@ -369,96 +456,131 @@ export const AdminBookChaptersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Chapters List */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold font-serif text-zinc-900 dark:text-zinc-100">
-          அத்தியாயங்கள் பட்டியல் ({book.chapters.length})
-        </h2>
+      {/* Chapters Table & List Card */}
+      <div className="rounded-3xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Headphones className="w-5 h-5 text-[#064E3B]" />
+            <h3 className="font-bold text-sm text-gray-900 font-serif">
+              அத்தியாயங்களின் வரிசை (Chapters & Episodes)
+            </h3>
+          </div>
+          <span className="text-xs text-gray-400 font-semibold">
+            {chapters.filter((c) => c.audioUrl).length} / {chapters.length} ஆடியோ உள்ளது
+          </span>
+        </div>
 
-        {book.chapters.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#10221B] border border-dashed border-zinc-300 dark:border-zinc-700 space-y-4">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center mx-auto">
-              <Headphones className="w-7 h-7" />
+        {chapters.length === 0 ? (
+          <div className="p-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-[#064E3B] flex items-center justify-center mx-auto">
+              <FileAudio className="w-8 h-8" />
             </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-zinc-900 dark:text-zinc-100">
+            <div>
+              <h4 className="text-base font-bold text-gray-900">
                 அத்தியாயங்கள் எதுவும் சேர்க்கப்படவில்லை
-              </h3>
-              <p className="text-xs text-zinc-500 max-w-md mx-auto">
-                முதல் அத்தியாயத்திற்கான MP3 ஆடியோ கோப்பைப் பதிவேற்றி, முன்னோட்டம் பார்த்து வெளியிடவும்.
+              </h4>
+              <p className="text-xs text-gray-500 max-w-md mx-auto mt-1">
+                இந்தக் கதைக்கு இன்னும் MP3 அத்தியாயங்கள் பதிவேற்றப்படவில்லை. மேலே உள்ள "புதிய அத்தியாயம் சேர்" அல்லது "மொத்த MP3 பதிவேற்றம்" பொத்தானைப் பயன்படுத்தவும்.
               </p>
             </div>
-            <button
-              onClick={() => setShowModal(true)}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
-            >
-              + அத்தியாயம் பதிவேற்று
-            </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {book.chapters.map((ch) => {
-              const isCurrentPlaying = activePreviewUrl === ch.audioUrl;
+          <div className="divide-y divide-gray-100">
+            {chapters.map((ch: any) => {
+              const hasAudio = Boolean(ch.audioUrl);
+              const isPlaying = activePreviewUrl === ch.audioUrl;
 
               return (
                 <div
                   key={ch.id}
-                  className="p-4 rounded-2xl bg-white dark:bg-[#10221B] border border-emerald-100 dark:border-emerald-900/40 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/70 transition-colors"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3.5 min-w-0">
                     {/* Chapter Number Badge */}
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-300 dark:border-emerald-800">
-                      {ch.number}
+                    <div className="w-9 h-9 rounded-xl bg-gray-100 text-gray-800 flex items-center justify-center font-bold text-xs shrink-0 font-serif">
+                      #{ch.number}
                     </div>
 
-                    <div>
+                    {/* Title & Metadata */}
+                    <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                          {ch.tamilTitle || ch.title}
+                        <h4 className="font-bold text-sm text-gray-900 truncate">
+                          {ch.title}
                         </h4>
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
                             ch.status === 'PUBLISHED'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                              : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-gray-100 text-gray-700'
                           }`}
                         >
-                          {ch.status === 'PUBLISHED' ? 'Published' : 'Draft'}
+                          {ch.status === 'PUBLISHED' ? 'வெளியானது' : 'வரைவு'}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {ch.title} • {formatDuration(ch.durationSec)} • {formatFileSize(ch.fileSizeBytes)}
-                      </p>
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                        {ch.durationSec ? (
+                          <span className="flex items-center gap-1 font-semibold text-gray-600">
+                            <Clock className="w-3 h-3" />
+                            <span>{formatDuration(ch.durationSec)}</span>
+                          </span>
+                        ) : null}
+                        {ch.fileSizeBytes ? (
+                          <span>{formatFileSize(ch.fileSizeBytes)}</span>
+                        ) : null}
+                        {hasAudio ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Firebase MP3</span>
+                          </span>
+                        ) : (
+                          <span className="text-amber-700 font-bold">ஆடியோ இல்லை</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {ch.audioUrl && (
+                  {/* Actions Bar */}
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    {hasAudio && (
                       <button
                         onClick={() => {
-                          setActivePreviewUrl(ch.audioUrl!);
-                          setActivePreviewTitle(ch.tamilTitle || ch.title);
+                          if (isPlaying) {
+                            setActivePreviewUrl(null);
+                          } else {
+                            setActivePreviewUrl(ch.audioUrl);
+                            setActivePreviewTitle(ch.title);
+                          }
                         }}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                          isCurrentPlaying
-                            ? 'bg-emerald-500 text-emerald-950'
-                            : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                          isPlaying
+                            ? 'bg-[#064E3B] text-white shadow-sm'
+                            : 'bg-emerald-50 text-[#064E3B] border border-emerald-200 hover:bg-emerald-100'
                         }`}
-                        title="முன்னோட்டம் கேள் (Preview Audio)"
                       >
-                        <Volume2 className="w-3.5 h-3.5" />
-                        <span>{isCurrentPlaying ? 'இயங்குகிறது' : 'கேள் (Play)'}</span>
+                        {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                        <span>{isPlaying ? 'நிறுத்து' : 'கேளுங்கள்'}</span>
                       </button>
                     )}
 
-                    <button
-                      onClick={() => handleDeleteChapter(ch.id, ch.tamilTitle || ch.title)}
-                      className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                      title="நீக்கு (Delete)"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {permissions.canUploadAudio && (
+                      <button
+                        onClick={() => openEditModal(ch)}
+                        className="p-1.5 rounded-xl border border-gray-200 hover:bg-gray-100 text-gray-600 transition-colors shadow-sm"
+                        title="திருத்து / மாற்று (Edit / Replace Audio)"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    {permissions.canUploadAudio && (
+                      <button
+                        onClick={() => handleDeleteChapter(ch)}
+                        className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        title="அத்தியாயத்தை நீக்கு (Delete Chapter)"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -467,182 +589,178 @@ export const AdminBookChaptersPage: React.FC = () => {
         )}
       </div>
 
-      {/* Add Chapter Modal */}
+      {/* Add / Edit Chapter Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0A1E16] text-zinc-900 dark:text-zinc-100 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl border border-emerald-900/60 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-4">
-              <div>
-                <h3 className="text-lg font-bold font-serif">
-                  புதிய அத்தியாயம் சேர்க்க (Upload MP3 Chapter)
-                </h3>
-                <p className="text-xs text-zinc-500">
-                  {book.tamilTitle} • அத்தியாயம் {chapterNumber}
-                </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 space-y-5 border border-gray-200 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute right-5 top-5 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#064E3B] text-xs font-bold uppercase tracking-wider mb-2">
+                <Headphones className="w-3.5 h-3.5" />
+                <span>
+                  {editingChapterId ? 'அத்தியாயத்தைத் திருத்து' : 'புதிய MP3 அத்தியாயம்'}
+                </span>
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-lg"
-              >
-                ✕
-              </button>
+              <h3 className="text-xl font-bold text-gray-900 font-serif">
+                {editingChapterId ? 'அத்தியாயம் & ஆடியோ விவரங்கள்' : 'புதிய அத்தியாயம் பதிவு'}
+              </h3>
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>{error}</span>
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-[#064E3B] text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-[#047857]" />
+                <span>{success}</span>
               </div>
             )}
 
             <form onSubmit={handleSaveChapter} className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                  <label className="block text-xs font-bold text-gray-700">
                     எண் (No.)
                   </label>
                   <input
                     type="number"
                     min={1}
                     value={chapterNumber}
-                    onChange={(e) => setChapterNumber(parseInt(e.target.value, 10))}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#06241C] text-sm"
+                    onChange={(e) => setChapterNumber(parseInt(e.target.value, 10) || 1)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
                   />
                 </div>
 
                 <div className="col-span-2 space-y-1">
-                  <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
-                    தமிழ் தலைப்பு *
+                  <label className="block text-xs font-bold text-gray-700">
+                    நிலை (Status)
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="எ.கா. அத்தியாயம் 1 - தொடக்கம்"
-                    value={tamilTitle}
-                    onChange={(e) => setTamilTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#06241C] text-sm"
-                  />
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
+                  >
+                    <option value="PUBLISHED">வெளியீடு (Published)</option>
+                    <option value="DRAFT">வரைவு (Draft)</option>
+                  </select>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-300">
-                  ஆங்கிலத் தலைப்பு (English Title)
+                <label className="block text-xs font-bold text-gray-700">
+                  அத்தியாயத் தலைப்பு (Chapter Title)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Chapter 1 - The Beginning"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#06241C] text-sm"
+                  required
+                  placeholder="எ.கா: அத்தியாயம் 1 - புதிய விடியல்"
+                  value={tamilTitle}
+                  onChange={(e) => setTamilTitle(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
                 />
               </div>
 
-              {/* Audio Upload Box */}
-              <div className="space-y-2 pt-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-                  MP3 ஆடியோ கோப்பு (Audio File) *
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-gray-700">
+                  சுருக்கமான விளக்கம் (Description - விருப்பமானது)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="இந்த அத்தியாயத்தில் இடம்பெறும் காட்சிகள் பற்றிய சுருக்கம்..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
+                />
+              </div>
+
+              {/* Audio File Selection & Progress */}
+              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
+                <label className="block text-xs font-bold text-gray-700">
+                  MP3 ஆடியோ கோப்பு (Audio File - audio/mpeg)
                 </label>
 
-                <label className="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-emerald-300 dark:border-emerald-800 bg-emerald-50/50 dark:bg-[#071E16] hover:bg-emerald-50 cursor-pointer transition-colors text-center">
-                  <FileAudio className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mb-1" />
-                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                    {selectedFile ? selectedFile.name : 'MP3 கோப்பைத் தேர்ந்தெடுக்க இங்கே கிளிக் செய்யவும்'}
-                  </span>
-                  <span className="text-[11px] text-zinc-500 mt-0.5">
-                    MIME Type: audio/mpeg (.mp3)
-                  </span>
-                  <input
-                    type="file"
-                    accept="audio/mpeg,audio/mp3,.mp3"
-                    onChange={handleAudioSelect}
-                    className="hidden"
-                  />
-                </label>
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-300 hover:bg-gray-100 text-xs font-bold text-gray-800 cursor-pointer shadow-sm transition-colors">
+                    <Upload className="w-4 h-4 text-[#064E3B]" />
+                    <span>MP3 கோப்பைத் தேர்ந்தெடு</span>
+                    <input
+                      type="file"
+                      accept="audio/mpeg,audio/mp3,.mp3"
+                      onChange={handleAudioSelect}
+                      className="hidden"
+                    />
+                  </label>
 
-                {/* Upload Progress Bar */}
+                  {selectedFile ? (
+                    <span className="text-xs text-emerald-800 font-bold truncate max-w-[200px]">
+                      {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                    </span>
+                  ) : previewAudioUrl ? (
+                    <span className="text-xs text-gray-500 font-semibold truncate max-w-[200px]">
+                      ஏற்கனவே ஆடியோ உள்ளது
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-400">கோப்பு தேர்ந்தெடுக்கப்படவில்லை</span>
+                  )}
+                </div>
+
+                {detectedDuration > 0 && (
+                  <div className="text-[11px] text-[#064E3B] font-bold">
+                    கண்டறியப்பட்ட ஆடியோ கால அளவு: {formatDuration(detectedDuration)}
+                  </div>
+                )}
+
                 {uploadProgress > 0 && uploadProgress < 100 && (
                   <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-zinc-500 font-mono">
-                      <span>Firebase Storage ஏற்றுதல்...</span>
+                    <div className="flex justify-between text-[11px] font-bold text-gray-600">
+                      <span>Firebase பதிவேற்றம்</span>
                       <span>{uploadProgress}%</span>
                     </div>
-                    <div className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                    <div className="w-full h-2 rounded-full bg-gray-200 overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500 transition-all"
+                        className="h-full bg-[#064E3B] transition-all"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
                   </div>
                 )}
-
-                {/* Detected Audio Metadata */}
-                {selectedFile && (
-                  <div className="p-3 rounded-xl bg-zinc-100 dark:bg-[#06241C] text-xs space-y-1 border border-zinc-200 dark:border-zinc-800">
-                    <div className="flex justify-between text-zinc-600 dark:text-zinc-300 font-mono">
-                      <span>கோப்பு அளவு:</span>
-                      <span className="font-bold">{formatFileSize(selectedFile.size)}</span>
-                    </div>
-                    <div className="flex justify-between text-zinc-600 dark:text-zinc-300 font-mono">
-                      <span>ஆடியோ நீளம்:</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        {detectedDuration > 0 ? formatDuration(detectedDuration) : 'கணக்கிடுகிறது...'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Interactive Audio Preview */}
-                {previewAudioUrl && (
-                  <div className="pt-2">
-                    <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 mb-1">
-                      உடனடி ஆடியோ சரிபார்ப்பு (Audio Preview before Save):
-                    </p>
-                    <AudioPreviewPlayer src={previewAudioUrl} title={tamilTitle || selectedFile?.name} />
-                  </div>
-                )}
               </div>
 
-              {/* Status Toggle */}
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-[#06241C] border border-zinc-200 dark:border-zinc-800 flex gap-4 text-xs font-semibold">
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="chapterStatus"
-                    value="PUBLISHED"
-                    checked={status === 'PUBLISHED'}
-                    onChange={() => setStatus('PUBLISHED')}
-                    className="accent-emerald-600"
-                  />
-                  <span>வெளியிடு (Publish)</span>
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="chapterStatus"
-                    value="DRAFT"
-                    checked={status === 'DRAFT'}
-                    onChange={() => setStatus('DRAFT')}
-                    className="accent-emerald-600"
-                  />
-                  <span>வரைவு (Draft)</span>
-                </label>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-100"
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
                 >
-                  ரத்துசெய்
+                  ரத்து செய்
                 </button>
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl bg-[#064E3B] hover:bg-[#047857] text-white text-xs font-bold shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
-                  {isUploading ? 'ஏற்றப்படுகிறது...' : 'அத்தியாயத்தைச் சேமி (Save Chapter)'}
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>பதிவேற்றப்படுகிறது...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>சேமித்து வெளியிடு</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -650,127 +768,97 @@ export const AdminBookChaptersPage: React.FC = () => {
         </div>
       )}
 
-      {/* Bulk Chapter Upload Modal */}
+      {/* Bulk Upload Modal */}
       {showBulkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-3xl rounded-3xl bg-white dark:bg-[#10221B] border border-emerald-100 dark:border-emerald-900/60 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold font-serif text-zinc-900 dark:text-zinc-100">
-                  மொத்த ஆடியோ அத்தியாயங்கள் பதிவேற்றம் (Bulk Audio Upload)
-                </h3>
-                <p className="text-xs text-zinc-500 mt-1">
-                  தேர்ந்தெடுக்கப்பட்ட கோப்புகள்: {bulkFiles.length} • தானியங்கி அத்தியாய எண் கண்டறிதல் & நகல் சரிபார்ப்பு
-                </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 space-y-5 border border-gray-200 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                if (!isBulkUploading) setShowBulkModal(false);
+              }}
+              disabled={isBulkUploading}
+              className="absolute right-5 top-5 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-[#064E3B] text-xs font-bold uppercase tracking-wider mb-2">
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>மொத்த ஆடியோ பதிவேற்றம் (Bulk Upload Queue)</span>
               </div>
+              <h3 className="text-xl font-bold text-gray-900 font-serif">
+                {bulkFiles.length} MP3 கோப்புகள் வரிசைப்படுத்தப்பட்டுள்ளன
+              </h3>
+              <p className="text-xs text-gray-500">
+                கோப்புகள் ஒவ்வொன்றாக Firebase Storage-க்கு பதிவேற்றப்பட்டு தானாக அத்தியாயங்களாக இணைக்கப்படும்.
+              </p>
+            </div>
+
+            {/* Queue List */}
+            <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-2xl p-2 bg-gray-50">
+              {bulkFiles.map((item, idx) => (
+                <div key={idx} className="p-2.5 flex items-center justify-between text-xs">
+                  <div className="min-w-0 pr-3">
+                    <p className="font-bold text-gray-900 truncate">
+                      #{item.chapterNumber} • {item.title}
+                    </p>
+                    <p className="text-[11px] text-gray-500">
+                      {formatFileSize(item.file.size)} • {formatDuration(item.durationSec)}
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 flex items-center gap-2">
+                    {item.status === 'completed' && (
+                      <span className="text-emerald-700 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>முடிந்தது</span>
+                      </span>
+                    )}
+                    {item.status === 'uploading' && (
+                      <span className="text-[#064E3B] font-bold">
+                        {item.progress}%
+                      </span>
+                    )}
+                    {item.status === 'pending' && (
+                      <span className="text-gray-400">காத்திருக்கிறது</span>
+                    )}
+                    {item.status === 'error' && (
+                      <span className="text-rose-600 font-bold">பிழை</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Controls */}
+            <div className="flex gap-3 pt-2">
               <button
-                onClick={() => {
-                  if (!isBulkUploading) setShowBulkModal(false);
-                }}
+                type="button"
+                onClick={() => setShowBulkModal(false)}
                 disabled={isBulkUploading}
-                className="text-zinc-400 hover:text-zinc-600 text-sm font-bold disabled:opacity-50"
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-50"
               >
-                ✕ மூடு
+                மூடு (Close)
               </button>
-            </div>
-
-            {/* File List Table */}
-            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden text-xs">
-              <table className="w-full text-left">
-                <thead className="bg-zinc-50 dark:bg-[#0A1612] text-zinc-500 uppercase font-bold border-b border-zinc-200 dark:border-zinc-800">
-                  <tr>
-                    <th className="px-4 py-3">கோப்பு பெயர்</th>
-                    <th className="px-4 py-3 text-center">அத்தியாயம் #</th>
-                    <th className="px-4 py-3">பரிந்துரைக்கப்பட்ட தலைப்பு</th>
-                    <th className="px-4 py-3 text-center">நகல் சரிபார்ப்பு</th>
-                    <th className="px-4 py-3 text-center">நிலை / முன்னேற்றம்</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {bulkFiles.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-zinc-50 dark:hover:bg-[#081813]">
-                      <td className="px-4 py-3 font-mono font-semibold truncate max-w-[160px]">
-                        {item.file.name}
-                      </td>
-                      <td className="px-4 py-3 text-center font-bold text-emerald-700 dark:text-emerald-400">
-                        #{item.chapterNumber}
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="text"
-                          value={item.title}
-                          disabled={isBulkUploading}
-                          onChange={(e) => {
-                            const newFiles = [...bulkFiles];
-                            newFiles[idx].title = e.target.value;
-                            setBulkFiles(newFiles);
-                          }}
-                          className="w-full px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#0A1612] text-xs font-medium"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {item.isDuplicate ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                            நகல் எச்சரிக்கை
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            புதியது
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {item.status === 'pending' && <span className="text-zinc-400">காத்திருக்கிறது</span>}
-                        {item.status === 'uploading' && (
-                          <div className="w-20 mx-auto space-y-1">
-                            <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
-                              <div
-                                className="h-full bg-emerald-500 rounded-full transition-all"
-                                style={{ width: `${item.progress}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] font-mono text-emerald-600">{item.progress}%</span>
-                          </div>
-                        )}
-                        {item.status === 'completed' && (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            <span>வெற்றி</span>
-                          </span>
-                        )}
-                        {item.status === 'error' && (
-                          <span className="text-rose-600 font-bold">{item.error || 'தோல்வி'}</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
-              <span className="text-xs text-zinc-500">
-                Firebase Storage: <code className="font-mono text-emerald-600">vaagai-audio-books-36a4e.appspot.com</code>
-              </span>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowBulkModal(false)}
-                  disabled={isBulkUploading}
-                  className="px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs font-semibold hover:bg-zinc-100 disabled:opacity-50"
-                >
-                  ரத்து செய்
-                </button>
-                <button
-                  type="button"
-                  onClick={startBulkUpload}
-                  disabled={isBulkUploading || bulkFiles.length === 0}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isBulkUploading ? 'பதிவேற்றப்படுகிறது...' : `அனைத்தையும் பதிவேற்று (${bulkFiles.length} கோப்புகள்)`}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={startBulkUpload}
+                disabled={isBulkUploading}
+                className="flex-1 py-2.5 rounded-xl bg-[#064E3B] hover:bg-[#047857] text-white text-xs font-bold shadow-md transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isBulkUploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>பதிவேற்றப்படுகிறது...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>அனைத்தையும் பதிவேற்று ({bulkFiles.length} Files)</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

@@ -2,318 +2,193 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  BookOpen,
-  PlusCircle,
-  Sparkles,
-  BarChart3,
-  Users,
-  CheckSquare,
-  ShieldAlert,
-  Radio,
-  FolderOpen,
-  FileAudio,
-  LogOut,
   UploadCloud,
+  BookOpen,
   Layers,
+  HardDrive,
+  BarChart3,
+  ShieldCheck,
   Settings,
+  LogOut,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
-export const Sidebar: React.FC = () => {
-  const { user, activeMode, setActiveMode, logout } = useAdminAuth();
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
+  const { user, logout, permissions } = useAdminAuth();
   const navigate = useNavigate();
-  const isAdminUser = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
   const handleLogout = () => {
     logout();
     navigate('/admin/login');
   };
 
+  const navItems = [
+    {
+      to: '/admin',
+      label: 'மேலோட்டம் (Dashboard)',
+      icon: LayoutDashboard,
+      allowed: true,
+      end: true,
+    },
+    {
+      to: '/admin/audio-upload',
+      label: 'ஆடியோ பதிவேற்றம் (Audiobook Upload)',
+      icon: UploadCloud,
+      allowed: permissions.canUploadAudio,
+    },
+    {
+      to: '/admin/stories',
+      label: 'கதைகள் மேலாண்மை (Story Management)',
+      icon: BookOpen,
+      allowed: permissions.canManageStories,
+    },
+    {
+      to: '/admin/categories',
+      label: 'வகைப்பாடுகள் (Category Management)',
+      icon: Layers,
+      allowed: permissions.canManageCategories,
+    },
+    {
+      to: '/admin/storage',
+      label: 'ஆடியோ சேமிப்பகம் (Audio Storage)',
+      icon: HardDrive,
+      allowed: permissions.canManageStorage,
+    },
+    {
+      to: '/admin/reports',
+      label: 'அறிக்கைகள் & பகுப்பாய்வு (Reports & Analytics)',
+      icon: BarChart3,
+      allowed: permissions.canViewReports,
+    },
+    {
+      to: '/admin/roles',
+      label: 'நிர்வாகப் பொறுப்புகள் (Admin Roles & Permissions)',
+      icon: ShieldCheck,
+      allowed: permissions.canManageStaff,
+    },
+    {
+      to: '/admin/settings',
+      label: 'அமைப்புகள் & பாதுகாப்பு (Settings & Security)',
+      icon: Settings,
+      allowed: permissions.canManageSettings,
+    },
+  ];
+
   return (
-    <aside className="w-64 shrink-0 bg-[#06241C] text-emerald-100 flex flex-col justify-between border-r border-emerald-900/60 min-h-screen">
-      {/* Top Branding & Mode Switcher */}
-      <div className="p-5 space-y-6">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-emerald-500 text-emerald-950 flex items-center justify-center font-bold text-lg font-serif">
-              க
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={`fixed lg:static top-0 left-0 z-50 h-full w-72 shrink-0 bg-[#064E3B] text-emerald-100 flex flex-col justify-between border-r border-[#047857]/40 shadow-xl lg:shadow-none transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {/* Top Header & Brand */}
+        <div className="p-5 space-y-6 overflow-y-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#047857] text-[#064E3B] flex items-center justify-center font-bold text-xl font-serif shadow-md shadow-emerald-950/40">
+                க
+              </div>
+              <div>
+                <h2 className="font-extrabold text-base text-white tracking-wide font-serif">
+                  Kathaisolli
+                </h2>
+                <p className="text-[11px] text-[#A7F3D0] font-tamil font-semibold">
+                  கதைசொல்லி நிர்வாக மையம்
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-base text-white tracking-wide">
-                கதைசொல்லி
-              </h2>
-              <p className="text-[10px] text-emerald-400 font-medium">
-                {activeMode === 'admin' ? 'நிர்வாக மையம் (Admin Panel)' : 'படைப்பாளர் ஸ்டுடியோ (Studio)'}
-              </p>
+
+            {/* Mobile Close Button */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="lg:hidden p-1.5 rounded-lg text-emerald-300 hover:text-white hover:bg-emerald-900/60"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Navigation Section Title */}
+          <div>
+            <div className="text-[10px] font-bold text-[#A7F3D0] uppercase tracking-wider px-3 mb-2 flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-[#34D399]" />
+              <span>முதன்மை நிர்வாகம் (Admin Navigation)</span>
             </div>
+
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                if (!item.allowed) return null;
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={() => onClose && onClose()}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                        isActive
+                          ? 'bg-[#047857] text-white shadow-sm font-bold'
+                          : 'text-emerald-100/90 hover:bg-[#033A2C] hover:text-white'
+                      }`
+                    }
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-[#A7F3D0]" />
+                    <span className="truncate">{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </nav>
           </div>
         </div>
 
-        {/* Mode Switcher for Admins */}
-        {isAdminUser && (
-          <div className="p-1 rounded-xl bg-[#031812] flex gap-1 text-xs font-semibold">
+        {/* Bottom User Profile Card & Logout */}
+        <div className="p-4 border-t border-[#047857]/40 bg-[#043E2F]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-9 w-9 rounded-xl bg-[#047857] text-[#A7F3D0] flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+                {user?.displayName?.charAt(0) || 'A'}
+              </div>
+              <div className="text-left overflow-hidden min-w-0">
+                <p className="text-xs font-bold text-white truncate max-w-[130px]">
+                  {user?.displayName || 'நிர்வாகி'}
+                </p>
+                <span className="text-[10px] text-[#A7F3D0] block truncate">
+                  {user?.role === 'SUPER_ADMIN'
+                    ? 'தலைமை நிர்வாகி'
+                    : user?.role === 'ADMIN'
+                    ? 'நிர்வாகி'
+                    : 'உள்ளடக்க ஆசிரியர்'}
+                </span>
+              </div>
+            </div>
+
             <button
-              onClick={() => setActiveMode('creator')}
-              className={`flex-1 py-1.5 rounded-lg transition-colors ${
-                activeMode === 'creator'
-                  ? 'bg-emerald-700 text-white shadow-sm'
-                  : 'text-emerald-300 hover:text-white'
-              }`}
+              onClick={handleLogout}
+              title="வெளியேறு (Logout)"
+              className="p-2 rounded-xl text-emerald-300 hover:text-white hover:bg-rose-900/40 transition-colors shrink-0"
             >
-              படைப்பாளர்
+              <LogOut className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => setActiveMode('admin')}
-              className={`flex-1 py-1.5 rounded-lg transition-colors ${
-                activeMode === 'admin'
-                  ? 'bg-emerald-700 text-white shadow-sm'
-                  : 'text-emerald-300 hover:text-white'
-              }`}
-            >
-              நிர்வாகி
-            </button>
-          </div>
-        )}
-
-        {/* Navigation Links */}
-        <nav className="space-y-1">
-          {activeMode === 'creator' ? (
-            <>
-              <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider px-3 mb-2">
-                படைப்பாளர் ஸ்டுடியோ
-              </div>
-              <NavLink
-                to="/creator"
-                end
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                <span>மேலோட்டம் (Dashboard)</span>
-              </NavLink>
-
-              <NavLink
-                to="/creator/series"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <BookOpen className="h-4 w-4" />
-                <span>எனது கதைகள் (My Stories)</span>
-              </NavLink>
-
-              <NavLink
-                to="/creator/series/new"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>புதிய தொடர் (New Series)</span>
-              </NavLink>
-
-              <NavLink
-                to="/creator/ai-assistant"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <Sparkles className="h-4 w-4 text-emerald-300" />
-                <span>AI கதை உதவி (AI Assistant)</span>
-              </NavLink>
-
-              <NavLink
-                to="/creator/analytics"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>பகுப்பாய்வு (Analytics)</span>
-              </NavLink>
-            </>
-          ) : (
-            <>
-              <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider px-3 mb-2">
-                நிர்வாகக் கட்டுப்பாடுகள்
-              </div>
-              <NavLink
-                to="/admin"
-                end
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                <span>தள மேலோட்டம் (KPIs)</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/books"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <BookOpen className="h-4 w-4" />
-                <span>புத்தகங்கள் (Books)</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/categories"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <Layers className="h-4 w-4" />
-                <span>வகைப்பாடுகள் (Categories)</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/analytics"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span>தள பகுப்பாய்வு (Analytics)</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/books/new"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <PlusCircle className="h-4 w-4" />
-                <span>புதிய புத்தகம் (Add Book)</span>
-              </NavLink>
-
-              <NavLink
-                to="/admin/audio-upload"
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                    isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                  }`
-                }
-              >
-                <FileAudio className="h-4 w-4" />
-                <span>ஆடியோ பதிவேற்றம் (Audio Upload)</span>
-              </NavLink>
-
-              <div className="pt-2">
-                <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider px-3 mb-2">
-                  அமைப்பு & பயனர்கள்
-                </div>
-                <NavLink
-                  to="/admin/users"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                    }`
-                  }
-                >
-                  <Users className="h-4 w-4" />
-                  <span>பயனர்கள் (Users)</span>
-                </NavLink>
-
-                <NavLink
-                  to="/admin/creators"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                    }`
-                  }
-                >
-                  <CheckSquare className="h-4 w-4" />
-                  <span>படைப்பாளர் விண்ணப்பங்கள்</span>
-                </NavLink>
-
-                <NavLink
-                  to="/admin/moderation"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                    }`
-                  }
-                >
-                  <ShieldAlert className="h-4 w-4" />
-                  <span>உள்ளடக்க மதிப்பாய்வு</span>
-                </NavLink>
-
-                <NavLink
-                  to="/admin/audio-queue"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                    }`
-                  }
-                >
-                  <Radio className="h-4 w-4" />
-                  <span>ஆடியோ டிரான்ஸ்கோடிங் வரிசை</span>
-                </NavLink>
-
-                <NavLink
-                  to="/admin/settings"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
-                      isActive ? 'bg-emerald-800 text-white' : 'hover:bg-emerald-900/40 text-emerald-200'
-                    }`
-                  }
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>கணினி அமைப்புகள் (Settings)</span>
-                </NavLink>
-              </div>
-            </>
-          )}
-        </nav>
-      </div>
-
-      {/* User info at bottom */}
-      <div className="p-4 border-t border-emerald-900/40 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-8 w-8 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shrink-0">
-            {user?.displayName?.charAt(0) || 'U'}
-          </div>
-          <div className="text-left overflow-hidden min-w-0">
-            <p className="text-xs font-bold text-white truncate max-w-[110px]">
-              {user?.displayName || 'பயனர்'}
-            </p>
-            <span className="text-[10px] text-emerald-400 block truncate">
-              {user?.role}
-            </span>
           </div>
         </div>
-
-        <button
-          onClick={handleLogout}
-          title="வெளியேறு (Logout)"
-          className="p-1.5 rounded-lg text-emerald-400 hover:text-white hover:bg-emerald-900/60 transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };

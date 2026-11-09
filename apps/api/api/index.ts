@@ -20,9 +20,12 @@ const allowedOrigins = [
   'http://localhost:5174',
 ];
 
-function isOriginAllowed(origin: string | undefined): boolean {
+function isOriginAllowed(origin: string | undefined, host?: string): boolean {
   if (!origin) return true;
+  if (host && (origin === `https://${host}` || origin === `http://${host}`)) return true;
   if (allowedOrigins.includes(origin)) return true;
+  if (process.env.APP_URL && origin === process.env.APP_URL.replace(/\/+$/, '')) return true;
+  if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL.replace(/\/+$/, '')) return true;
   if (/^https:\/\/web(-[a-z0-9-]+)?-kalai21\.vercel\.app$/.test(origin)) return true;
   if (/^https:\/\/web(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
   if (/^https:\/\/admin(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
@@ -109,11 +112,35 @@ async function bootstrap(): Promise<void> {
 }
 
 export default async function handler(req: Request, res: Response) {
-  // Normalize incoming URL from x-matched-path if rewritten by Vercel
-  const matchedPath = req.headers['x-matched-path'] as string | undefined;
-  if (matchedPath) {
-    req.url = matchedPath;
+  // Normalize incoming URL across direct execution, Vercel catch-all (...path), and Vercel edge rewrites
+  const query = (req as any).query || {};
+  let targetUrl = req.url || '/';
+
+  if (query.path) {
+    const rawPath = Array.isArray(query.path) ? query.path.join('/') : query.path;
+    const cleanPath = String(rawPath).startsWith('/') ? String(rawPath) : `/${rawPath}`;
+    targetUrl = cleanPath.startsWith('/api') ? cleanPath : `/api${cleanPath}`;
+  } else {
+    const originalUrlHeader =
+      (req.headers['x-forwarded-url'] as string | undefined) ||
+      (req.headers['x-original-url'] as string | undefined) ||
+      (req.headers['x-rewrite-url'] as string | undefined);
+
+    if (originalUrlHeader && originalUrlHeader !== '/api' && originalUrlHeader !== '/api/') {
+      targetUrl = originalUrlHeader;
+    } else {
+      const matchedPath = req.headers['x-matched-path'] as string | undefined;
+      if (matchedPath && matchedPath !== '/api' && matchedPath !== '/api/index') {
+        targetUrl = matchedPath;
+      }
+    }
   }
+
+  if (!targetUrl.startsWith('/')) {
+    targetUrl = `/${targetUrl}`;
+  }
+
+  req.url = targetUrl;
 
   // OWASP security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -123,7 +150,8 @@ export default async function handler(req: Request, res: Response) {
 
   // Handle CORS headers at edge entry
   const origin = req.headers.origin as string | undefined;
-  if (origin && isOriginAllowed(origin)) {
+  const host = req.headers.host as string | undefined;
+  if (origin && isOriginAllowed(origin, host)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader(
@@ -146,15 +174,13 @@ export default async function handler(req: Request, res: Response) {
   const cleanUrl = rawUrl.replace(/\/+$/, '') || '/';
 
   // Direct fast health response for deployment verification and health monitoring
-  if (
-    cleanUrl === '/' ||
-    cleanUrl === '/health' ||
-    cleanUrl === '/api' ||
+  const isHealthCheck =
     cleanUrl === '/api/health' ||
-    cleanUrl === '/api/index' ||
-    cleanUrl === '/api/v1' ||
-    cleanUrl === '/api/v1/health'
-  ) {
+    cleanUrl === '/api/v1/health' ||
+    cleanUrl === '/health' ||
+    (req.method === 'GET' && (cleanUrl === '/api' || cleanUrl === '/' || cleanUrl === '/api/index' || cleanUrl === '/api/v1'));
+
+  if (isHealthCheck) {
     return res.status(200).json({
       status: 'ok',
       service: 'Kathaisolli API (Vercel Serverless)',

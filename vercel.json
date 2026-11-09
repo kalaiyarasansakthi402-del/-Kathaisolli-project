@@ -4,6 +4,9 @@
   "buildCommand": "node scripts/build.mjs",
   "outputDirectory": "dist",
   "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "apps/api/dist/**"
+    },
     "api/index.ts": {
       "includeFiles": "apps/api/dist/**"
     }
@@ -88,7 +91,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api"
+      "destination": "/api/$1"
     },
     {
       "source": "/api",

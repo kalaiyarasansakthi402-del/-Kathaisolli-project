@@ -247,3 +247,179 @@ export interface AdminMetrics {
   failedUploadJobs: number;
   totalListeningHours: number;
 }
+
+export interface AdminDashboardStats {
+  totalStories: number;
+  totalCategories: number;
+  totalAudioFiles: number;
+  totalAudioStorageUsage: number;
+  storageUsageFormatted: string;
+  totalPublishedStories: number;
+  totalDraftStories: number;
+  coverImageCount: number;
+  recentlyUploadedStories: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    shortDescription?: string;
+    coverImage?: string | null;
+    authorName: string;
+    narratorName: string;
+    status: ContentStatus;
+    categoryName: string;
+    languageName: string;
+    totalEpisodes: number;
+    totalDurationSec: number;
+    publishedAt?: string | null;
+    createdAt: string;
+  }>;
+  recentAdminActivities: Array<{
+    id: string;
+    action: string;
+    targetType: string;
+    targetId?: string | null;
+    details?: any;
+    createdAt: string;
+    actorName: string;
+    actorEmail: string;
+    actorRole: string;
+  }>;
+  storageUsageStatistics: {
+    totalBytes: number;
+    audioCount: number;
+    imageCount: number;
+    audioBytes: number;
+    imageBytesApprox: number;
+  };
+  monthlyUploadAnalytics: Array<{
+    month: string;
+    stories: number;
+    episodes: number;
+  }>;
+}
+
+export interface AdminStoryListItem {
+  id: string;
+  slug: string;
+  title: string;
+  shortDescription?: string;
+  fullDescription?: string;
+  coverImage?: string;
+  coverImageUrl?: string;
+  authorName: string;
+  narratorName: string;
+  categoryId: string;
+  categoryName?: string;
+  languageId: string;
+  languageName?: string;
+  status: ContentStatus;
+  publishedAt?: string | null;
+  totalEpisodes: number;
+  totalDurationSec: number;
+  totalStorageBytes: number;
+  chapters?: any[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminStorageOverview {
+  totalStorageBytes: number;
+  audioFilesCount: number;
+  imageFilesCount: number;
+  totalFilesCount: number;
+  audioStorageBytes: number;
+  imageStorageBytes: number;
+  bucket: string;
+  provider: string;
+}
+
+export interface AdminStorageFile {
+  id: string;
+  name: string;
+  path: string;
+  url: string;
+  contentType: string;
+  sizeBytes: number;
+  durationSec: number;
+  isProcessed: boolean;
+  associatedStory?: string | null;
+  associatedStoryId?: string | null;
+  associatedChapter?: string | null;
+  createdAt: string;
+}
+
+export interface AdminStaffMember {
+  id: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  roleName: string;
+  avatarUrl?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSystemHealth {
+  status: 'ok' | 'degraded';
+  database: {
+    status: string;
+    latencyMs: number;
+  };
+  storage: {
+    provider: string;
+    bucket: string;
+    status: string;
+  };
+  system: {
+    nodeVersion: string;
+    platform: string;
+    uptimeSeconds: number;
+    environment: string;
+    memoryUsageMb: number;
+  };
+  timestamp: string;
+}
+
+export interface AdminReportsData {
+  timeframe: string;
+  dateRange: { start: string; end: string };
+  metrics: {
+    periodStoriesCreated: number;
+    periodPublishedStories: number;
+    periodDraftStories: number;
+    periodAudioUploads: number;
+    totalAllTimeStories: number;
+    totalCategories: number;
+  };
+  categoryDistribution: {
+    id: string;
+    name: string;
+    slug: string;
+    count: number;
+    percentage: number;
+  }[];
+  monthlyTrends: {
+    key: string;
+    label: string;
+    tamilMonth: string;
+    storiesCount: number;
+    audioFilesCount: number;
+    storageMb: number;
+  }[];
+  recentAuditLogs: {
+    id: string;
+    action: string;
+    targetType: string;
+    targetId?: string | null;
+    details?: any;
+    createdAt: string;
+    user?: {
+      displayName: string;
+      email: string;
+      role: string;
+    } | null;
+  }[];
+}
+
+

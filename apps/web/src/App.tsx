@@ -59,6 +59,16 @@ const RouteLoadingFallback = () => (
   </div>
 );
 
+// Redirect client-side route transitions targeting /admin to full page reload so Vercel serves the Admin SPA
+const AdminRedirect: React.FC = () => {
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.location.href = window.location.pathname + window.location.search;
+    }
+  }, []);
+  return null;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -131,7 +141,8 @@ const AppContent: React.FC = () => {
               <Route path="/stories" element={<Navigate to="/categories" replace />} />
 
               {/* Public Website Isolation: Admin is hosted completely separately on Private Admin Website */}
-              <Route path="/admin/*" element={<Navigate to="/" replace />} />
+              <Route path="/admin" element={<AdminRedirect />} />
+              <Route path="/admin/*" element={<AdminRedirect />} />
 
               {/* 404 Catch-All */}
               <Route path="*" element={<NotFoundPage />} />
