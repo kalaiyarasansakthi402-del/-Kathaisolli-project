@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ServiceUnavailableException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -26,6 +27,32 @@ export function formatUserId(id: string): string {
   return "KTH-" + String(num);
 }
 
+function isDatabaseConnectionError(error: any): boolean {
+  if (!error) return false;
+  const msg = error.message || String(error);
+  const code = error.code;
+  return (
+    error.name === 'PrismaClientInitializationError' ||
+    error.name === 'PrismaClientRustPanicError' ||
+    code === 'P1001' ||
+    code === 'P1002' ||
+    code === 'P1017' ||
+    msg.includes("Can't reach database server") ||
+    msg.includes('Connection is closed') ||
+    msg.includes('ECONNREFUSED') ||
+    msg.includes('ETIMEDOUT')
+  );
+}
+
+function handleDbError(error: any): never {
+  if (isDatabaseConnectionError(error)) {
+    throw new ServiceUnavailableException(
+      'Authentication database is temporarily unreachable. Please verify the production DATABASE_URL.',
+    );
+  }
+  throw error;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -35,10 +62,15 @@ export class AuthService {
 
   async register(input: RegisterDto) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const existing = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true },
-    });
+    let existing;
+    try {
+      existing = await this.prisma.user.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true },
+      });
+    } catch (err) {
+      handleDbError(err);
+    }
     if (existing) {
       throw new ConflictException('An account with this email already exists.');
     }
@@ -71,7 +103,7 @@ export class AuthService {
           'An account with this email already exists.',
         );
       }
-      throw error;
+      handleDbError(error);
     }
 
     return this.createSession(user);
@@ -79,9 +111,14 @@ export class AuthService {
 
   async login(input: LoginDto) {
     const normalizedEmail = input.email.trim().toLowerCase();
-    const user = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
-    });
+    let user;
+    try {
+      user = await this.prisma.user.findUnique({
+        where: { email: normalizedEmail },
+      });
+    } catch (err) {
+      handleDbError(err);
+    }
     if (
       !user ||
       user.disabledAt ||
@@ -99,25 +136,30 @@ export class AuthService {
   }
 
   async getProfile(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId, disabledAt: null },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        displayName: true,
-        avatarUrl: true,
-        creatorProfile: {
-          select: {
-            id: true,
-            slug: true,
-            bio: true,
-            approvedAt: true,
+    let user;
+    try {
+      user = await this.prisma.user.findUnique({
+        where: { id: userId, disabledAt: null },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          displayName: true,
+          avatarUrl: true,
+          creatorProfile: {
+            select: {
+              id: true,
+              slug: true,
+              bio: true,
+              approvedAt: true,
+            },
           },
+          createdAt: true,
         },
-        createdAt: true,
-      },
-    });
+      });
+    } catch (err) {
+      handleDbError(err);
+    }
     if (!user) return null;
     return {
       ...user,

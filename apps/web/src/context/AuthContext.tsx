@@ -49,7 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const api = useMemo(() => {
     const rawEnv = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
     let baseURL: string;
-    if (rawEnv) {
+    const isLegacyVercelApi = rawEnv && (rawEnv.includes('api-kalai21.vercel.app') || rawEnv.includes('api-three-lyart-42.vercel.app'));
+    if (rawEnv && !isLegacyVercelApi) {
       const stripped = rawEnv.replace(/\/+$/, '');
       if (stripped.endsWith('/api/v1')) {
         baseURL = stripped;

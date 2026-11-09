@@ -1,9 +1,30 @@
-import 'reflect-metadata';
+import fs from 'node:fs';
 import path from 'node:path';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { ExpressAdapter } from '@nestjs/platform-express';
+import { createRequire } from 'node:module';
 import type { Request, Response } from 'express';
+
+function getApiRequire(): NodeRequire {
+  const possiblePkgPaths = [
+    path.join(process.cwd(), 'apps/api/package.json'),
+    path.join(__dirname, '../package.json'),
+    path.join(__dirname, '../../package.json'),
+    path.join(__dirname, '../apps/api/package.json'),
+    path.join(process.cwd(), 'package.json'),
+  ];
+  for (const pkg of possiblePkgPaths) {
+    if (fs.existsSync(pkg)) {
+      return createRequire(pkg);
+    }
+  }
+  return createRequire(__filename);
+}
+
+const apiReq = getApiRequire();
+try {
+  apiReq('reflect-metadata');
+} catch {
+  // Reflect metadata already initialized
+}
 
 let cachedHandler: ((req: Request, res: Response) => void) | null = null;
 let bootstrapPromise: Promise<void> | null = null;
@@ -34,21 +55,23 @@ function isOriginAllowed(origin: string | undefined, host?: string): boolean {
 }
 
 async function getAppModule(): Promise<any> {
+  const apiRequire = getApiRequire();
   const candidatePaths = [
+    path.join(process.cwd(), 'apps/api/dist/app.module'),
     '../dist/app.module',
     './dist/app.module',
-    path.join(process.cwd(), 'apps/api/dist/app.module'),
-    path.join(process.cwd(), 'dist/app.module'),
-    path.join(__dirname, '../apps/api/dist/app.module'),
-    path.join(__dirname, 'apps/api/dist/app.module'),
     path.join(__dirname, '../dist/app.module'),
+    path.join(__dirname, 'apps/api/dist/app.module'),
+    path.join(__dirname, '../apps/api/dist/app.module'),
+    path.join(__dirname, 'dist/app.module'),
+    path.join(process.cwd(), 'dist/app.module'),
     '../src/app.module',
   ];
 
   for (const candidate of candidatePaths) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require(candidate);
+      const mod = apiRequire(candidate);
       if (mod && mod.AppModule) {
         return mod.AppModule;
       }
@@ -63,6 +86,12 @@ async function getAppModule(): Promise<any> {
 }
 
 async function bootstrap(): Promise<void> {
+  const apiRequire = getApiRequire();
+  apiRequire('reflect-metadata');
+  const { NestFactory } = apiRequire('@nestjs/core');
+  const { ValidationPipe } = apiRequire('@nestjs/common');
+  const { ExpressAdapter } = apiRequire('@nestjs/platform-express');
+
   const adapter = new ExpressAdapter();
   const AppModule = await getAppModule();
 

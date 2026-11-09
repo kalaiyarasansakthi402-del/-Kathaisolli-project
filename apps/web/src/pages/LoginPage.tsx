@@ -76,6 +76,8 @@ export const LoginPage: React.FC = () => {
 
       if (err?.response?.status === 401 || (serverMessage && serverMessage.includes('Invalid email or password'))) {
         setError('தவறான மின்னஞ்சல் அல்லது கடவுச்சொல். மீண்டும் முயற்சிக்கவும் (Invalid email or password).');
+      } else if (err?.response?.status === 503 || (serverMessage && (serverMessage.includes('database') || serverMessage.includes('DATABASE_URL')))) {
+        setError('தரவுத்தள இணைப்பு தற்காலிகமாக கிடைக்கவில்லை. தயவுசெய்து சிறிது நேரம் கழித்து முயற்சிக்கவும் (Database service temporarily unavailable).');
       } else if (err?.message === 'Network Error' || err?.code === 'ERR_NETWORK') {
         setError('சேவையகத்தை தொடர்பு கொள்ள முடியவில்லை. தயவுசெய்து உங்கள் இணைய இணைப்பை சரிபார்க்கவும் (Network error: Unable to reach server).');
       } else {

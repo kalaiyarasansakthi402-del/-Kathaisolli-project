@@ -120,6 +120,8 @@ export const RegisterPage: React.FC = () => {
 
       if (serverMessage && (serverMessage.includes('already exists') || err?.response?.status === 409)) {
         setError('இந்த மின்னஞ்சல் முகவரியில் ஏற்கனவே ஒரு கணக்கு உள்ளது. உள்நுழைய முயற்சிக்கவும் (An account with this email already exists).');
+      } else if (err?.response?.status === 503 || (serverMessage && (serverMessage.includes('database') || serverMessage.includes('DATABASE_URL')))) {
+        setError('தரவுத்தள இணைப்பு தற்காலிகமாக கிடைக்கவில்லை. தயவுசெய்து சிறிது நேரம் கழித்து முயற்சிக்கவும் (Database service temporarily unavailable).');
       } else if (err?.message === 'Network Error' || err?.code === 'ERR_NETWORK') {
         setError('சேவையகத்தை தொடர்பு கொள்ள முடியவில்லை. தயவுசெய்து உங்கள் இணைய இணைப்பை சரிபார்க்கவும் (Network error: Unable to reach server).');
       } else {
