@@ -46,6 +46,7 @@ const PlaylistsPage = lazyWithRetry(() => import('./pages/PlaylistsPage').then((
 const NotificationsPage = lazyWithRetry(() => import('./pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
 const CreatorApplyPage = lazyWithRetry(() => import('./pages/CreatorApplyPage').then((m) => ({ default: m.CreatorApplyPage })));
 const SettingsPage = lazyWithRetry(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const HelpSupportPage = lazyWithRetry(() => import('./pages/HelpSupportPage').then((m) => ({ default: m.HelpSupportPage })));
 const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })));
 const TermsConditionsPage = lazyWithRetry(() => import('./pages/TermsConditionsPage').then((m) => ({ default: m.TermsConditionsPage })));
@@ -124,7 +125,7 @@ const AppContent: React.FC = () => {
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/creator/apply" element={<CreatorApplyPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/profile" element={<Navigate to="/my-library" replace />} />
+              <Route path="/profile" element={<ProfilePage />} />
 
               {/* Stories alias */}
               <Route path="/stories" element={<Navigate to="/categories" replace />} />

@@ -358,6 +358,13 @@ export const Navbar: React.FC = () => {
               Categories (வகைகள்)
             </Link>
             <Link
+              to="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+            >
+              Profile (சுயவிவரம்)
+            </Link>
+            <Link
               to="/my-library"
               onClick={() => setMobileMenuOpen(false)}
               className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
