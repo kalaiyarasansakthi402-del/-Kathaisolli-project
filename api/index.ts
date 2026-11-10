@@ -270,11 +270,11 @@ export default async function handler(req: Request, res: Response) {
   } catch (error: any) {
     console.error('[NestServerless] Request error during execution:', error);
     bootstrapPromise = null;
-    const isProd = process.env.NODE_ENV === 'production';
     return res.status(500).json({
       statusCode: 500,
       message: 'Internal Server Error during serverless execution',
-      error: isProd ? 'Internal Server Error' : (error?.message || String(error)),
+      error: error?.message || String(error),
+      stack: error?.stack ? error.stack.split('\n').slice(0, 4) : undefined,
       timestamp: new Date().toISOString(),
     });
   }
