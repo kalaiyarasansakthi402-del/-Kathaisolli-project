@@ -107,9 +107,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         <div className="p-5 space-y-6 overflow-y-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-[#10B981] to-[#047857] text-[#064E3B] flex items-center justify-center font-bold text-xl font-serif shadow-md shadow-emerald-950/40">
-                க
-              </div>
+              <img
+                src="/admin/app-icon.png"
+                alt="Kathaisolli Logo"
+                className="h-10 w-10 rounded-2xl object-contain bg-white/10 p-0.5 border border-[#10B981]/40 shadow-md shadow-emerald-950/40"
+              />
               <div>
                 <h2 className="font-extrabold text-base text-white tracking-wide font-serif">
                   Kathaisolli

@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'sakthi' })
@@ -20,4 +20,10 @@ export class CreateUserDto {
   @MinLength(6, { message: 'Password must be at least 6 characters long.' })
   @MaxLength(128, { message: 'Password cannot exceed 128 characters.' })
   password!: string;
+
+  @ApiPropertyOptional({ example: '+91 9876543210' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30, { message: 'Phone number cannot exceed 30 characters.' })
+  phoneNumber?: string;
 }

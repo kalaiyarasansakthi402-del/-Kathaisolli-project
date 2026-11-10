@@ -20,6 +20,7 @@ import {
   Check,
   Eye,
   EyeOff,
+  Phone,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import type { AdminManagedUser } from '@kathaisolli/shared-types';
@@ -40,6 +41,7 @@ export const AdminUsersPage: React.FC = () => {
   const [createUsername, setCreateUsername] = useState<string>('');
   const [createPassword, setCreatePassword] = useState<string>('');
   const [createConfirmPassword, setCreateConfirmPassword] = useState<string>('');
+  const [createPhoneNumber, setCreatePhoneNumber] = useState<string>('');
   const [showCreatePassword, setShowCreatePassword] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -127,6 +129,7 @@ export const AdminUsersPage: React.FC = () => {
       await api.admin.createUser({
         username: trimmedUsername,
         password: createPassword,
+        phoneNumber: createPhoneNumber.trim() || undefined,
       });
 
       setSuccessMessage('User Account Created Successfully!');
@@ -134,6 +137,7 @@ export const AdminUsersPage: React.FC = () => {
       setCreateUsername('');
       setCreatePassword('');
       setCreateConfirmPassword('');
+      setCreatePhoneNumber('');
       fetchUsers();
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err: any) {
@@ -380,6 +384,7 @@ export const AdminUsersPage: React.FC = () => {
               <tr className="bg-stone-50 border-b border-[#E8E1CE] text-xs font-bold uppercase tracking-wider text-stone-600">
                 <th className="py-3.5 px-4 sm:px-6">User ID</th>
                 <th className="py-3.5 px-4 sm:px-6">Username</th>
+                <th className="py-3.5 px-4 sm:px-6">Phone Number</th>
                 <th className="py-3.5 px-4 sm:px-6">Created Date</th>
                 <th className="py-3.5 px-4 sm:px-6">Account Status</th>
                 <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
@@ -388,7 +393,7 @@ export const AdminUsersPage: React.FC = () => {
             <tbody className="divide-y divide-stone-100 text-sm">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-stone-500">
+                  <td colSpan={6} className="py-12 text-center text-stone-500">
                     <div className="flex flex-col items-center justify-center space-y-2">
                       <div className="w-6 h-6 border-2 border-[#064E3B] border-t-transparent rounded-full animate-spin" />
                       <span className="text-xs font-semibold">பயனர்கள் பட்டியல் ஏற்றப்படுகிறது...</span>
@@ -397,7 +402,7 @@ export const AdminUsersPage: React.FC = () => {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-stone-500">
+                  <td colSpan={6} className="py-12 text-center text-stone-500">
                     <Users className="w-8 h-8 mx-auto text-stone-400 mb-2" />
                     <p className="font-semibold text-sm">பயனர்கள் எவரும் காணப்படவில்லை</p>
                     <p className="text-xs text-stone-400 mt-1">புதிய பயனரை உருவாக்க "Create New User" பொத்தானை அழுத்தவும்.</p>
@@ -445,6 +450,15 @@ export const AdminUsersPage: React.FC = () => {
                             )}
                           </div>
                         </div>
+                      </td>
+
+                      {/* Phone Number */}
+                      <td className="py-3.5 px-4 sm:px-6 text-stone-600 text-xs font-mono">
+                        {u.phoneNumber ? (
+                          <span className="font-medium text-stone-800">{u.phoneNumber}</span>
+                        ) : (
+                          <span className="text-stone-400 italic">Not Provided</span>
+                        )}
                       </td>
 
                       {/* Created Date */}
@@ -628,6 +642,23 @@ export const AdminUsersPage: React.FC = () => {
                     placeholder="Re-enter password"
                     value={createConfirmPassword}
                     onChange={(e) => setCreateConfirmPassword(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number (Optional) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-1.5">
+                  Phone Number (தொலைபேசி எண் - விருப்பத்தேர்வு)
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    placeholder="Enter phone number (optional)"
+                    value={createPhoneNumber}
+                    onChange={(e) => setCreatePhoneNumber(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent font-medium"
                   />
                 </div>

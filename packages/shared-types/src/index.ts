@@ -72,6 +72,7 @@ export interface AdminManagedUser {
 export interface CreateUserInput {
   username: string;
   password: string;
+  phoneNumber?: string;
 }
 
 export interface UpdateUserInput {

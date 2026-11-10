@@ -4,6 +4,8 @@ node_modules/
 
 # Production & Build outputs
 dist/
+api-dist/
+apps/web/api-dist/
 build/
 out/
 .next/

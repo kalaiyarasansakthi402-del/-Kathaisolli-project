@@ -170,8 +170,8 @@ export const AdminLoginPage: React.FC = () => {
         <div className="p-8 sm:p-10 rounded-3xl bg-white border border-[#E5E7EB] shadow-[0_20px_50px_rgba(6,78,59,0.08)] space-y-6">
           {/* Brand Header */}
           <div className="text-center space-y-3">
-            <div className="w-16 h-16 rounded-2xl bg-[#064E3B] text-emerald-200 border border-[#047857] flex items-center justify-center mx-auto shadow-md">
-              <Shield className="w-8 h-8 text-[#A7F3D0]" />
+            <div className="w-16 h-16 rounded-2xl bg-[#064E3B] text-emerald-200 border border-[#047857] flex items-center justify-center mx-auto shadow-md p-1.5 overflow-hidden">
+              <img src="/admin/app-icon.png" alt="Kathaisolli Mascot" className="w-full h-full object-contain" />
             </div>
             <div>
               <div className="flex items-center justify-center gap-2">

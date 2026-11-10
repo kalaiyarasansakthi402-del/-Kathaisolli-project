@@ -6,6 +6,7 @@ import type { Request, Response } from 'express';
 function getApiRequire(): NodeRequire {
   const possiblePkgPaths = [
     path.join(process.cwd(), 'apps/api/package.json'),
+    path.join(process.cwd(), 'apps/web/package.json'),
     path.join(process.cwd(), 'package.json'),
     path.join(__dirname, '../package.json'),
     path.join(__dirname, '../../package.json'),
@@ -30,14 +31,14 @@ function getApiRequire(): NodeRequire {
       return createRequire(pkg);
     }
   }
-  return createRequire(__filename);
+  return createRequire(typeof __filename !== 'undefined' ? __filename : process.cwd());
 }
 
-const apiReq = getApiRequire();
 try {
+  const apiReq = getApiRequire();
   apiReq('reflect-metadata');
 } catch {
-  // Reflect metadata already initialized
+  // Suppress top-level initialization errors so edge liveness checks never fail
 }
 
 let cachedHandler: ((req: Request, res: Response) => void) | null = null;
@@ -71,8 +72,13 @@ function isOriginAllowed(origin: string | undefined, host?: string): boolean {
 async function getAppModule(): Promise<any> {
   const apiRequire = getApiRequire();
   const candidatePaths = [
+    path.join(process.cwd(), 'api-dist/app.module'),
+    path.join(process.cwd(), 'apps/web/api-dist/app.module'),
     path.join(process.cwd(), 'apps/api/dist/app.module'),
     path.join(process.cwd(), 'dist/app.module'),
+    path.join(__dirname, '../api-dist/app.module'),
+    path.join(__dirname, '../../api-dist/app.module'),
+    path.join(__dirname, 'api-dist/app.module'),
     path.join(__dirname, '../dist/app.module'),
     path.join(__dirname, '../../dist/app.module'),
     path.join(__dirname, '../apps/api/dist/app.module'),

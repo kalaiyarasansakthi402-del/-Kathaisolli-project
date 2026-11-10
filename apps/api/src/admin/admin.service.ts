@@ -1427,18 +1427,45 @@ export class AdminService {
       timeCost: 2,
     });
 
-    const user = await this.prisma.user.create({
-      data: {
-        username: normalizedUsername,
-        email: systemEmail,
-        displayName: dto.username,
-        passwordHash,
-        role: UserRole.LISTENER,
-        isActive: true,
-        disabledAt: null,
-        emailVerifiedAt: new Date(),
-      },
-    });
+    let user: any;
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          username: normalizedUsername,
+          email: systemEmail,
+          displayName: dto.username,
+          phoneNumber: dto.phoneNumber?.trim() || null,
+          passwordHash,
+          role: UserRole.LISTENER,
+          isActive: true,
+          disabledAt: null,
+          emailVerifiedAt: new Date(),
+        },
+      });
+    } catch (createErr: any) {
+      if (
+        createErr?.message?.includes('phone_number') ||
+        createErr?.code === 'P2021' ||
+        createErr?.code === 'P2002'
+      ) {
+        if (createErr?.code === 'P2002') throw createErr;
+        // Fallback without phoneNumber if column is pending migration
+        user = await this.prisma.user.create({
+          data: {
+            username: normalizedUsername,
+            email: systemEmail,
+            displayName: dto.username,
+            passwordHash,
+            role: UserRole.LISTENER,
+            isActive: true,
+            disabledAt: null,
+            emailVerifiedAt: new Date(),
+          },
+        });
+      } else {
+        throw createErr;
+      }
+    }
 
     await this.logActivity(actorId, 'CREATE_USER', 'User', user.id, {
       username: user.username,

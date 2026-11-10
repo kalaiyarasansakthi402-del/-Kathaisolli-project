@@ -22,6 +22,24 @@ function run(cmd, desc) {
 // 1. Build Backend API
 run('pnpm --filter @kathaisolli/api build', 'API Build (Prisma + NestJS)');
 
+// Copy API dist into apps/web/api-dist and root api-dist for Vercel Serverless Function bundling
+console.log('[ASSEMBLE] Syncing API distribution artifacts for serverless bundling...');
+const apiDistDir = path.join(rootDir, 'apps/api/dist');
+const webApiDistDir = path.join(rootDir, 'apps/web/api-dist');
+const rootApiDistDir = path.join(rootDir, 'api-dist');
+
+if (fs.existsSync(webApiDistDir)) {
+  fs.rmSync(webApiDistDir, { recursive: true, force: true });
+}
+fs.cpSync(apiDistDir, webApiDistDir, { recursive: true });
+console.log('  -> Copied apps/api/dist to apps/web/api-dist/');
+
+if (fs.existsSync(rootApiDistDir)) {
+  fs.rmSync(rootApiDistDir, { recursive: true, force: true });
+}
+fs.cpSync(apiDistDir, rootApiDistDir, { recursive: true });
+console.log('  -> Copied apps/api/dist to api-dist/');
+
 // 2. Build User Web App
 run('pnpm --filter @kathaisolli/web build', 'Web App Build (React + Vite)');
 

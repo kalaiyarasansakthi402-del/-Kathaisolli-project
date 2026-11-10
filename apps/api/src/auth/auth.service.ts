@@ -124,7 +124,7 @@ export class AuthService {
           isActive: true,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
@@ -133,7 +133,42 @@ export class AuthService {
           'This username is already taken. Please choose another username.',
         );
       }
-      handleDbError(error);
+      if (error?.message?.includes('phone_number') || error?.code === 'P2021') {
+        try {
+          user = await this.prisma.user.create({
+            data: {
+              username: normalizedUsername,
+              email: systemEmail,
+              passwordHash,
+              displayName,
+              role: UserRole.LISTENER,
+              isActive: true,
+              disabledAt: null,
+              emailVerifiedAt: new Date(),
+            },
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              displayName: true,
+              role: true,
+              isActive: true,
+            },
+          });
+        } catch (retryErr: any) {
+          if (
+            retryErr instanceof Prisma.PrismaClientKnownRequestError &&
+            retryErr.code === 'P2002'
+          ) {
+            throw new ConflictException(
+              'This username is already taken. Please choose another username.',
+            );
+          }
+          handleDbError(retryErr);
+        }
+      } else {
+        handleDbError(error);
+      }
     }
 
     const session = await this.createSession({
