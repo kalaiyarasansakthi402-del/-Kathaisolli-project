@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -8,16 +9,20 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function getApiRequire(): NodeRequire {
+  try {
+    const metaReq = createRequire(import.meta.url);
+    metaReq.resolve('@nestjs/core');
+    return metaReq;
+  } catch {
+    // Continue
+  }
+
   const possiblePkgPaths = [
-    path.join(process.cwd(), 'apps/api/package.json'),
-    path.join(process.cwd(), 'apps/web/package.json'),
     path.join(process.cwd(), 'package.json'),
     path.join(__dirname, '../package.json'),
-    path.join(__dirname, '../../package.json'),
-    path.join(__dirname, '../../../package.json'),
-    path.join(__dirname, '../apps/api/package.json'),
-    path.join(__dirname, '../../apps/api/package.json'),
-    path.join(__dirname, '../../../apps/api/package.json'),
+    path.join(__dirname, 'package.json'),
+    path.join(process.cwd(), 'apps/web/package.json'),
+    path.join(process.cwd(), 'apps/api/package.json'),
   ];
   for (const pkg of possiblePkgPaths) {
     if (fs.existsSync(pkg)) {
@@ -30,12 +35,7 @@ function getApiRequire(): NodeRequire {
       }
     }
   }
-  for (const pkg of possiblePkgPaths) {
-    if (fs.existsSync(pkg)) {
-      return createRequire(pkg);
-    }
-  }
-  return createRequire(typeof __filename !== 'undefined' ? __filename : process.cwd());
+  return createRequire(import.meta.url);
 }
 
 try {
