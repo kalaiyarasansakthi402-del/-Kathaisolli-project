@@ -267,6 +267,15 @@ export const Navbar: React.FC = () => {
 
                   <div className="space-y-0.5">
                     <Link
+                      to="/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-200 hover:bg-[#E8F0E2] dark:hover:bg-[#033B2B] hover:text-[#064E3B] dark:hover:text-[#A7F3D0] transition-colors"
+                    >
+                      <UserIcon className="w-4 h-4 text-[#166534] dark:text-[#A7F3D0]" />
+                      <span>Profile (சுயவிவரம்)</span>
+                    </Link>
+
+                    <Link
                       to="/my-library"
                       onClick={() => setProfileDropdownOpen(false)}
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-stone-700 dark:text-stone-200 hover:bg-[#E8F0E2] dark:hover:bg-[#033B2B] hover:text-[#064E3B] dark:hover:text-[#A7F3D0] transition-colors"

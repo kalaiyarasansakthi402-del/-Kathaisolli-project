@@ -6,11 +6,25 @@ import type { Request, Response } from 'express';
 function getApiRequire(): NodeRequire {
   const possiblePkgPaths = [
     path.join(process.cwd(), 'apps/api/package.json'),
+    path.join(process.cwd(), 'package.json'),
     path.join(__dirname, '../package.json'),
     path.join(__dirname, '../../package.json'),
+    path.join(__dirname, '../../../package.json'),
     path.join(__dirname, '../apps/api/package.json'),
-    path.join(process.cwd(), 'package.json'),
+    path.join(__dirname, '../../apps/api/package.json'),
+    path.join(__dirname, '../../../apps/api/package.json'),
   ];
+  for (const pkg of possiblePkgPaths) {
+    if (fs.existsSync(pkg)) {
+      try {
+        const req = createRequire(pkg);
+        req.resolve('@nestjs/core');
+        return req;
+      } catch {
+        // Continue searching
+      }
+    }
+  }
   for (const pkg of possiblePkgPaths) {
     if (fs.existsSync(pkg)) {
       return createRequire(pkg);
@@ -58,13 +72,16 @@ async function getAppModule(): Promise<any> {
   const apiRequire = getApiRequire();
   const candidatePaths = [
     path.join(process.cwd(), 'apps/api/dist/app.module'),
+    path.join(process.cwd(), 'dist/app.module'),
+    path.join(__dirname, '../dist/app.module'),
+    path.join(__dirname, '../../dist/app.module'),
+    path.join(__dirname, '../apps/api/dist/app.module'),
+    path.join(__dirname, '../../apps/api/dist/app.module'),
+    path.join(__dirname, '../../../apps/api/dist/app.module'),
+    path.join(__dirname, 'apps/api/dist/app.module'),
+    path.join(__dirname, 'dist/app.module'),
     '../dist/app.module',
     './dist/app.module',
-    path.join(__dirname, '../dist/app.module'),
-    path.join(__dirname, 'apps/api/dist/app.module'),
-    path.join(__dirname, '../apps/api/dist/app.module'),
-    path.join(__dirname, 'dist/app.module'),
-    path.join(process.cwd(), 'dist/app.module'),
     '../src/app.module',
   ];
 

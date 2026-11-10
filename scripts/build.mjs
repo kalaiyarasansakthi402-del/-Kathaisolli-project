@@ -1,11 +1,15 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const rootDir = process.cwd();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
 
 console.log('====================================================');
 console.log('  KATHAISOLLI UNIFIED SINGLE VERCEL BUILD');
+console.log('  Working Root:', rootDir);
 console.log('====================================================\n');
 
 function run(cmd, desc) {
@@ -43,10 +47,17 @@ const distAdminDir = path.join(distDir, 'admin');
 fs.cpSync(adminDistDir, distAdminDir, { recursive: true });
 console.log('  -> Copied apps/admin/dist to dist/admin/');
 
+// ALSO Copy Admin build into apps/web/dist/admin for apps/web deployments
+const webDistAdminDir = path.join(webDistDir, 'admin');
+fs.cpSync(adminDistDir, webDistAdminDir, { recursive: true });
+console.log('  -> Copied apps/admin/dist to apps/web/dist/admin/');
+
 // Verify critical artifacts
 const requiredArtifacts = [
   path.join(distDir, 'index.html'),
   path.join(distDir, 'admin/index.html'),
+  path.join(webDistDir, 'index.html'),
+  path.join(webDistAdminDir, 'index.html'),
   path.join(rootDir, 'apps/api/dist/app.module.js'),
 ];
 
@@ -58,7 +69,8 @@ for (const artifact of requiredArtifacts) {
 
 console.log('\n====================================================');
 console.log('  UNIFIED VERCEL BUILD VERIFICATION PASSED');
-console.log('  - Web SPA:    dist/index.html');
-console.log('  - Admin SPA:  dist/admin/index.html');
-console.log('  - API Module: apps/api/dist/app.module.js');
+console.log('  - Root Web SPA:    dist/index.html');
+console.log('  - Root Admin SPA:  dist/admin/index.html');
+console.log('  - Web Admin SPA:   apps/web/dist/admin/index.html');
+console.log('  - API Module:      apps/api/dist/app.module.js');
 console.log('====================================================\n');

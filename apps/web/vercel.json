@@ -1,11 +1,28 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm run build",
+  "version": 2,
+  "buildCommand": "node ../../scripts/build.mjs",
   "outputDirectory": "dist",
-  "framework": "vite",
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "{apps/api/dist/**,../../apps/api/dist/**,package.json,../../apps/api/package.json,node_modules/.prisma/client/**,../../node_modules/.prisma/client/**,node_modules/@prisma/client/**,../../node_modules/@prisma/client/**}"
+    },
+    "api/index.ts": {
+      "includeFiles": "{apps/api/dist/**,../../apps/api/dist/**,package.json,../../apps/api/package.json,node_modules/.prisma/client/**,../../node_modules/.prisma/client/**,node_modules/@prisma/client/**,../../node_modules/@prisma/client/**}"
+    }
+  },
   "headers": [
     {
       "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/admin/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -60,12 +77,41 @@
           "value": "public, max-age=0, must-revalidate"
         }
       ]
+    },
+    {
+      "source": "/admin/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ],
   "rewrites": [
     {
-      "source": "/api/v1/:path*",
-      "destination": "https://api-kalai21.vercel.app/api/v1/:path*"
+      "source": "/api/(.*)",
+      "destination": "/api?path=$1"
+    },
+    {
+      "source": "/api",
+      "destination": "/api"
+    },
+    {
+      "source": "/admin/assets/(.*)",
+      "destination": "/admin/assets/$1"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
     },
     {
       "source": "/(.*)",
