@@ -61,6 +61,7 @@ model User {
   emailVerifiedAt DateTime?       @map("email_verified_at")
   disabledAt      DateTime?       @map("disabled_at")
   isActive        Boolean         @default(true) @map("is_active")
+  phoneNumber     String?         @map("phone_number") @db.VarChar(30)
   sessions        AuthSession[]
   creatorProfile  CreatorProfile?
   createdSeries   Series[]        @relation("SeriesCreator")

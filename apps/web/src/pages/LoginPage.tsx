@@ -205,7 +205,7 @@ export const LoginPage: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="Enter your username"
+                    placeholder="Enter your username."
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
@@ -224,7 +224,7 @@ export const LoginPage: React.FC = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder="Enter your password"
+                    placeholder="Enter your password."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
@@ -276,20 +276,20 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            {/* Informational Guidance Section Below Login Button */}
-            <div className="pt-4 border-t border-stone-200 dark:border-[#104434] space-y-2.5 text-center">
-              <p className="text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0]">
+            {/* Sign Up Link & Guidance Section Below Login Button */}
+            <div className="pt-4 border-t border-stone-200 dark:border-[#104434] space-y-3 text-center">
+              <p className="text-xs text-stone-600 dark:text-stone-300 font-medium">
+                New to Kathaisolli?{' '}
+                <Link
+                  to="/signup"
+                  className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline transition-colors"
+                >
+                  Create your account.
+                </Link>
+              </p>
+              <p className="text-[11px] text-stone-500 dark:text-stone-400">
                 Forgot Password? Contact Admin.
               </p>
-              <div className="p-3 rounded-2xl bg-[#F8F5E9] dark:bg-[#063325] border border-[#E8E1CE] dark:border-[#0E4738] text-[11px] sm:text-xs text-stone-600 dark:text-stone-300 space-y-1 text-left">
-                <div className="flex items-start gap-2">
-                  <Info className="w-3.5 h-3.5 mt-0.5 text-[#D97706] flex-shrink-0" />
-                  <span>New users: Please get your username and password from the Admin.</span>
-                </div>
-                <div className="flex items-start gap-2 pl-5.5 text-[11px] text-stone-500 dark:text-stone-400">
-                  <span>Users cannot create their own accounts. Only Admin can create user accounts.</span>
-                </div>
-              </div>
             </div>
 
           </div>

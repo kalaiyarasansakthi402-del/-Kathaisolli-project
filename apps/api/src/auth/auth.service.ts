@@ -61,37 +61,67 @@ export class AuthService {
   ) {}
 
   async register(input: RegisterDto) {
-    const normalizedEmail = input.email.trim().toLowerCase();
+    const rawUsername = (input.username || '').trim().toLowerCase();
+    const rawEmail = (input.email || '').trim().toLowerCase();
+
+    const normalizedUsername =
+      rawUsername || (rawEmail.includes('@') ? rawEmail.split('@')[0] : rawEmail);
+    if (!normalizedUsername) {
+      throw new BadRequestException('Username is required.');
+    }
+
+    const systemEmail = rawEmail || `${normalizedUsername}@user.kathaisolli.local`;
+    const displayName = (input.displayName || input.username || normalizedUsername).trim();
+
     let existing;
     try {
-      existing = await this.prisma.user.findUnique({
-        where: { email: normalizedEmail },
-        select: { id: true },
+      existing = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { username: normalizedUsername },
+            { email: systemEmail },
+            ...(rawEmail ? [{ email: rawEmail }] : []),
+          ],
+        },
+        select: { id: true, username: true, email: true },
       });
     } catch (err) {
       handleDbError(err);
     }
+
     if (existing) {
-      throw new ConflictException('An account with this email already exists.');
+      throw new ConflictException(
+        'This username is already taken. Please choose another username.',
+      );
     }
 
     const passwordHash = await argon2.hash(input.password, {
       type: argon2.argon2id,
+      memoryCost: 19456,
+      timeCost: 2,
     });
-    let user: AuthenticatedUser;
+
+    let user: any;
     try {
       user = await this.prisma.user.create({
         data: {
-          email: normalizedEmail,
+          username: normalizedUsername,
+          email: systemEmail,
           passwordHash,
-          displayName: input.displayName.trim(),
+          displayName,
+          phoneNumber: input.phoneNumber ? input.phoneNumber.trim() : null,
           role: UserRole.LISTENER,
+          isActive: true,
+          disabledAt: null,
+          emailVerifiedAt: new Date(),
         },
         select: {
           id: true,
+          username: true,
           email: true,
           displayName: true,
           role: true,
+          isActive: true,
         },
       });
     } catch (error) {
@@ -100,13 +130,25 @@ export class AuthService {
         error.code === 'P2002'
       ) {
         throw new ConflictException(
-          'An account with this email already exists.',
+          'This username is already taken. Please choose another username.',
         );
       }
       handleDbError(error);
     }
 
-    return this.createSession(user);
+    const session = await this.createSession({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      displayName: user.displayName,
+      role: user.role,
+      isActive: user.isActive,
+    });
+
+    return {
+      message: 'Your Kathaisolli account has been created successfully!',
+      ...session,
+    };
   }
 
   async login(input: LoginDto) {

@@ -40,31 +40,32 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('creates listener accounts with an Argon2id password hash', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({
         id: 'user-id',
-        email: 'listener@example.com',
-        displayName: 'Listener',
+        username: 'sakthi',
+        email: 'sakthi@user.kathaisolli.local',
+        displayName: 'sakthi',
         role: UserRole.LISTENER,
+        isActive: true,
       });
 
       const input: RegisterDto = {
-        email: 'listener@example.com',
+        username: 'sakthi',
         password: 'securePassword123',
-        displayName: 'Listener',
+        phoneNumber: '+919876543210',
       };
       const result = await service.register(input);
 
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'listener@example.com' },
-        select: { id: true },
-      });
+      expect(prisma.user.findFirst).toHaveBeenCalled();
       expect(prisma.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            email: 'listener@example.com',
-            displayName: 'Listener',
+            username: 'sakthi',
+            email: 'sakthi@user.kathaisolli.local',
             role: UserRole.LISTENER,
+            phoneNumber: '+919876543210',
+            isActive: true,
           }),
         }),
       );
@@ -72,6 +73,7 @@ describe('AuthService', () => {
       expect(createArgument.data.passwordHash).toMatch(/^\$argon2id\$/);
       expect(createArgument.data.passwordHash).not.toBe(input.password);
       expect(result).toMatchObject({
+        message: 'Your Kathaisolli account has been created successfully!',
         accessToken: 'signed-access-token',
         tokenType: 'Bearer',
         expiresIn: 900,
@@ -82,13 +84,12 @@ describe('AuthService', () => {
       });
     });
 
-    it('rejects duplicate email registration with ConflictException', async () => {
-      prisma.user.findUnique.mockResolvedValue({ id: 'existing-id' });
+    it('rejects duplicate username registration with ConflictException', async () => {
+      prisma.user.findFirst.mockResolvedValue({ id: 'existing-id' });
 
       const input: RegisterDto = {
-        email: 'duplicate@example.com',
+        username: 'sakthi',
         password: 'securePassword123',
-        displayName: 'Existing User',
       };
 
       await expect(service.register(input)).rejects.toThrow(ConflictException);

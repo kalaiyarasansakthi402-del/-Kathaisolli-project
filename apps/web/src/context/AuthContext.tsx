@@ -3,9 +3,11 @@ import { createApiClient, KathaisolliApiClient } from '@kathaisolli/api-client';
 import type { User, AuthSessionResponse } from '@kathaisolli/shared-types';
 
 export interface RegisterParams {
-  email: string;
+  username: string;
   password: string;
-  displayName: string;
+  phoneNumber?: string;
+  email?: string;
+  displayName?: string;
   autoLogin?: boolean;
 }
 
@@ -154,11 +156,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // User Registration Handler
   const register = useCallback(
     async (params: RegisterParams): Promise<AuthSessionResponse> => {
-      const normalizedEmail = params.email.trim().toLowerCase();
+      const trimmedUsername = (params.username || params.email?.split('@')[0] || '').trim().toLowerCase();
       const res = await api.auth.register({
-        email: normalizedEmail,
+        username: trimmedUsername,
         password: params.password,
-        displayName: params.displayName.trim(),
+        phoneNumber: params.phoneNumber ? params.phoneNumber.trim() : undefined,
+        email: params.email ? params.email.trim().toLowerCase() : undefined,
+        displayName: params.displayName ? params.displayName.trim() : params.username,
       });
 
       if (params.autoLogin && res.accessToken && res.user) {

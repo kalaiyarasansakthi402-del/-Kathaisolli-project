@@ -99,8 +99,8 @@ const AppContent: React.FC = () => {
             <Routes>
               {/* Authentication Routes (Admin-controlled user accounts) */}
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<Navigate to="/login" replace />} />
-              <Route path="/signup" element={<Navigate to="/login" replace />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/signup" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
               <Route path="/reset-password" element={<Navigate to="/login" replace />} />
 

@@ -1386,6 +1386,7 @@ export class AdminService {
     role: UserRole;
     isActive: boolean;
     disabledAt: Date | null;
+    phoneNumber?: string | null;
     createdAt: Date;
     updatedAt: Date;
   }) {
@@ -1397,6 +1398,7 @@ export class AdminService {
       role: user.role,
       isActive: user.isActive && !user.disabledAt,
       disabledAt: user.disabledAt ? user.disabledAt.toISOString() : null,
+      phoneNumber: user.phoneNumber || null,
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
     };

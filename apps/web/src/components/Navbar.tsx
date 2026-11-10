@@ -309,13 +309,19 @@ export const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            /* User NOT Logged In: Login Button */
+            /* User NOT Logged In: Login & Sign Up Buttons */
             <div className="hidden sm:flex items-center gap-2 sm:gap-3">
+              <Link
+                to="/signup"
+                className="px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-[#064E3B] dark:text-[#A7F3D0] hover:bg-stone-200/50 dark:hover:bg-[#073224] transition-all"
+              >
+                Sign Up
+              </Link>
               <Link
                 to="/login"
                 className="px-5 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#064E3B] text-white hover:bg-[#166534] shadow-md shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
-                Login (உள்நுழை)
+                Login
               </Link>
             </div>
           )}
@@ -417,13 +423,20 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="pt-2 border-t border-[#E3DCBA] dark:border-[#124835]">
+            <div className="pt-2 border-t border-[#E3DCBA] dark:border-[#124835] space-y-2">
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full block text-center py-2.5 rounded-full text-xs font-bold bg-[#064E3B] text-white"
               >
-                Login (உள்நுழை)
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full block text-center py-2 rounded-full text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B] dark:border-[#A7F3D0]"
+              >
+                Sign Up
               </Link>
             </div>
           )}

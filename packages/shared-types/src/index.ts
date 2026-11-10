@@ -64,6 +64,7 @@ export interface AdminManagedUser {
   role: UserRole;
   isActive: boolean;
   disabledAt?: string | null;
+  phoneNumber?: string | null;
   createdAt: string;
   updatedAt: string;
 }
