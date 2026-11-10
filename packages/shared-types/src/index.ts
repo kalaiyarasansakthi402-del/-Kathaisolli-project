@@ -45,15 +45,47 @@ export type NotificationType =
 
 export interface User {
   id: string;
+  username?: string | null;
   email: string;
   displayName: string;
   role: UserRole;
+  isActive?: boolean;
   avatarUrl?: string | null;
   emailVerifiedAt?: string | null;
   disabledAt?: string | null;
   creatorProfile?: CreatorProfile | null;
   createdAt: string;
   publicId?: string;
+}
+
+export interface AdminManagedUser {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  isActive: boolean;
+  disabledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserInput {
+  username: string;
+  password: string;
+}
+
+export interface UpdateUserInput {
+  username?: string;
+  displayName?: string;
+}
+
+export interface ResetUserPasswordInput {
+  newPassword: string;
+}
+
+export interface UpdateUserStatusInput {
+  isActive: boolean;
 }
 
 export interface CreatorProfile {

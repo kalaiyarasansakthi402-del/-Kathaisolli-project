@@ -110,28 +110,46 @@ export class AuthService {
   }
 
   async login(input: LoginDto) {
-    const normalizedEmail = input.email.trim().toLowerCase();
-    let user;
+    const rawIdentifier = (input.username || input.email || '').trim().toLowerCase();
+    if (!rawIdentifier || !input.password) {
+      throw new UnauthorizedException('Invalid username or password.');
+    }
+
+    let user: any;
     try {
-      user = await this.prisma.user.findUnique({
-        where: { email: normalizedEmail },
+      user = await this.prisma.user.findFirst({
+        where: {
+          OR: [
+            { username: rawIdentifier },
+            { email: rawIdentifier },
+          ],
+        },
       });
     } catch (err) {
       handleDbError(err);
     }
-    if (
-      !user ||
-      user.disabledAt ||
-      !(await argon2.verify(user.passwordHash, input.password))
-    ) {
-      throw new UnauthorizedException('Invalid email or password.');
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid username or password.');
+    }
+
+    const isPasswordValid = await argon2.verify(user.passwordHash, input.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid username or password.');
+    }
+
+    const isInactive = Boolean(user.disabledAt) || user.isActive === false;
+    if (isInactive) {
+      throw new UnauthorizedException('Your account is inactive. Please contact Admin.');
     }
 
     return this.createSession({
       id: user.id,
       email: user.email,
+      username: user.username,
       displayName: user.displayName,
       role: user.role,
+      isActive: !isInactive,
     });
   }
 
@@ -142,9 +160,11 @@ export class AuthService {
         where: { id: userId, disabledAt: null },
         select: {
           id: true,
+          username: true,
           email: true,
           role: true,
           displayName: true,
+          isActive: true,
           avatarUrl: true,
           creatorProfile: {
             select: {

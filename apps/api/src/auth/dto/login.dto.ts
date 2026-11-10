@@ -1,15 +1,25 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
-  @ApiProperty({ example: 'listener@example.com' })
+  @ApiProperty({ required: false, example: 'sakthi' })
   @Transform(({ value }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
-  @IsEmail()
+  @IsOptional()
+  @IsString()
   @MaxLength(320)
-  email!: string;
+  username?: string;
+
+  @ApiProperty({ required: false, example: 'admin@example.com' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsOptional()
+  @IsString()
+  @MaxLength(320)
+  email?: string;
 
   @ApiProperty({ maxLength: 128, writeOnly: true })
   @IsString()

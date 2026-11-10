@@ -23,6 +23,10 @@ import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { SaveChapterAudioDto } from './dto/save-chapter-audio.dto';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Injectable()
 export class AdminService {
@@ -1370,6 +1374,263 @@ export class AdminService {
     });
 
     return { success: true };
+  }
+
+  // ==========================================
+  // 8.5. USER MANAGEMENT (ADMIN-CONTROLLED USERS)
+  // ==========================================
+  private mapManagedUser(user: {
+    id: string;
+    username: string | null;
+    email: string;
+    displayName: string;
+    role: UserRole;
+    isActive: boolean;
+    disabledAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: user.id,
+      username: user.username || user.email.split('@')[0],
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role,
+      isActive: user.isActive && !user.disabledAt,
+      disabledAt: user.disabledAt ? user.disabledAt.toISOString() : null,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    };
+  }
+
+  async createUser(dto: CreateUserDto, actorId: string) {
+    const normalizedUsername = dto.username.toLowerCase().trim();
+    const systemEmail = `${normalizedUsername}@user.kathaisolli.local`;
+
+    const existing = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: normalizedUsername },
+          { email: systemEmail },
+        ],
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('Username is already taken. Please choose another username.');
+    }
+
+    const passwordHash = await argon2.hash(dto.password, {
+      type: argon2.argon2id,
+      memoryCost: 19456,
+      timeCost: 2,
+    });
+
+    const user = await this.prisma.user.create({
+      data: {
+        username: normalizedUsername,
+        email: systemEmail,
+        displayName: dto.username,
+        passwordHash,
+        role: UserRole.LISTENER,
+        isActive: true,
+        disabledAt: null,
+        emailVerifiedAt: new Date(),
+      },
+    });
+
+    await this.logActivity(actorId, 'CREATE_USER', 'User', user.id, {
+      username: user.username,
+      displayName: user.displayName,
+    });
+
+    return this.mapManagedUser(user);
+  }
+
+  async listUsers(query?: string, page = 1, limit = 50) {
+    const pageNum = Math.max(1, Number(page) || 1);
+    const take = Math.min(100, Math.max(1, Number(limit) || 50));
+    const skip = (pageNum - 1) * take;
+
+    const where: Prisma.UserWhereInput = {};
+
+    if (query && query.trim()) {
+      const q = query.trim().toLowerCase();
+      where.OR = [
+        { username: { contains: q, mode: 'insensitive' } },
+        { displayName: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    const [total, users] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return {
+      users: users.map((u) => this.mapManagedUser(u)),
+      total,
+      page: pageNum,
+      limit: take,
+      totalPages: Math.ceil(total / take),
+    };
+  }
+
+  async getUser(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+    return this.mapManagedUser(user);
+  }
+
+  async updateUser(id: string, dto: UpdateUserDto, actorId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const data: Prisma.UserUpdateInput = {};
+
+    if (dto.username) {
+      const normalized = dto.username.toLowerCase().trim();
+      if (normalized !== user.username) {
+        const existing = await this.prisma.user.findFirst({
+          where: {
+            username: normalized,
+            id: { not: id },
+          },
+        });
+        if (existing) {
+          throw new ConflictException('Username is already taken.');
+        }
+        data.username = normalized;
+        if (user.email.endsWith('@user.kathaisolli.local')) {
+          data.email = `${normalized}@user.kathaisolli.local`;
+        }
+      }
+    }
+
+    if (dto.displayName !== undefined) {
+      data.displayName = dto.displayName.trim();
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data,
+    });
+
+    await this.logActivity(actorId, 'UPDATE_USER', 'User', id, {
+      username: updated.username,
+      displayName: updated.displayName,
+    });
+
+    return this.mapManagedUser(updated);
+  }
+
+  async resetUserPassword(id: string, newPassword: string, actorId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const passwordHash = await argon2.hash(newPassword, {
+      type: argon2.argon2id,
+      memoryCost: 19456,
+      timeCost: 2,
+    });
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    });
+
+    await this.prisma.authSession.deleteMany({
+      where: { userId: id },
+    });
+
+    await this.logActivity(actorId, 'RESET_USER_PASSWORD', 'User', id, {
+      username: user.username,
+    });
+
+    return { success: true, message: 'Password reset successfully.' };
+  }
+
+  async updateUserStatus(id: string, isActive: boolean, actorId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    if (user.id === actorId && !isActive) {
+      throw new BadRequestException('You cannot deactivate your own account.');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: {
+        isActive,
+        disabledAt: isActive ? null : new Date(),
+      },
+    });
+
+    if (!isActive) {
+      await this.prisma.authSession.deleteMany({
+        where: { userId: id },
+      });
+    }
+
+    await this.logActivity(actorId, isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER', 'User', id, {
+      username: user.username,
+      isActive,
+    });
+
+    return this.mapManagedUser(updated);
+  }
+
+  async deleteUser(id: string, actorId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    if (user.id === actorId) {
+      throw new BadRequestException('You cannot delete your own account.');
+    }
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      const superAdminCount = await this.prisma.user.count({
+        where: { role: UserRole.SUPER_ADMIN },
+      });
+      if (superAdminCount <= 1) {
+        throw new BadRequestException('Cannot delete the last remaining Super Admin.');
+      }
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+
+    await this.logActivity(actorId, 'DELETE_USER', 'User', id, {
+      username: user.username,
+      email: user.email,
+    });
+
+    return { success: true, message: 'User deleted successfully.' };
   }
 
   // ==========================================

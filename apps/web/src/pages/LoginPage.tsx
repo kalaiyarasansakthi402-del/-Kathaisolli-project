@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Mail,
+  User as UserIcon,
   Lock,
   Eye,
   EyeOff,
@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Headphones,
   BookOpen,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,7 +20,7 @@ export const LoginPage: React.FC = () => {
   const location = useLocation();
   const { login, user, isLoading: authLoading } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -28,7 +29,7 @@ export const LoginPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // If redirected with state message (e.g. from registration or logout)
+  // If redirected with state message (e.g. from logout)
   useEffect(() => {
     const stateSuccess = (location.state as any)?.successMessage;
     if (stateSuccess) {
@@ -36,7 +37,7 @@ export const LoginPage: React.FC = () => {
     }
   }, [location.state]);
 
-  // If already authenticated, redirect away from login
+  // If already authenticated, redirect to home page
   useEffect(() => {
     if (user && !authLoading) {
       const returnTo = (location.state as any)?.from?.pathname || '/';
@@ -49,39 +50,49 @@ export const LoginPage: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail) {
-      setError('தயவுசெய்து உங்கள் மின்னஞ்சல் முகவரியை உள்ளிடவும் (Please enter email address).');
+    const trimmedUsername = username.trim().toLowerCase();
+    if (!trimmedUsername) {
+      setError('Please enter your username.');
       return;
     }
 
     if (!password) {
-      setError('தயவுசெய்து கடவுச்சொல்லை உள்ளிடவும் (Please enter password).');
+      setError('Please enter your password.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      await login(trimmedEmail, password, rememberMe);
-      setSuccess('உள்நுழைவு வெற்றிகரமானது! (Login successful! Redirecting...)');
+      await login(trimmedUsername, password, rememberMe);
+      setSuccess('Login successful! Redirecting...');
 
       const returnTo = (location.state as any)?.from?.pathname || '/';
       setTimeout(() => {
         navigate(returnTo, { replace: true });
-      }, 500);
+      }, 400);
     } catch (err: any) {
       console.error('[Login] Error:', err);
-      const serverMessage = err?.response?.data?.message || err?.message;
+      const serverMessage = err?.response?.data?.message || err?.message || '';
 
-      if (err?.response?.status === 401 || (serverMessage && serverMessage.includes('Invalid email or password'))) {
-        setError('தவறான மின்னஞ்சல் அல்லது கடவுச்சொல். மீண்டும் முயற்சிக்கவும் (Invalid email or password).');
-      } else if (err?.response?.status === 503 || (serverMessage && (serverMessage.includes('database') || serverMessage.includes('DATABASE_URL')))) {
-        setError('தரவுத்தள இணைப்பு தற்காலிகமாக கிடைக்கவில்லை. தயவுசெய்து சிறிது நேரம் கழித்து முயற்சிக்கவும் (Database service temporarily unavailable).');
+      if (serverMessage.includes('inactive') || serverMessage.includes('disabled')) {
+        setError('Your account is inactive. Please contact Admin.');
+      } else if (
+        err?.response?.status === 401 ||
+        serverMessage.includes('Invalid') ||
+        serverMessage.includes('credentials')
+      ) {
+        setError('Invalid username or password.');
+      } else if (
+        err?.response?.status === 503 ||
+        serverMessage.includes('database') ||
+        serverMessage.includes('DATABASE_URL')
+      ) {
+        setError('Database service temporarily unavailable. Please try again shortly.');
       } else if (err?.message === 'Network Error' || err?.code === 'ERR_NETWORK') {
-        setError('சேவையகத்தை தொடர்பு கொள்ள முடியவில்லை. தயவுசெய்து உங்கள் இணைய இணைப்பை சரிபார்க்கவும் (Network error: Unable to reach server).');
+        setError('Network error: Unable to reach server. Please check your connection.');
       } else {
-        setError(serverMessage || 'உள்நுழைவதில் பிழை ஏற்பட்டது. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.');
+        setError(serverMessage || 'Invalid username or password.');
       }
     } finally {
       setIsSubmitting(false);
@@ -92,7 +103,7 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#FAF7EE] dark:bg-[#03261C] transition-colors">
       <div className="w-full max-w-4xl bg-white dark:bg-[#04281E] rounded-3xl shadow-2xl border border-[#E8E1CE] dark:border-[#0F4738] overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all">
         
-        {/* LEFT SECTION: Mascot & Welcome Back */}
+        {/* LEFT SECTION: Mascot & Brand Welcome */}
         <div className="lg:col-span-5 bg-gradient-to-br from-[#064E3B] via-[#043E2F] to-[#02261C] p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#166534]/30">
           {/* Subtle Background Glows */}
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-[#D97706]/15 rounded-full blur-3xl pointer-events-none" />
@@ -131,7 +142,7 @@ export const LoginPage: React.FC = () => {
               மீண்டும் நல்வரவு!
             </h3>
             <p className="mt-2 text-xs sm:text-sm font-tamil text-[#A7F3D0] max-w-xs leading-relaxed">
-              உங்கள் சேமித்த கதைகள் மற்றும் கேட்ட வரலாற்றைத் தொடர உங்கள் கணக்கில் உள்நுழையவும்.
+              உங்கள் சேமித்த கதைகள் மற்றும் கேட்ட வரலாற்றைத் தொடர உள்நுழையவும்.
             </p>
           </div>
 
@@ -152,17 +163,17 @@ export const LoginPage: React.FC = () => {
         <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full space-y-6">
             
-            {/* Header */}
+            {/* Header: Title & Subtitle */}
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider mb-2">
                 <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
-                <span>உள்நுழைவு (Sign In)</span>
+                <span>KATHAISOLLI</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#064E3B] dark:text-[#FAF7EE]">
-                கதைசொல்லிக்கு உள்நுழைக
+                Welcome to Kathaisolli
               </h2>
               <p className="mt-1 text-xs sm:text-sm text-stone-600 dark:text-stone-300">
-                உங்கள் மின்னஞ்சல் மற்றும் கடவுச்சொல்லை உள்ளிடவும்.
+                Your stories, your world.
               </p>
             </div>
 
@@ -184,46 +195,40 @@ export const LoginPage: React.FC = () => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Email Address */}
+              {/* Field 1: Username */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">
-                  மின்னஞ்சல் முகவரி (Email Address)
+                  Username
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type="email"
+                    type="text"
                     required
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
                   />
                 </div>
               </div>
 
-              {/* Password */}
+              {/* Field 2: Password */}
               <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                    கடவுச்சொல் (Password)
-                  </label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
-                  >
-                    கடவுச்சொல் மறந்ததா?
-                  </Link>
-                </div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">
+                  Password
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder="உங்கள் கடவுச்சொல்"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
+                    autoComplete="current-password"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
                   />
                   <button
                     type="button"
@@ -246,12 +251,12 @@ export const LoginPage: React.FC = () => {
                     className="w-4 h-4 rounded text-[#064E3B] focus:ring-[#064E3B] border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] cursor-pointer"
                   />
                   <span className="text-xs text-stone-600 dark:text-stone-300 font-medium">
-                    என்னை நினைவில் கொள் (Remember Me)
+                    Remember Me
                   </span>
                 </label>
               </div>
 
-              {/* Submit Button */}
+              {/* Login Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -260,28 +265,31 @@ export const LoginPage: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>சரிபார்க்கப்படுகிறது...</span>
+                    <span>Signing in...</span>
                   </>
                 ) : (
                   <>
-                    <span>உள்நுழைக (Sign In)</span>
+                    <span>Login</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
             </form>
 
-            {/* Bottom Navigation Link to Register */}
-            <div className="text-center pt-2 border-t border-stone-200 dark:border-[#104434]">
-              <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">
-                புதியவரா? கணக்கு இல்லையா?{' '}
-                <Link
-                  to="/register"
-                  className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
-                >
-                  கணக்கை உருவாக்குங்கள் (Create Account)
-                </Link>
+            {/* Informational Guidance Section Below Login Button */}
+            <div className="pt-4 border-t border-stone-200 dark:border-[#104434] space-y-2.5 text-center">
+              <p className="text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0]">
+                Forgot Password? Contact Admin.
               </p>
+              <div className="p-3 rounded-2xl bg-[#F8F5E9] dark:bg-[#063325] border border-[#E8E1CE] dark:border-[#0E4738] text-[11px] sm:text-xs text-stone-600 dark:text-stone-300 space-y-1 text-left">
+                <div className="flex items-start gap-2">
+                  <Info className="w-3.5 h-3.5 mt-0.5 text-[#D97706] flex-shrink-0" />
+                  <span>New users: Please get your username and password from the Admin.</span>
+                </div>
+                <div className="flex items-start gap-2 pl-5.5 text-[11px] text-stone-500 dark:text-stone-400">
+                  <span>Users cannot create their own accounts. Only Admin can create user accounts.</span>
+                </div>
+              </div>
             </div>
 
           </div>

@@ -10,6 +10,7 @@ export interface AdminPermissions {
   canManageStorage: boolean;
   canViewReports: boolean;
   canManageStaff: boolean;
+  canManageUsers: boolean;
   canManageSettings: boolean;
 }
 
@@ -22,7 +23,7 @@ interface AdminAuthContextType {
   isSuperAdmin: boolean;
   isAdmin: boolean;
   isEditor: boolean;
-  login: (email: string, pass: string) => Promise<User>;
+  login: (identifier: string, pass: string) => Promise<User>;
   logout: () => void;
   refreshProfile: () => Promise<void>;
   clearSessionExpiredNotice: () => void;
@@ -132,6 +133,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         canManageStorage: true,
         canViewReports: true,
         canManageStaff: true,
+        canManageUsers: true,
         canManageSettings: true,
       };
     }
@@ -144,6 +146,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         canManageStorage: true,
         canViewReports: true,
         canManageStaff: true,
+        canManageUsers: true,
         canManageSettings: false,
       };
     }
@@ -157,6 +160,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         canManageStorage: false,
         canViewReports: true,
         canManageStaff: false,
+        canManageUsers: false,
         canManageSettings: false,
       };
     }
@@ -168,6 +172,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       canManageStorage: false,
       canViewReports: false,
       canManageStaff: false,
+      canManageUsers: false,
       canManageSettings: false,
     };
   }, [user?.role]);
@@ -197,14 +202,16 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [token, handleUnauthorized]);
 
-  const login = async (email: string, pass: string): Promise<User> => {
+  const login = async (identifier: string, pass: string): Promise<User> => {
     setIsLoading(true);
     setSessionExpired(false);
     try {
-      const res = await api.auth.login({
-        email: email.trim().toLowerCase(),
-        password: pass,
-      });
+      const trimmed = identifier.trim();
+      const payload = trimmed.includes('@')
+        ? { email: trimmed.toLowerCase(), password: pass }
+        : { username: trimmed.toLowerCase(), password: pass };
+
+      const res = await api.auth.login(payload);
 
       const authenticatedUser = res.user;
 

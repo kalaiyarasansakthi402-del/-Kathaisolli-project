@@ -65,6 +65,11 @@ const AdminRolesPage = lazyWithRetry(() =>
   import('./pages/AdminRolesPage').then((m) => ({ default: m.AdminRolesPage }))
 );
 
+// Module 8.5: User Management (Admin-Controlled Users)
+const AdminUsersPage = lazyWithRetry(() =>
+  import('./pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage }))
+);
+
 // Module 9: Settings & Security
 const AdminSettingsPage = lazyWithRetry(() =>
   import('./pages/AdminSettingsPage').then((m) => ({ default: m.AdminSettingsPage }))
@@ -179,8 +184,8 @@ export const App: React.FC = () => {
               {/* Module 9: Settings & Security */}
               <Route path="/admin/settings" element={<AdminSettingsPage />} />
 
-              {/* Redirect removed modules to admin overview */}
-              <Route path="/admin/users" element={<Navigate to="/admin" replace />} />
+              {/* Module 8.5: User Management */}
+              <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/subscriptions" element={<Navigate to="/admin" replace />} />
               <Route path="/admin/payments" element={<Navigate to="/admin" replace />} />
               <Route path="/admin/creators" element={<Navigate to="/admin" replace />} />

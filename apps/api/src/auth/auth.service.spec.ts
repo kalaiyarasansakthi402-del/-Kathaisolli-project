@@ -11,6 +11,7 @@ describe('AuthService', () => {
   const prisma = {
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -100,12 +101,14 @@ describe('AuthService', () => {
       const passwordHash = await argon2.hash('myCorrectPassword123', {
         type: argon2.argon2id,
       });
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-123',
+        username: 'listener1',
         email: 'listener@example.com',
         passwordHash,
         role: UserRole.LISTENER,
         displayName: 'கதை கேட்பவர்',
+        isActive: true,
         disabledAt: null,
       });
 
@@ -114,8 +117,13 @@ describe('AuthService', () => {
         password: 'myCorrectPassword123',
       });
 
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: 'listener@example.com' },
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { username: 'listener@example.com' },
+            { email: 'listener@example.com' },
+          ],
+        },
       });
       expect(result).toEqual({
         accessToken: 'signed-access-token',
@@ -123,25 +131,61 @@ describe('AuthService', () => {
         expiresIn: 900,
         user: {
           id: 'user-123',
+          username: 'listener1',
           email: 'listener@example.com',
           displayName: 'கதை கேட்பவர்',
           role: UserRole.LISTENER,
+          isActive: true,
           publicId: 'KTH-47872',
         },
       });
       expect(jwt.signAsync).toHaveBeenCalled();
     });
 
+    it('logs in successfully with username', async () => {
+      const passwordHash = await argon2.hash('myCorrectPassword123', {
+        type: argon2.argon2id,
+      });
+      prisma.user.findFirst.mockResolvedValue({
+        id: 'user-456',
+        username: 'sakthi',
+        email: 'sakthi@user.kathaisolli.local',
+        passwordHash,
+        role: UserRole.LISTENER,
+        displayName: 'Sakthi',
+        isActive: true,
+        disabledAt: null,
+      });
+
+      const result = await service.login({
+        username: 'sakthi',
+        password: 'myCorrectPassword123',
+      });
+
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { username: 'sakthi' },
+            { email: 'sakthi' },
+          ],
+        },
+      });
+      expect(result.user.username).toBe('sakthi');
+      expect(result.accessToken).toBe('signed-access-token');
+    });
+
     it('rejects invalid password without issuing a token', async () => {
       const passwordHash = await argon2.hash('correct-password', {
         type: argon2.argon2id,
       });
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-id',
+        username: 'listener',
         email: 'listener@example.com',
         passwordHash,
         role: UserRole.LISTENER,
         displayName: 'Listener',
+        isActive: true,
         disabledAt: null,
       });
 
@@ -155,7 +199,7 @@ describe('AuthService', () => {
     });
 
     it('rejects non-existent email without issuing a token', async () => {
-      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(
         service.login({
@@ -170,12 +214,14 @@ describe('AuthService', () => {
       const passwordHash = await argon2.hash('password123', {
         type: argon2.argon2id,
       });
-      prisma.user.findUnique.mockResolvedValue({
+      prisma.user.findFirst.mockResolvedValue({
         id: 'user-disabled',
+        username: 'disabled_user',
         email: 'disabled@example.com',
         passwordHash,
         role: UserRole.LISTENER,
         displayName: 'Disabled User',
+        isActive: false,
         disabledAt: new Date(),
       });
 

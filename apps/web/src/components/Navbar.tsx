@@ -309,19 +309,13 @@ export const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            /* User NOT Logged In: Login & Sign Up Buttons */
+            /* User NOT Logged In: Login Button */
             <div className="hidden sm:flex items-center gap-2 sm:gap-3">
               <Link
                 to="/login"
-                className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200 hover:text-[#064E3B] dark:hover:text-[#A7F3D0] px-3 py-1.5 rounded-full transition-colors"
+                className="px-5 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#064E3B] text-white hover:bg-[#166534] shadow-md shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Login (உள்நுழை)
-              </Link>
-              <Link
-                to="/register"
-                className="px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#064E3B] text-white hover:bg-[#166534] shadow-md shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                Sign Up (பதிவு செய்)
               </Link>
             </div>
           )}
@@ -423,20 +417,13 @@ export const Navbar: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="flex gap-2 pt-2 border-t border-[#E3DCBA] dark:border-[#124835]">
+            <div className="pt-2 border-t border-[#E3DCBA] dark:border-[#124835]">
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex-1 text-center py-2.5 rounded-full text-xs font-bold border border-[#064E3B] text-[#064E3B] dark:text-[#A7F3D0]"
+                className="w-full block text-center py-2.5 rounded-full text-xs font-bold bg-[#064E3B] text-white"
               >
-                Login
-              </Link>
-              <Link
-                to="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex-1 text-center py-2.5 rounded-full text-xs font-bold bg-[#064E3B] text-white"
-              >
-                Sign Up
+                Login (உள்நுழை)
               </Link>
             </div>
           )}

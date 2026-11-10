@@ -13,7 +13,7 @@ export interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, pass: string, rememberMe?: boolean) => Promise<AuthSessionResponse>;
+  login: (identifier: string, pass: string, rememberMe?: boolean) => Promise<AuthSessionResponse>;
   register: (params: RegisterParams) => Promise<AuthSessionResponse>;
   logout: () => Promise<void>;
   updateProfile: (data: { displayName?: string; avatarUrl?: string }) => Promise<User>;
@@ -122,9 +122,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // User Login Handler
   const login = useCallback(
-    async (email: string, pass: string, rememberMe = true): Promise<AuthSessionResponse> => {
-      const normalizedEmail = email.trim().toLowerCase();
-      const res = await api.auth.login({ email: normalizedEmail, password: pass });
+    async (identifier: string, pass: string, rememberMe = true): Promise<AuthSessionResponse> => {
+      const trimmed = identifier.trim();
+      const payload = trimmed.includes('@')
+        ? { email: trimmed.toLowerCase(), password: pass }
+        : { username: trimmed.toLowerCase(), password: pass };
+      const res = await api.auth.login(payload);
 
       if (res.accessToken && res.user) {
         setToken(res.accessToken);

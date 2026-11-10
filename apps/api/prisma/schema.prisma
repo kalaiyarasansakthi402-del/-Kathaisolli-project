@@ -52,6 +52,7 @@ enum UploadStatus {
 
 model User {
   id              String          @id @default(uuid()) @db.Uuid
+  username        String?         @unique @db.VarChar(60)
   email           String          @unique @db.VarChar(320)
   passwordHash    String          @map("password_hash")
   role            UserRole        @default(LISTENER)
@@ -59,6 +60,7 @@ model User {
   avatarUrl       String?         @map("avatar_url") @db.VarChar(2048)
   emailVerifiedAt DateTime?       @map("email_verified_at")
   disabledAt      DateTime?       @map("disabled_at")
+  isActive        Boolean         @default(true) @map("is_active")
   sessions        AuthSession[]
   creatorProfile  CreatorProfile?
   createdSeries   Series[]        @relation("SeriesCreator")
@@ -76,6 +78,7 @@ model User {
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
   @@index([role, createdAt])
+  @@index([username])
   @@map("users")
 }
 

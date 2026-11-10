@@ -27,6 +27,10 @@ import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { SaveChapterAudioDto } from './dto/save-chapter-audio.dto';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffRoleDto } from './dto/update-staff-role.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @ApiTags('Administration')
 @ApiBearerAuth()
@@ -328,5 +332,82 @@ export class AdminController {
     @CurrentUser() actor: AuthPrincipal,
   ) {
     return this.adminService.deleteStaff(id, actor.id);
+  }
+
+  // ==========================================
+  // USER MANAGEMENT (ADMIN-CONTROLLED USERS)
+  // ==========================================
+  @ApiOperation({ summary: 'List all managed platform users' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @ApiQuery({ name: 'query', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @Get('users')
+  listUsers(
+    @Query('query') query?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.adminService.listUsers(query, page, limit);
+  }
+
+  @ApiOperation({ summary: 'Create a new user account' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Post('users')
+  createUser(
+    @Body() input: CreateUserDto,
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    return this.adminService.createUser(input, actor.id);
+  }
+
+  @ApiOperation({ summary: 'Get managed user details by ID' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Get('users/:id')
+  getUser(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.adminService.getUser(id);
+  }
+
+  @ApiOperation({ summary: 'Update user account (username / display name)' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Patch('users/:id')
+  updateUser(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() input: UpdateUserDto,
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    return this.adminService.updateUser(id, input, actor.id);
+  }
+
+  @ApiOperation({ summary: 'Reset a user password' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Post('users/:id/reset-password')
+  resetUserPassword(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() input: ResetUserPasswordDto,
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    return this.adminService.resetUserPassword(id, input.newPassword, actor.id);
+  }
+
+  @ApiOperation({ summary: 'Activate or deactivate a user account' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Patch('users/:id/status')
+  updateUserStatus(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() input: UpdateUserStatusDto,
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    return this.adminService.updateUserStatus(id, input.isActive, actor.id);
+  }
+
+  @ApiOperation({ summary: 'Delete a user account' })
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @Delete('users/:id')
+  deleteUser(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    return this.adminService.deleteUser(id, actor.id);
   }
 }

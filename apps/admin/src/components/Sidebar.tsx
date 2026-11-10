@@ -8,6 +8,7 @@ import {
   HardDrive,
   BarChart3,
   ShieldCheck,
+  Users,
   Settings,
   LogOut,
   X,
@@ -72,6 +73,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       label: 'நிர்வாகப் பொறுப்புகள் (Admin Roles & Permissions)',
       icon: ShieldCheck,
       allowed: permissions.canManageStaff,
+    },
+    {
+      to: '/admin/users',
+      label: 'பயனர் மேலாண்மை (User Management)',
+      icon: Users,
+      allowed: permissions.canManageUsers,
     },
     {
       to: '/admin/settings',

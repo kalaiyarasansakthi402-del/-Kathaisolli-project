@@ -4,6 +4,11 @@ import type {
   AdminMetrics,
   AdminReportsData,
   AdminStaffMember,
+  AdminManagedUser,
+  CreateUserInput,
+  UpdateUserInput,
+  ResetUserPasswordInput,
+  UpdateUserStatusInput,
   AdminStorageFile,
   AdminStorageOverview,
   AdminStoryListItem,
@@ -83,7 +88,7 @@ export class KathaisolliApiClient {
     register: (data: { email: string; password: string; displayName: string }) =>
       this.client.post<AuthSessionResponse>('/auth/register', data).then((r) => r.data),
 
-    login: (data: { email: string; password: string }) =>
+    login: (data: { email?: string; username?: string; password: string }) =>
       this.client.post<AuthSessionResponse>('/auth/login', data).then((r) => r.data),
 
     getProfile: () => this.client.get<User>('/auth/me').then((r) => r.data),
@@ -376,6 +381,37 @@ export class KathaisolliApiClient {
 
     deleteStaff: (id: string) =>
       this.client.delete<any>(`/admin/staff/${id}`).then((r) => r.data),
+
+    // User Management (Admin-Controlled Users)
+    listUsers: (params?: { query?: string; page?: number; limit?: number }) =>
+      this.client
+        .get<{ users: AdminManagedUser[]; total: number; page: number; limit: number; totalPages: number }>(
+          '/admin/users',
+          { params },
+        )
+        .then((r) => r.data),
+
+    getUser: (id: string) =>
+      this.client.get<AdminManagedUser>(`/admin/users/${id}`).then((r) => r.data),
+
+    createUser: (data: CreateUserInput) =>
+      this.client.post<AdminManagedUser>('/admin/users', data).then((r) => r.data),
+
+    updateUser: (id: string, data: UpdateUserInput) =>
+      this.client.patch<AdminManagedUser>(`/admin/users/${id}`, data).then((r) => r.data),
+
+    resetUserPassword: (id: string, data: ResetUserPasswordInput) =>
+      this.client
+        .post<{ success: boolean; message: string }>(`/admin/users/${id}/reset-password`, data)
+        .then((r) => r.data),
+
+    updateUserStatus: (id: string, data: UpdateUserStatusInput) =>
+      this.client.patch<AdminManagedUser>(`/admin/users/${id}/status`, data).then((r) => r.data),
+
+    deleteUser: (id: string) =>
+      this.client
+        .delete<{ success: boolean; message: string }>(`/admin/users/${id}`)
+        .then((r) => r.data),
   };
 
   // --- Notifications ---
