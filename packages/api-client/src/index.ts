@@ -236,11 +236,8 @@ export class KathaisolliApiClient {
 
   // --- Creator Studio ---
   creator = {
-    apply: (data: { bio: string; sampleAudioUrl?: string; experience?: string; portfolioUrl?: string }) =>
-      this.client.post('/creator/apply', data).then((r) => r.data),
-
     getStatus: () =>
-      this.client.get<{ isCreator: boolean; creatorProfile: any; latestApplication: any }>('/creator/status').then((r) => r.data),
+      this.client.get<{ isCreator: boolean; creatorProfile: any }>('/creator/status').then((r) => r.data),
 
     getAnalytics: () =>
       this.client.get<CreatorAnalytics>('/creator/analytics').then((r) => r.data),

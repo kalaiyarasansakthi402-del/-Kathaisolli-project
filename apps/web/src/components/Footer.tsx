@@ -96,11 +96,6 @@ export const Footer: React.FC = () => {
                   Terms of Service (விதிமுறைகள்)
                 </Link>
               </li>
-              <li>
-                <Link to="/creator/apply" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Become a Storyteller (கதைசொல்லியாக சேர)
-                </Link>
-              </li>
             </ul>
           </div>
         </div>

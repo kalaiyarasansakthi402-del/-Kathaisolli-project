@@ -7,7 +7,6 @@ import {
   Optional,
 } from '@nestjs/common';
 import {
-  ApplicationStatus,
   ContentStatus,
   Prisma,
   UserRole,

@@ -171,7 +171,6 @@ export class AuthService {
               id: true,
               slug: true,
               bio: true,
-              approvedAt: true,
             },
           },
           createdAt: true,

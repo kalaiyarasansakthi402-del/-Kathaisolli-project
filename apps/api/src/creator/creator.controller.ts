@@ -19,7 +19,6 @@ import { CreateEpisodeDto } from '../catalog/dto/create-episode.dto';
 import { CreateSeasonDto } from '../catalog/dto/create-season.dto';
 import { CreateSeriesDto } from '../catalog/dto/create-series.dto';
 import { CreatorService } from './creator.service';
-import { ApplyCreatorDto } from './dto/creator-application.dto';
 
 @ApiTags('Creator')
 @ApiBearerAuth()
@@ -31,16 +30,7 @@ export class CreatorController {
     private readonly creatorService: CreatorService,
   ) {}
 
-  @ApiOperation({ summary: 'Apply to become a verified Creator' })
-  @Post('apply')
-  apply(
-    @CurrentUser() user: AuthPrincipal,
-    @Body() dto: ApplyCreatorDto,
-  ) {
-    return this.creatorService.apply(user.id, dto);
-  }
-
-  @ApiOperation({ summary: 'Check creator verification and approval status' })
+  @ApiOperation({ summary: 'Check creator status' })
   @Get('status')
   getStatus(@CurrentUser() user: AuthPrincipal) {
     return this.creatorService.getStatus(user.id);

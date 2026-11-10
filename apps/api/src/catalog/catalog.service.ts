@@ -644,11 +644,11 @@ export class CatalogService {
 
   private async assertApprovedCreator(userId: string): Promise<void> {
     const profile = await this.prisma.creatorProfile.findFirst({
-      where: { userId, approvedAt: { not: null } },
+      where: { userId },
       select: { id: true },
     });
     if (!profile) {
-      throw new ForbiddenException('An approved creator profile is required.');
+      throw new ForbiddenException('A creator profile is required.');
     }
   }
 

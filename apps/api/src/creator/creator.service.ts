@@ -1,33 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { ApplicationStatus, ContentStatus, UserRole } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { ContentStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ApplyCreatorDto } from './dto/creator-application.dto';
 
 @Injectable()
 export class CreatorService {
   constructor(private readonly prisma: PrismaService) {}
-
-  async apply(userId: string, dto: ApplyCreatorDto) {
-    const existing = await this.prisma.creatorApplication.findFirst({
-      where: {
-        userId,
-        status: ApplicationStatus.PENDING,
-      },
-    });
-    if (existing) {
-      throw new ConflictException('You already have a pending creator application.');
-    }
-
-    return this.prisma.creatorApplication.create({
-      data: {
-        userId,
-        bio: dto.bio,
-        sampleAudioUrl: dto.sampleAudioUrl,
-        experience: dto.experience,
-        status: ApplicationStatus.PENDING,
-      },
-    });
-  }
 
   async getStatus(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -40,7 +17,6 @@ export class CreatorService {
             id: true,
             slug: true,
             bio: true,
-            approvedAt: true,
           },
         },
       },
@@ -50,15 +26,9 @@ export class CreatorService {
       throw new NotFoundException('User not found.');
     }
 
-    const application = await this.prisma.creatorApplication.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
-
     return {
       isCreator: user.role === UserRole.CREATOR,
       creatorProfile: user.creatorProfile,
-      latestApplication: application,
     };
   }
 

@@ -371,11 +371,11 @@ export class UploadService implements OnModuleInit, OnModuleDestroy {
       throw new ForbiddenException('Creator access is required.');
     }
     const profile = await this.prisma.creatorProfile.findFirst({
-      where: { userId: actor.id, approvedAt: { not: null } },
+      where: { userId: actor.id },
       select: { id: true },
     });
     if (!profile) {
-      throw new ForbiddenException('An approved creator profile is required.');
+      throw new ForbiddenException('A creator profile is required.');
     }
     if (creatorId !== actor.id) {
       throw new ForbiddenException('You can only upload to your own series.');

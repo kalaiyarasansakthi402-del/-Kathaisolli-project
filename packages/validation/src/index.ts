@@ -54,12 +54,6 @@ export const CreatePlaylistSchema = z.object({
   isPublic: z.boolean().default(false),
 });
 
-export const ApplyCreatorSchema = z.object({
-  bio: z.string().min(20, 'தயவுசெய்து உங்களைப்பற்றி குறைந்தது 20 எழுத்துகளில் விவரிக்கவும்').max(1000),
-  sampleAudioUrl: z.string().url().optional().or(z.literal('')),
-  experience: z.string().optional(),
-});
-
 export const ModerationDecisionSchema = z.object({
   decision: z.enum(['APPROVE', 'REJECT']),
   moderationNote: z.string().optional(),
@@ -72,5 +66,4 @@ export type CreateSeriesInput = z.infer<typeof CreateSeriesSchema>;
 export type CreateSeasonInput = z.infer<typeof CreateSeasonSchema>;
 export type CreateEpisodeInput = z.infer<typeof CreateEpisodeSchema>;
 export type CreatePlaylistInput = z.infer<typeof CreatePlaylistSchema>;
-export type ApplyCreatorInput = z.infer<typeof ApplyCreatorSchema>;
 export type ModerationDecisionInput = z.infer<typeof ModerationDecisionSchema>;

@@ -35,8 +35,6 @@ export type UploadStatus =
   | 'COMPLETED'
   | 'FAILED';
 
-export type ApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-
 export type NotificationType =
   | 'SYSTEM'
   | 'CONTENT_PUBLISHED'
@@ -269,7 +267,6 @@ export interface AdminMetrics {
   totalUsers: number;
   activeListeners: number;
   totalCreators: number;
-  pendingCreatorApprovals: number;
   totalStories: number;
   totalEpisodes: number;
   publishedStories: number;
