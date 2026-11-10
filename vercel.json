@@ -4,11 +4,9 @@
   "buildCommand": "node scripts/build.mjs",
   "outputDirectory": "dist",
   "functions": {
-    "api/**/*.ts": {
-      "includeFiles": "{apps/api/dist/**,apps/api/package.json,node_modules/.prisma/client/**,node_modules/@prisma/client/**}"
-    },
     "api/index.ts": {
-      "includeFiles": "{apps/api/dist/**,apps/api/package.json,node_modules/.prisma/client/**,node_modules/@prisma/client/**}"
+      "includeFiles": "{apps/api/dist/**,apps/api/package.json,node_modules/.prisma/client/**,node_modules/@prisma/client/**}",
+      "maxDuration": 30
     }
   },
   "headers": [
