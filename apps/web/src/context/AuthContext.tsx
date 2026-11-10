@@ -6,7 +6,6 @@ export interface RegisterParams {
   email: string;
   password: string;
   displayName: string;
-  mobile?: string;
   autoLogin?: boolean;
 }
 
@@ -157,7 +156,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: normalizedEmail,
         password: params.password,
         displayName: params.displayName.trim(),
-        role: 'LISTENER',
       });
 
       if (params.autoLogin && res.accessToken && res.user) {

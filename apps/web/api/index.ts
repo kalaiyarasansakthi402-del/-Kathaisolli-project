@@ -166,6 +166,22 @@ export default async function handler(req: Request, res: Response) {
     const rawPath = Array.isArray(query.path) ? query.path.join('/') : query.path;
     const cleanPath = String(rawPath).startsWith('/') ? String(rawPath) : `/${rawPath}`;
     targetUrl = cleanPath.startsWith('/api') ? cleanPath : `/api${cleanPath}`;
+
+    // Preserve original query parameters other than the routing 'path' param
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(query)) {
+      if (key !== 'path') {
+        if (Array.isArray(value)) {
+          value.forEach((v) => queryParams.append(key, String(v)));
+        } else if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      }
+    }
+    const qs = queryParams.toString();
+    if (qs) {
+      targetUrl = `${targetUrl}?${qs}`;
+    }
   } else {
     const originalUrlHeader =
       (req.headers['x-forwarded-url'] as string | undefined) ||
@@ -219,14 +235,14 @@ export default async function handler(req: Request, res: Response) {
   const rawUrl = (req.url || '').split('?')[0];
   const cleanUrl = rawUrl.replace(/\/+$/, '') || '/';
 
-  // Direct fast health response for deployment verification and health monitoring
-  const isHealthCheck =
+  // Fast liveness verification for edge/CDN deployment checks (does not mock database connectivity)
+  const isLivenessCheck =
     cleanUrl === '/api/health' ||
     cleanUrl === '/api/v1/health' ||
     cleanUrl === '/health' ||
     (req.method === 'GET' && (cleanUrl === '/api' || cleanUrl === '/' || cleanUrl === '/api/index' || cleanUrl === '/api/v1'));
 
-  if (isHealthCheck) {
+  if (isLivenessCheck) {
     return res.status(200).json({
       status: 'ok',
       service: 'Kathaisolli API (Vercel Serverless)',
@@ -248,10 +264,11 @@ export default async function handler(req: Request, res: Response) {
   } catch (error: any) {
     console.error('[NestServerless] Request error during execution:', error);
     bootstrapPromise = null;
+    const isProd = process.env.NODE_ENV === 'production';
     return res.status(500).json({
       statusCode: 500,
       message: 'Internal Server Error during serverless execution',
-      error: error?.message || String(error),
+      error: isProd ? 'Internal Server Error' : (error?.message || String(error)),
       timestamp: new Date().toISOString(),
     });
   }

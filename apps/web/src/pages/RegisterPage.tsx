@@ -4,7 +4,6 @@ import {
   User,
   Mail,
   Lock,
-  Phone,
   Eye,
   EyeOff,
   CheckCircle2,
@@ -23,7 +22,6 @@ export const RegisterPage: React.FC = () => {
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -106,7 +104,6 @@ export const RegisterPage: React.FC = () => {
         email: trimmedEmail,
         password,
         displayName: trimmedName,
-        mobile: mobile.trim() || undefined,
         autoLogin: true,
       });
 
@@ -263,26 +260,6 @@ export const RegisterPage: React.FC = () => {
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Mobile Number (Optional) */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                    கைபேசி எண் (Mobile Number)
-                  </label>
-                  <span className="text-[10px] text-stone-500 dark:text-stone-400">விருப்பத்தேர்வு (Optional)</span>
-                </div>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="tel"
-                    placeholder="+91 98765 43210"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
                   />
                 </div>

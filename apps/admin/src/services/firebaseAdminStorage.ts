@@ -5,6 +5,8 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   type FirebaseStorage,
+  type UploadTaskSnapshot,
+  type StorageError,
 } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -99,11 +101,11 @@ export const uploadBookCoverImage = async (
       return new Promise((resolve, reject) => {
         uploadTask.on(
           'state_changed',
-          (snapshot) => {
+          (snapshot: UploadTaskSnapshot) => {
             const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
             if (onProgress) onProgress(pct);
           },
-          (error) => {
+          (error: StorageError) => {
             console.error('[Admin Firebase] Remote cover upload failed:', error);
             reject(new Error(`Firebase Storage error: ${error.message || 'Upload failed'}`));
           },
@@ -184,11 +186,11 @@ export const uploadChapterAudioMp3 = async (
       return new Promise((resolve, reject) => {
         uploadTask.on(
           'state_changed',
-          (snapshot) => {
+          (snapshot: UploadTaskSnapshot) => {
             const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
             if (onProgress) onProgress(pct);
           },
-          (error) => {
+          (error: StorageError) => {
             console.error('[Admin Firebase] Remote audio upload failed:', error);
             reject(new Error(`Firebase Storage error: ${error.message || 'Upload failed'}`));
           },

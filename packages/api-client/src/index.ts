@@ -80,7 +80,7 @@ export class KathaisolliApiClient {
 
   // --- Auth & Profile ---
   auth = {
-    register: (data: { email: string; password: string; displayName: string; role?: string }) =>
+    register: (data: { email: string; password: string; displayName: string }) =>
       this.client.post<AuthSessionResponse>('/auth/register', data).then((r) => r.data),
 
     login: (data: { email: string; password: string }) =>
