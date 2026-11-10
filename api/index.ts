@@ -1,4 +1,7 @@
 import 'reflect-metadata';
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -95,6 +98,7 @@ async function getAppModule(): Promise<any> {
     '../src/app.module',
   ];
 
+  let lastModuleError: any = null;
   for (const candidate of candidatePaths) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -102,23 +106,20 @@ async function getAppModule(): Promise<any> {
       if (mod && mod.AppModule) {
         return mod.AppModule;
       }
-    } catch {
-      // Try next candidate path
+    } catch (err: any) {
+      if (err?.code !== 'MODULE_NOT_FOUND' || !err?.message?.includes(candidate)) {
+        lastModuleError = err;
+      }
     }
   }
 
   throw new Error(
-    'Unable to load AppModule. Checked candidate paths: ' + candidatePaths.join(', '),
+    `Unable to load AppModule. ${lastModuleError ? `Last error: ${lastModuleError.message}. ` : ''}Checked candidate paths: ` +
+      candidatePaths.join(', '),
   );
 }
 
 async function bootstrap(): Promise<void> {
-  const apiRequire = getApiRequire();
-  apiRequire('reflect-metadata');
-  const { NestFactory } = apiRequire('@nestjs/core');
-  const { ValidationPipe } = apiRequire('@nestjs/common');
-  const { ExpressAdapter } = apiRequire('@nestjs/platform-express');
-
   const adapter = new ExpressAdapter();
   const AppModule = await getAppModule();
 
