@@ -279,6 +279,22 @@ export default async function handler(req: Request, res: Response) {
     (req.method === 'GET' && (cleanUrl === '/api' || cleanUrl === '/' || cleanUrl === '/api/index' || cleanUrl === '/api/v1'));
 
   if (isLivenessCheck) {
+    let dbStatus: any = {
+      isConfigured: Boolean(process.env.DATABASE_URL),
+    };
+    if (process.env.DATABASE_URL) {
+      try {
+        const parsed = new URL(process.env.DATABASE_URL);
+        dbStatus.protocol = parsed.protocol;
+        dbStatus.host = parsed.hostname;
+        dbStatus.port = parsed.port || '5432';
+        dbStatus.database = parsed.pathname.replace(/^\//, '');
+        dbStatus.isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+      } catch (err: any) {
+        dbStatus.parseError = 'MALFORMED_DATABASE_URL';
+      }
+    }
+
     return res.status(200).json({
       status: 'ok',
       service: 'Kathaisolli API (Vercel Serverless)',
@@ -286,6 +302,7 @@ export default async function handler(req: Request, res: Response) {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'production',
+      database: dbStatus,
     });
   }
 
