@@ -68,3 +68,4 @@ apps/api/prisma/dev.db-journal
 *.crt
 
 .vercel
+.neon
