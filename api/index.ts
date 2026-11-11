@@ -5,7 +5,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Request, Response } from 'express';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,13 +79,16 @@ function isOriginAllowed(origin: string | undefined, host?: string): boolean {
 async function getAppModule(): Promise<any> {
   const apiRequire = getApiRequire();
   const candidatePaths = [
+    path.join(process.cwd(), 'api-dist/app.module.js'),
+    path.join(process.cwd(), 'apps/web/api-dist/app.module.js'),
+    path.join(process.cwd(), 'apps/api/dist/app.module.js'),
+    path.join(__dirname, '../api-dist/app.module.js'),
+    path.join(__dirname, '../../api-dist/app.module.js'),
+    path.join(__dirname, 'api-dist/app.module.js'),
     path.join(process.cwd(), 'api-dist/app.module'),
     path.join(process.cwd(), 'apps/web/api-dist/app.module'),
     path.join(process.cwd(), 'apps/api/dist/app.module'),
     path.join(process.cwd(), 'dist/app.module'),
-    path.join(__dirname, '../api-dist/app.module'),
-    path.join(__dirname, '../../api-dist/app.module'),
-    path.join(__dirname, 'api-dist/app.module'),
     path.join(__dirname, '../dist/app.module'),
     path.join(__dirname, '../../dist/app.module'),
     path.join(__dirname, '../apps/api/dist/app.module'),
@@ -99,6 +102,23 @@ async function getAppModule(): Promise<any> {
   ];
 
   let lastModuleError: any = null;
+
+  // 1. Try dynamic import (supported for both ES Modules and CommonJS)
+  for (const candidate of candidatePaths) {
+    if (fs.existsSync(candidate)) {
+      try {
+        const fileUrl = pathToFileURL(candidate).href;
+        const mod = await import(fileUrl);
+        if (mod && (mod.AppModule || mod.default?.AppModule)) {
+          return mod.AppModule || mod.default.AppModule;
+        }
+      } catch (err: any) {
+        lastModuleError = err;
+      }
+    }
+  }
+
+  // 2. Try require fallback
   for (const candidate of candidatePaths) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires

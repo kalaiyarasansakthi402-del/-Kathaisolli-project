@@ -32,13 +32,15 @@ if (fs.existsSync(webApiDistDir)) {
   fs.rmSync(webApiDistDir, { recursive: true, force: true });
 }
 fs.cpSync(apiDistDir, webApiDistDir, { recursive: true });
-console.log('  -> Copied apps/api/dist to apps/web/api-dist/');
+fs.writeFileSync(path.join(webApiDistDir, 'package.json'), JSON.stringify({ name: 'api-dist', type: 'commonjs' }, null, 2));
+console.log('  -> Copied apps/api/dist to apps/web/api-dist/ (configured as CommonJS)');
 
 if (fs.existsSync(rootApiDistDir)) {
   fs.rmSync(rootApiDistDir, { recursive: true, force: true });
 }
 fs.cpSync(apiDistDir, rootApiDistDir, { recursive: true });
-console.log('  -> Copied apps/api/dist to api-dist/');
+fs.writeFileSync(path.join(rootApiDistDir, 'package.json'), JSON.stringify({ name: 'api-dist', type: 'commonjs' }, null, 2));
+console.log('  -> Copied apps/api/dist to api-dist/ (configured as CommonJS)');
 
 // 2. Build User Web App
 run('pnpm --filter @kathaisolli/web build', 'Web App Build (React + Vite)');
