@@ -9,13 +9,21 @@ import {
   type StorageError,
 } from 'firebase/storage';
 
+const hasViteEnv = typeof import.meta !== 'undefined' && Boolean(import.meta.env);
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vaagai-audio-books-36a4e.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vaagai-audio-books-36a4e',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: hasViteEnv ? import.meta.env.VITE_FIREBASE_API_KEY : undefined,
+  authDomain:
+    (hasViteEnv ? import.meta.env.VITE_FIREBASE_AUTH_DOMAIN : undefined) ||
+    'vaagai-audio-books-36a4e.firebaseapp.com',
+  projectId:
+    (hasViteEnv ? import.meta.env.VITE_FIREBASE_PROJECT_ID : undefined) ||
+    'vaagai-audio-books-36a4e',
+  storageBucket:
+    (hasViteEnv ? import.meta.env.VITE_FIREBASE_STORAGE_BUCKET : undefined) ||
+    'vaagai-audio-books-36a4e.appspot.com',
+  messagingSenderId: hasViteEnv ? import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID : undefined,
+  appId: hasViteEnv ? import.meta.env.VITE_FIREBASE_APP_ID : undefined,
 };
 
 let app: FirebaseApp | null = null;
@@ -91,7 +99,7 @@ export const uploadBookCoverImage = async (
   const cleanFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const storagePath = `kathaisolli/books/${bookId}/cover/${cleanFileName}`;
 
-  if (storage && import.meta.env.VITE_FIREBASE_API_KEY) {
+  if (storage && (hasViteEnv ? import.meta.env.VITE_FIREBASE_API_KEY : undefined)) {
     try {
       const storageRef = ref(storage, storagePath);
       const uploadTask = uploadBytesResumable(storageRef, file, {
@@ -170,7 +178,7 @@ export const uploadChapterAudioMp3 = async (
   const storagePath = `kathaisolli/books/${bookId}/chapters/${cleanFileName}`;
 
   // 3. Upload to Firebase Storage
-  if (storage && import.meta.env.VITE_FIREBASE_API_KEY) {
+  if (storage && (hasViteEnv ? import.meta.env.VITE_FIREBASE_API_KEY : undefined)) {
     try {
       const storageRef = ref(storage, storagePath);
       const uploadTask = uploadBytesResumable(storageRef, file, {
@@ -213,7 +221,7 @@ export const uploadChapterAudioMp3 = async (
 
   // Local simulated progress and URL for development/demo operation
   if (onProgress) {
-    for (let p = 15; p <= 100; p += 15) {
+    for (let p = 20; p <= 100; p += 20) {
       onProgress(p);
       await new Promise((r) => setTimeout(r, 80));
     }

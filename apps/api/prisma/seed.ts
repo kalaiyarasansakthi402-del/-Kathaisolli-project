@@ -1,8 +1,33 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { UserRole } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
+import { sanitizeDatabaseUrl } from '../src/prisma/prisma.service';
 
-const prisma = new PrismaClient();
+const candidateEnvPaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../../../.env'),
+  path.resolve(__dirname, '../../.env'),
+];
+
+for (const envFile of candidateEnvPaths) {
+  if (fs.existsSync(envFile) && typeof process.loadEnvFile === 'function') {
+    try {
+      process.loadEnvFile(envFile);
+      break;
+    } catch {}
+  }
+}
+
+const targetDbUrl =
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.DIRECT_URL ||
+  process.env.DATABASE_URL;
+const sanitizedUrl = sanitizeDatabaseUrl(targetDbUrl);
+const prisma = sanitizedUrl
+  ? new PrismaClient({ datasources: { db: { url: sanitizedUrl } } })
+  : new PrismaClient();
 
 function getSeedPassword(environmentVariable: string, email: string): string {
   const password = process.env[environmentVariable];

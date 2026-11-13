@@ -101,24 +101,28 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#FAF7EE]/95 dark:bg-[#04281E]/95 border-b border-[#E8E1CE] dark:border-[#0F4738] transition-colors shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-3 lg:gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-3 lg:gap-6">
         {/* Brand Logo with App Icon */}
-        <Link to="/" className="flex items-center gap-3 group flex-shrink-0">
+        <Link
+          to="/"
+          onClick={() => setMobileMenuOpen(false)}
+          className="flex items-center gap-2 sm:gap-3 group min-w-0"
+        >
           <img
             src="/app-icon.png"
             alt="Kathaisolli Logo"
-            className="w-11 h-11 rounded-xl object-contain shadow-md shadow-emerald-950/20 group-hover:scale-105 transition-transform bg-[#F8F5E9] p-0.5 border border-[#166534]/30"
+            className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl object-contain shadow-md shadow-emerald-950/20 group-hover:scale-105 transition-transform bg-[#F8F5E9] p-0.5 border border-[#166534]/30 flex-shrink-0"
           />
-          <div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-black font-serif tracking-tight text-[#064E3B] dark:text-[#A7F3D0]">
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-1 sm:gap-1.5">
+              <span className="text-lg sm:text-2xl font-black font-serif tracking-tight text-[#064E3B] dark:text-[#A7F3D0] truncate">
                 Kathaisolli
               </span>
-              <span className="text-base font-bold font-tamil text-[#064E3B] dark:text-[#E8F0E2]">
+              <span className="text-xs sm:text-base font-bold font-tamil text-[#064E3B] dark:text-[#E8F0E2] truncate">
                 கதைசொல்லி
               </span>
             </div>
-            <span className="block text-[10px] font-bold tracking-widest uppercase text-[#166534]/70 dark:text-[#A7F3D0]/70">
+            <span className="block text-[9px] sm:text-[10px] font-bold tracking-wider sm:tracking-widest uppercase text-[#166534]/70 dark:text-[#A7F3D0]/70 truncate">
               BY ANZLES · 100% FREE
             </span>
           </div>
@@ -219,11 +223,11 @@ export const Navbar: React.FC = () => {
         </form>
 
         {/* Right Section: Theme Toggle & User Auth */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
           <button
             onClick={toggleTheme}
             aria-label="Toggle Theme"
-            className="p-2 rounded-full hover:bg-stone-200/60 dark:hover:bg-[#073224] text-stone-700 dark:text-stone-200 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full hover:bg-stone-200/60 dark:hover:bg-[#073224] text-stone-700 dark:text-stone-200 transition-colors"
           >
             {isDark ? (
               <Sun className="w-5 h-5 text-amber-400" />
@@ -238,7 +242,7 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-[#073224] border border-[#DDD5C0] dark:border-[#0E4738] hover:border-[#064E3B] dark:hover:border-[#A7F3D0] transition-all shadow-sm"
+                className="flex items-center gap-1.5 sm:gap-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white dark:bg-[#073224] border border-[#DDD5C0] dark:border-[#0E4738] hover:border-[#064E3B] dark:hover:border-[#A7F3D0] transition-all shadow-sm"
               >
                 <div className="w-7 h-7 rounded-full bg-[#064E3B] text-[#A7F3D0] flex items-center justify-center text-xs font-bold uppercase shadow-sm">
                   {user.displayName?.slice(0, 1) || user.email?.slice(0, 1)?.toUpperCase() || 'K'}

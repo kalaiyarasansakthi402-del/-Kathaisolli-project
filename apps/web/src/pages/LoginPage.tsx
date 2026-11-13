@@ -15,6 +15,17 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+/**
+ * Resolve safe post-login destination while preserving query params and avoiding auth redirect loops.
+ */
+function resolvePostLoginPath(state: unknown): string {
+  const from = (state as { from?: { pathname?: string; search?: string } } | null)?.from;
+  if (!from?.pathname || /^\/(login|signup|register)(\/|$)/i.test(from.pathname)) {
+    return '/';
+  }
+  return `${from.pathname}${from.search || ''}`;
+}
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,11 +48,10 @@ export const LoginPage: React.FC = () => {
     }
   }, [location.state]);
 
-  // If already authenticated, redirect to home page
+  // If already authenticated, redirect to home page (or safe original destination)
   useEffect(() => {
     if (user && !authLoading) {
-      const returnTo = (location.state as any)?.from?.pathname || '/';
-      navigate(returnTo, { replace: true });
+      navigate(resolvePostLoginPath(location.state), { replace: true });
     }
   }, [user, authLoading, navigate, location.state]);
 
@@ -66,11 +76,7 @@ export const LoginPage: React.FC = () => {
     try {
       await login(trimmedUsername, password, rememberMe);
       setSuccess('Login successful! Redirecting...');
-
-      const returnTo = (location.state as any)?.from?.pathname || '/';
-      setTimeout(() => {
-        navigate(returnTo, { replace: true });
-      }, 400);
+      navigate(resolvePostLoginPath(location.state), { replace: true });
     } catch (err: any) {
       console.error('[Login] Error:', err);
       const serverMessage = err?.response?.data?.message || err?.message || '';

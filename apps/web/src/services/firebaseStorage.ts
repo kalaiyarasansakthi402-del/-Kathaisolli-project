@@ -82,7 +82,11 @@ export async function listAudioFiles(folderPath = '', maxItems = 24): Promise<Fi
     return [];
   }
 
-  const targetPath = folderPath || import.meta.env.VITE_FIREBASE_STORIES_PATH || 'stories';
+  const configuredStoriesPath =
+    typeof import.meta !== 'undefined' && import.meta.env
+      ? import.meta.env.VITE_FIREBASE_STORIES_PATH
+      : undefined;
+  const targetPath = folderPath || configuredStoriesPath || 'stories';
 
   try {
     // Add timeout protection so Firebase queries never block UI indefinitely

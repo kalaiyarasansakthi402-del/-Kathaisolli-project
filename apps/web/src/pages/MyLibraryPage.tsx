@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   History,
   Heart,
@@ -21,8 +21,9 @@ import { getSavedBooks, removeBook, type SavedBookItem } from '../services/userL
 import { formatDuration } from '@kathaisolli/shared-utils';
 
 export const MyLibraryPage: React.FC = () => {
-  const { user, api } = useAuth();
+  const { user, isLoading, api } = useAuth();
   const { playEpisode } = usePlayer();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialTab =
@@ -73,6 +74,19 @@ export const MyLibraryPage: React.FC = () => {
     queryFn: () => api.library.getFavorites(),
     enabled: !!user,
   });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-3">
+        <div className="w-8 h-8 border-2 border-[#064E3B] border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-stone-500 font-tamil">ஏற்றுகிறது...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#F8F5E9] dark:bg-[#033B2B] text-[#173D2E] dark:text-[#F8F5E9] transition-colors min-h-[75vh]">

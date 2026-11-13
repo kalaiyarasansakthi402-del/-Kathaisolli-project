@@ -91,9 +91,7 @@ export const RegisterPage: React.FC = () => {
       });
 
       setSuccess('Your Kathaisolli account has been created successfully!');
-      setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 1200);
+      navigate('/', { replace: true });
     } catch (err: any) {
       console.error('[Register] Error:', err);
       const serverMessage = err?.response?.data?.message || err?.message;

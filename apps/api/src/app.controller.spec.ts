@@ -30,12 +30,23 @@ describe('AppController', () => {
   });
 
   describe('health', () => {
-    it('returns basic liveness health metrics without faking database connection', () => {
-      const res = appController.getHealth();
+    it('reports ok with connected database when query succeeds', async () => {
+      mockPrisma.$queryRaw.mockResolvedValueOnce([{ '1': 1 }]);
+      const res = await appController.getHealth();
       expect(res.status).toBe('ok');
       expect(res.service).toBe('Kathaisolli API');
+      expect(res.database.connected).toBe(true);
+      expect(res.database.status).toBe('connected');
       expect(typeof res.uptime).toBe('number');
       expect(typeof res.timestamp).toBe('string');
+    });
+
+    it('reports degraded status when database query fails', async () => {
+      mockPrisma.$queryRaw.mockRejectedValueOnce(new Error('Connection refused'));
+      const res = await appController.getHealth();
+      expect(res.status).toBe('degraded');
+      expect(res.database.connected).toBe(false);
+      expect(res.database.status).toBe('disconnected');
     });
   });
 

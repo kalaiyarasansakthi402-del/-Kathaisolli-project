@@ -1,4 +1,5 @@
-import { Controller, Get, Optional } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Optional, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller()
@@ -14,18 +15,62 @@ export class AppController {
   }
 
   @Get('health')
-  getHealth() {
-    return {
-      status: 'ok',
+  async getHealth(@Res({ passthrough: true }) res?: Response) {
+    const base = {
       service: 'Kathaisolli API',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
     };
+
+    if (!this.prisma) {
+      res?.status(HttpStatus.SERVICE_UNAVAILABLE);
+      return {
+        ...base,
+        status: 'degraded',
+        database: {
+          isConfigured: Boolean(process.env.DATABASE_URL),
+          connected: false,
+          status: 'service_unavailable',
+        },
+      };
+    }
+
+    const start = Date.now();
+    try {
+      await this.prisma.$queryRaw`SELECT 1`;
+      return {
+        ...base,
+        status: 'ok',
+        database: {
+          isConfigured: true,
+          connected: true,
+          status: 'connected',
+          latencyMs: Date.now() - start,
+        },
+      };
+    } catch (error: any) {
+      res?.status(HttpStatus.SERVICE_UNAVAILABLE);
+      return {
+        ...base,
+        status: 'degraded',
+        database: {
+          isConfigured: Boolean(process.env.DATABASE_URL),
+          connected: false,
+          status: 'disconnected',
+          latencyMs: Date.now() - start,
+          error:
+            process.env.NODE_ENV === 'production'
+              ? 'Database unreachable'
+              : error?.message || 'Database connection error',
+        },
+      };
+    }
   }
 
   @Get('health/ready')
-  async getReadiness() {
+  async getReadiness(@Res({ passthrough: true }) res?: Response) {
     if (!this.prisma) {
+      res?.status(HttpStatus.SERVICE_UNAVAILABLE);
       return {
         status: 'degraded',
         database: 'service_unavailable',
@@ -40,6 +85,7 @@ export class AppController {
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
+      res?.status(HttpStatus.SERVICE_UNAVAILABLE);
       return {
         status: 'degraded',
         database: 'disconnected',

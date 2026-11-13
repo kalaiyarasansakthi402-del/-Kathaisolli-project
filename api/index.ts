@@ -6,7 +6,7 @@ import '@nestjs/config';
 import '@nestjs/jwt';
 import '@nestjs/throttler';
 import '@nestjs/swagger';
-import '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -55,6 +55,62 @@ try {
 
 let cachedHandler: ((req: Request, res: Response) => void) | null = null;
 let bootstrapPromise: Promise<void> | null = null;
+let healthPrismaClient: PrismaClient | null = null;
+let healthPrismaUrl: string | null = null;
+
+function sanitizeDatabaseUrl(rawUrl?: string): string | undefined {
+  const trimmed = rawUrl?.trim();
+  if (!trimmed) return undefined;
+
+  const unquoted =
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+      ? trimmed.slice(1, -1)
+      : trimmed;
+
+  if (
+    !unquoted.startsWith('postgres://') &&
+    !unquoted.startsWith('postgresql://')
+  ) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(unquoted);
+    parsed.searchParams.delete('channel_binding');
+    if (!parsed.searchParams.has('connect_timeout')) {
+      parsed.searchParams.set('connect_timeout', '30');
+    }
+    if (!parsed.searchParams.has('pool_timeout')) {
+      parsed.searchParams.set('pool_timeout', '30');
+    }
+    return parsed.toString();
+  } catch {
+    return unquoted;
+  }
+}
+
+function redactDatabaseCredentials(msg: string): string {
+  return msg
+    .replace(/postgres(?:ql)?:\/\/[^\s'"]+/gi, '[REDACTED_DATABASE_URL]')
+    .split('\n')[0]
+    .slice(0, 200);
+}
+
+function getOrCreateHealthPrisma(dbUrl: string): PrismaClient {
+  if (!healthPrismaClient || healthPrismaUrl !== dbUrl) {
+    let ClientCtor = PrismaClient;
+    if (!ClientCtor) {
+      const apiReq = getApiRequire();
+      ClientCtor = apiReq('@prisma/client').PrismaClient;
+    }
+    healthPrismaClient = new ClientCtor({
+      datasources: { db: { url: dbUrl } },
+    });
+    healthPrismaUrl = dbUrl;
+  }
+  return healthPrismaClient;
+}
 
 const allowedOrigins = [
   'https://web-kalai21.vercel.app',
@@ -268,41 +324,126 @@ export default async function handler(req: Request, res: Response) {
     return res.status(204).end();
   }
 
+  const sanitizedDbUrl = sanitizeDatabaseUrl(process.env.DATABASE_URL);
+  if (sanitizedDbUrl && sanitizedDbUrl !== process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = sanitizedDbUrl;
+  }
+
   const rawUrl = (req.url || '').split('?')[0];
   const cleanUrl = rawUrl.replace(/\/+$/, '') || '/';
 
-  // Fast liveness verification for edge/CDN deployment checks (does not mock database connectivity)
-  const isLivenessCheck =
+  const isDatabaseHealthCheck =
     cleanUrl === '/api/health' ||
     cleanUrl === '/api/v1/health' ||
     cleanUrl === '/health' ||
-    (req.method === 'GET' && (cleanUrl === '/api' || cleanUrl === '/' || cleanUrl === '/api/index' || cleanUrl === '/api/v1'));
+    cleanUrl === '/api/health/ready' ||
+    cleanUrl === '/api/v1/health/ready';
 
-  if (isLivenessCheck) {
-    let dbStatus: any = {
+  if (isDatabaseHealthCheck) {
+    const dbStatus: Record<string, any> = {
       isConfigured: Boolean(process.env.DATABASE_URL),
+      connected: false,
+      status: 'unconfigured',
     };
-    if (process.env.DATABASE_URL) {
-      try {
-        const parsed = new URL(process.env.DATABASE_URL);
-        dbStatus.protocol = parsed.protocol;
-        dbStatus.host = parsed.hostname;
-        dbStatus.port = parsed.port || '5432';
-        dbStatus.database = parsed.pathname.replace(/^\//, '');
-        dbStatus.isLocalhost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
-      } catch (err: any) {
-        dbStatus.parseError = 'MALFORMED_DATABASE_URL';
-      }
+
+    if (!sanitizedDbUrl) {
+      dbStatus.error = process.env.DATABASE_URL
+        ? 'MALFORMED_DATABASE_URL'
+        : 'DATABASE_URL is not configured in Vercel environment variables.';
+      return res.status(503).json({
+        status: 'degraded',
+        service: 'Kathaisolli API (Vercel Serverless)',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'production',
+        database: dbStatus,
+      });
     }
 
+    try {
+      const parsed = new URL(sanitizedDbUrl);
+      dbStatus.protocol = parsed.protocol;
+      dbStatus.host = parsed.hostname;
+      dbStatus.port = parsed.port || '5432';
+      dbStatus.database = parsed.pathname.replace(/^\//, '');
+      dbStatus.pooled = parsed.hostname.includes('-pooler');
+      dbStatus.isLocalhost =
+        parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+    } catch {
+      dbStatus.status = 'malformed';
+    }
+
+    const pingStart = Date.now();
+    try {
+      const client = getOrCreateHealthPrisma(sanitizedDbUrl);
+      const rows = await Promise.race([
+        client.$queryRawUnsafe<Array<{ ok: number; users_table: string | null }>>(
+          "SELECT 1 AS ok, to_regclass('public.users')::text AS users_table",
+        ),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('Database health check timed out after 10000ms')),
+            10000,
+          ),
+        ),
+      ]);
+
+      const firstRow = Array.isArray(rows) ? rows[0] : undefined;
+      dbStatus.connected = true;
+      dbStatus.status = 'connected';
+      dbStatus.latencyMs = Date.now() - pingStart;
+      dbStatus.schemaReady = Boolean(firstRow?.users_table);
+
+      return res.status(200).json({
+        status: 'ok',
+        service: 'Kathaisolli API (Vercel Serverless)',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'production',
+        database: dbStatus,
+      });
+    } catch (err: any) {
+      dbStatus.connected = false;
+      dbStatus.status = 'disconnected';
+      dbStatus.latencyMs = Date.now() - pingStart;
+      dbStatus.errorCode = err?.code || err?.name || 'DB_CONNECT_ERROR';
+      dbStatus.error = redactDatabaseCredentials(
+        err?.message || 'Unable to reach PostgreSQL database.',
+      );
+
+      return res.status(503).json({
+        status: 'degraded',
+        service: 'Kathaisolli API (Vercel Serverless)',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'production',
+        database: dbStatus,
+      });
+    }
+  }
+
+  const isRootStatusCheck =
+    req.method === 'GET' &&
+    (cleanUrl === '/api' ||
+      cleanUrl === '/' ||
+      cleanUrl === '/api/index' ||
+      cleanUrl === '/api/v1');
+
+  if (isRootStatusCheck) {
     return res.status(200).json({
+      name: 'Kathaisolli API',
       status: 'ok',
       service: 'Kathaisolli API (Vercel Serverless)',
       version: '1.0.0',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       environment: process.env.NODE_ENV || 'production',
-      database: dbStatus,
+      database: {
+        isConfigured: Boolean(sanitizedDbUrl),
+      },
     });
   }
 
@@ -317,11 +458,12 @@ export default async function handler(req: Request, res: Response) {
   } catch (error: any) {
     console.error('[NestServerless] Request error during execution:', error);
     bootstrapPromise = null;
+    const isProd = process.env.NODE_ENV === 'production';
     return res.status(500).json({
       statusCode: 500,
       message: 'Internal Server Error during serverless execution',
-      error: error?.message || String(error),
-      stack: error?.stack ? error.stack.split('\n').slice(0, 4) : undefined,
+      error: redactDatabaseCredentials(error?.message || String(error)),
+      stack: !isProd && error?.stack ? error.stack.split('\n').slice(0, 4) : undefined,
       timestamp: new Date().toISOString(),
     });
   }

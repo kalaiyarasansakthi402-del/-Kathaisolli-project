@@ -39,10 +39,10 @@ export class OptionalJwtAuthGuard implements CanActivate {
       ) {
         const user = await this.prisma.user.findUnique({
           where: { id: payload.sub },
-          select: { id: true, email: true, role: true, disabledAt: true },
+          select: { id: true, email: true, role: true, disabledAt: true, isActive: true },
         });
 
-        if (user && !user.disabledAt) {
+        if (user && !user.disabledAt && user.isActive !== false) {
           request.user = {
             id: user.id,
             email: user.email,

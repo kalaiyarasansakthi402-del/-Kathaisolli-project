@@ -1,12 +1,70 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   Sparkles,
   ChevronRight,
+  Search,
+  Headphones,
+  BookOpen,
+  Star,
+  ArrowRight,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
+import { COMPLETE_LIBRARY_CATALOG } from '../data/libraryCatalog';
 
 export const HomePage: React.FC = () => {
+  const navigate = useNavigate();
+  const { api } = useAuth();
+  const [homeSearchQuery, setHomeSearchQuery] = useState('');
+
+  const { data: apiHome } = useQuery({
+    queryKey: ['catalog', 'home-preview'],
+    queryFn: async () => {
+      try {
+        return await api.catalog.getHome();
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const featuredStories = useMemo(() => {
+    const apiFeatured = (apiHome as any)?.featured || (apiHome as any)?.collections?.[0]?.items || [];
+    if (Array.isArray(apiFeatured) && apiFeatured.length >= 3) {
+      return apiFeatured.slice(0, 6).map((s: any) => ({
+        id: s.id,
+        slug: s.slug || s.id,
+        title: s.title,
+        authorName: s.authorName || 'கதைசொல்லி குழு',
+        category: s.category?.name || 'தமிழ் கதைகள்',
+        durationMinutes: Math.max(5, Math.round((s.totalDurationSeconds || 600) / 60)),
+      }));
+    }
+
+    return COMPLETE_LIBRARY_CATALOG.slice(0, 6).map((book) => ({
+      id: book.id,
+      slug: book.slug,
+      title: book.tamilTitle ? `${book.tamilTitle} (${book.title})` : book.title,
+      authorName: book.authorName,
+      category: book.category,
+      durationMinutes: Math.max(5, Math.round((book.totalDurationSeconds || 600) / 60)),
+    }));
+  }, [apiHome]);
+
+  const handleHomeSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = homeSearchQuery.trim();
+    if (trimmed) {
+      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+    } else {
+      navigate('/categories');
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors relative overflow-hidden flex flex-col justify-center py-10 sm:py-16">
       {/* Subtle Decorative Botanical Sprigs in Background */}
@@ -97,6 +155,93 @@ export const HomePage: React.FC = () => {
                 </div>
               </Link>
             </div>
+          </div>
+        </section>
+
+        {/* ================= QUICK SEARCH & FEATURED STORIES CATALOG ================= */}
+        <section className="mt-14 pt-10 border-t border-[#E3DCBA]/80 dark:border-[#0F4738] space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#166534] dark:text-[#A7F3D0]">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Featured Audiobooks</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+                சிறப்பு தமிழ் கதைகள் (Featured Stories)
+              </h2>
+            </div>
+
+            <form
+              onSubmit={handleHomeSearch}
+              className="flex items-center gap-2 w-full md:w-auto md:min-w-[320px]"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="search"
+                  value={homeSearchQuery}
+                  onChange={(e) => setHomeSearchQuery(e.target.value)}
+                  placeholder="Search Tamil stories, authors..."
+                  aria-label="Search featured stories"
+                  className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-full bg-white dark:bg-[#073224] border border-[#DDD5C0] dark:border-[#0E4738] focus:border-[#064E3B] focus:ring-1 focus:ring-[#064E3B] outline-none text-stone-800 dark:text-stone-100"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2.5 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white text-xs sm:text-sm font-bold transition-colors shrink-0"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredStories.map((story) => (
+              <Link
+                key={story.id}
+                to={`/stories/${story.slug}`}
+                className="group flex flex-col justify-between rounded-2xl bg-white dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 space-y-4"
+              >
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8F0E2] dark:bg-[#032419] px-3 py-1 text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0]">
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span className="truncate max-w-[140px]">{story.category}</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      4.9
+                    </span>
+                  </div>
+                  <h3 className="font-bold font-serif text-lg leading-snug text-[#064E3B] dark:text-[#F8F5E9] group-hover:text-[#166534] transition-colors line-clamp-2">
+                    {story.title}
+                  </h3>
+                  <p className="text-xs font-medium text-stone-600 dark:text-stone-300 line-clamp-1">
+                    {story.authorName}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-[#E3DCBA]/60 dark:border-[#124835] flex items-center justify-between text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0]">
+                  <span className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
+                    <Headphones className="w-3.5 h-3.5 text-[#166534] dark:text-emerald-400" />
+                    {story.durationMinutes} mins · Free
+                  </span>
+                  <span className="inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    Listen Now <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex justify-center pt-2">
+            <Link
+              to="/categories"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-sm shadow-lg shadow-emerald-950/20 hover:scale-[1.02] transition-all"
+            >
+              <span>அனைத்து கதைகளையும் காண்க (Explore Full Story Catalog)</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
         </section>
       </div>

@@ -9,24 +9,31 @@ import { getAuth, type Auth } from 'firebase/auth';
  *
  * Configured securely via environment variables (never hardcoded secrets).
  */
+const hasViteEnv = typeof import.meta !== 'undefined' && Boolean(import.meta.env);
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: hasViteEnv ? import.meta.env.VITE_FIREBASE_API_KEY : undefined,
   authDomain:
-    import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'vaagai-audio-books-36a4e.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'vaagai-audio-books-36a4e',
+    (hasViteEnv ? import.meta.env.VITE_FIREBASE_AUTH_DOMAIN : undefined) ||
+    'vaagai-audio-books-36a4e.firebaseapp.com',
+  projectId:
+    (hasViteEnv ? import.meta.env.VITE_FIREBASE_PROJECT_ID : undefined) ||
+    'vaagai-audio-books-36a4e',
   storageBucket:
-    import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    (hasViteEnv ? import.meta.env.VITE_FIREBASE_STORAGE_BUCKET : undefined) ||
+    'vaagai-audio-books-36a4e.appspot.com',
+  messagingSenderId: hasViteEnv ? import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID : undefined,
+  appId: hasViteEnv ? import.meta.env.VITE_FIREBASE_APP_ID : undefined,
 };
 
 /**
  * Checks whether Firebase credentials have been configured in the environment.
  */
 export const isFirebaseConfigured = (): boolean => {
+  const apiKey = hasViteEnv ? import.meta.env.VITE_FIREBASE_API_KEY : undefined;
   return Boolean(
-    import.meta.env.VITE_FIREBASE_API_KEY &&
-      import.meta.env.VITE_FIREBASE_API_KEY !== 'your-firebase-api-key' &&
+    apiKey &&
+      apiKey !== 'your-firebase-api-key' &&
       firebaseConfig.projectId,
   );
 };
