@@ -97,6 +97,15 @@ export class KathaisolliApiClient {
     login: (data: { email?: string; username?: string; password: string }) =>
       this.client.post<AuthSessionResponse>('/auth/login', data).then((r) => r.data),
 
+    neonSync: (data: {
+      email: string;
+      sessionToken: string;
+      name?: string;
+      neonUserId?: string;
+      emailVerified?: boolean;
+    }) =>
+      this.client.post<AuthSessionResponse>('/auth/neon-sync', data).then((r) => r.data),
+
     getProfile: () => this.client.get<User>('/auth/me').then((r) => r.data),
 
     updateProfile: (data: { displayName?: string; avatarUrl?: string }) =>

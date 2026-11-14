@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { register, user, isLoading: authLoading } = useAuth();
+  const { register, registerWithNeon, user, isLoading: authLoading } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -83,12 +83,32 @@ export const RegisterPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await register({
-        username: trimmedUsername,
-        password,
-        phoneNumber: phoneNumber.trim() || undefined,
-        autoLogin: true,
-      });
+      if (trimmedUsername.includes('@') && registerWithNeon) {
+        try {
+          await registerWithNeon({
+            email: trimmedUsername,
+            password,
+            name: trimmedUsername.split('@')[0],
+          });
+        } catch {
+          // Fallback to unified registration
+          await register({
+            username: trimmedUsername.split('@')[0],
+            email: trimmedUsername,
+            password,
+            phoneNumber: phoneNumber.trim() || undefined,
+            autoLogin: true,
+          });
+        }
+      } else {
+        await register({
+          username: trimmedUsername,
+          password,
+          phoneNumber: phoneNumber.trim() || undefined,
+          email: trimmedUsername.includes('@') ? trimmedUsername : undefined,
+          autoLogin: true,
+        });
+      }
 
       setSuccess('Your Kathaisolli account has been created successfully!');
       navigate('/', { replace: true });

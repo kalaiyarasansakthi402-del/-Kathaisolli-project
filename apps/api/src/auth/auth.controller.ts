@@ -22,6 +22,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, UpdateProfileDto } from './dto/update-profile.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { NeonSyncDto } from './dto/neon-sync.dto';
 
 @Controller('auth')
 @ApiTags('Authentication')
@@ -41,6 +42,14 @@ export class AuthController {
   @Throttle({ default: { limit: 30, ttl: 60_000 } })
   login(@Body() input: LoginDto) {
     return this.authService.login(input);
+  }
+
+  @ApiOperation({ summary: 'Synchronize verified Neon Managed Auth user with application session' })
+  @Post('neon-sync')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  neonSync(@Body() input: NeonSyncDto) {
+    return this.authService.syncNeonUser(input);
   }
 
   @ApiOperation({ summary: 'Get current user profile' })

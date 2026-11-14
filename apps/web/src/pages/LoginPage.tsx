@@ -29,7 +29,7 @@ function resolvePostLoginPath(state: unknown): string {
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user, isLoading: authLoading } = useAuth();
+  const { login, loginWithNeon, user, isLoading: authLoading } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -74,7 +74,20 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      await login(trimmedUsername, password, rememberMe);
+      if (trimmedUsername.includes('@') && loginWithNeon) {
+        try {
+          await loginWithNeon({
+            email: trimmedUsername,
+            password,
+            rememberMe,
+          });
+        } catch {
+          // Fallback to standard login
+          await login(trimmedUsername, password, rememberMe);
+        }
+      } else {
+        await login(trimmedUsername, password, rememberMe);
+      }
       setSuccess('Login successful! Redirecting...');
       navigate(resolvePostLoginPath(location.state), { replace: true });
     } catch (err: any) {

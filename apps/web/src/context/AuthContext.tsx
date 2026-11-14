@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { createApiClient, KathaisolliApiClient } from '@kathaisolli/api-client';
 import type { User, AuthSessionResponse } from '@kathaisolli/shared-types';
+import { authClient } from '../lib/neon-auth';
 
 export interface RegisterParams {
   username: string;
@@ -17,6 +18,8 @@ export interface AuthContextType {
   isLoading: boolean;
   login: (identifier: string, pass: string, rememberMe?: boolean) => Promise<AuthSessionResponse>;
   register: (params: RegisterParams) => Promise<AuthSessionResponse>;
+  loginWithNeon?: (params: { email: string; password: string; rememberMe?: boolean }) => Promise<AuthSessionResponse>;
+  registerWithNeon?: (params: { email: string; password: string; name?: string }) => Promise<AuthSessionResponse>;
   logout: () => Promise<void>;
   updateProfile: (data: { displayName?: string; avatarUrl?: string }) => Promise<User>;
   refreshProfile: () => Promise<void>;
@@ -186,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.warn('[AuthContext] Remote logout failed:', err);
     } finally {
+      authClient.signOut().catch(() => {});
       setToken(null);
       setUser(null);
       localStorage.removeItem(TOKEN_KEY);
@@ -194,6 +198,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       sessionStorage.removeItem(USER_KEY);
     }
   }, [api, token]);
+
+  // Neon Managed Auth - Login
+  const loginWithNeon = useCallback(
+    async (params: { email: string; password: string; rememberMe?: boolean }): Promise<AuthSessionResponse> => {
+      const normalizedEmail = params.email.trim().toLowerCase();
+      const neonRes = await authClient.signIn.email({
+        email: normalizedEmail,
+        password: params.password,
+        rememberMe: params.rememberMe ?? true,
+      });
+
+      if (neonRes.error) {
+        throw new Error(neonRes.error.message || 'Neon authentication failed.');
+      }
+
+      const sessionToken = neonRes.data?.session?.token || authClient.getToken() || '';
+      const session = await api.auth.neonSync({
+        email: normalizedEmail,
+        sessionToken,
+        name: neonRes.data?.user?.name,
+        neonUserId: neonRes.data?.user?.id,
+        emailVerified: Boolean(neonRes.data?.user?.emailVerified),
+      });
+
+      if (session.accessToken && session.user) {
+        setToken(session.accessToken);
+        setUser(session.user);
+        if (params.rememberMe ?? true) {
+          localStorage.setItem(TOKEN_KEY, session.accessToken);
+          localStorage.setItem(USER_KEY, JSON.stringify(session.user));
+          sessionStorage.removeItem(TOKEN_KEY);
+          sessionStorage.removeItem(USER_KEY);
+        } else {
+          sessionStorage.setItem(TOKEN_KEY, session.accessToken);
+          sessionStorage.setItem(USER_KEY, JSON.stringify(session.user));
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+        }
+      }
+
+      return session;
+    },
+    [api],
+  );
+
+  // Neon Managed Auth - Register
+  const registerWithNeon = useCallback(
+    async (params: { email: string; password: string; name?: string }): Promise<AuthSessionResponse> => {
+      const normalizedEmail = params.email.trim().toLowerCase();
+      const displayName = params.name?.trim() || normalizedEmail.split('@')[0];
+
+      const neonRes = await authClient.signUp.email({
+        email: normalizedEmail,
+        password: params.password,
+        name: displayName,
+      });
+
+      if (neonRes.error) {
+        throw new Error(neonRes.error.message || 'Neon registration failed.');
+      }
+
+      const sessionToken = neonRes.data?.session?.token || authClient.getToken() || '';
+      const session = await api.auth.neonSync({
+        email: normalizedEmail,
+        sessionToken,
+        name: displayName,
+        neonUserId: neonRes.data?.user?.id,
+        emailVerified: Boolean(neonRes.data?.user?.emailVerified),
+      });
+
+      if (session.accessToken && session.user) {
+        setToken(session.accessToken);
+        setUser(session.user);
+        localStorage.setItem(TOKEN_KEY, session.accessToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(session.user));
+      }
+
+      return session;
+    },
+    [api],
+  );
 
   // Refresh Profile
   const refreshProfile = useCallback(async () => {
@@ -250,6 +335,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         register,
+        loginWithNeon,
+        registerWithNeon,
         logout,
         updateProfile,
         refreshProfile,

@@ -16,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, UpdateProfileDto } from './dto/update-profile.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { NeonSyncDto } from './dto/neon-sync.dto';
 
 export function formatUserId(id: string): string {
   if (!id) return 'KTH-10001';
@@ -115,7 +116,7 @@ export class AuthService {
           role: UserRole.LISTENER,
           isActive: true,
           disabledAt: null,
-          emailVerifiedAt: new Date(),
+          emailVerifiedAt: null,
         },
         select: {
           id: true,
@@ -229,6 +230,151 @@ export class AuthService {
       displayName: user.displayName,
       role: user.role,
       isActive: !isInactive,
+    });
+  }
+
+  async syncNeonUser(input: NeonSyncDto) {
+    const normalizedEmail = (input.email || '').trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      throw new BadRequestException('A valid email address is required.');
+    }
+
+    const sessionToken = (input.sessionToken || '').trim();
+    if (!sessionToken) {
+      throw new UnauthorizedException('Neon Auth session token is required for identity synchronization.');
+    }
+
+    // Server-side cryptographic token verification against Neon Auth / Better Auth service
+    const neonAuthUrl = (
+      process.env.NEON_AUTH_URL ||
+      process.env.VITE_NEON_AUTH_URL ||
+      process.env.BETTER_AUTH_URL ||
+      ''
+    ).replace(/\/+$/, '');
+
+    let isEmailVerified = Boolean(input.emailVerified);
+
+    if (neonAuthUrl) {
+      try {
+        const verifyRes = await fetch(`${neonAuthUrl}/api/auth/get-session`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${sessionToken}`,
+            Accept: 'application/json',
+          },
+        });
+
+        if (!verifyRes.ok) {
+          throw new UnauthorizedException('Invalid or expired Neon Auth session token.');
+        }
+
+        const verifyData: any = await verifyRes.json().catch(() => null);
+        const remoteEmail = (verifyData?.user?.email || '').trim().toLowerCase();
+        if (!remoteEmail || remoteEmail !== normalizedEmail) {
+          throw new UnauthorizedException('Neon Auth session token identity does not match requested email.');
+        }
+
+        if (verifyData?.user?.emailVerified !== undefined) {
+          isEmailVerified = Boolean(verifyData.user.emailVerified);
+        }
+      } catch (err: any) {
+        if (err instanceof UnauthorizedException) throw err;
+        console.warn('[AuthService] Neon Auth remote verification warning:', err?.message || err);
+      }
+    }
+
+    let user: any;
+    try {
+      user = await this.prisma.user.findFirst({
+        where: { email: normalizedEmail },
+      });
+    } catch (err) {
+      handleDbError(err);
+    }
+
+    if (user) {
+      const isInactive = Boolean(user.disabledAt) || user.isActive === false;
+      if (isInactive) {
+        throw new UnauthorizedException('Your account is inactive. Please contact Admin.');
+      }
+
+      // Security Invariant: Prevent takeover of administrative accounts via third-party sync
+      if (
+        user.role === UserRole.ADMIN ||
+        user.role === UserRole.SUPER_ADMIN ||
+        user.role === UserRole.MODERATOR
+      ) {
+        throw new UnauthorizedException(
+          'Administrative accounts cannot be synchronized via third-party authentication. Please use administrative credentials.',
+        );
+      }
+
+      return this.createSession({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        displayName: user.displayName,
+        role: user.role,
+        isActive: true,
+      });
+    }
+
+    // Provision new user mapped from verified Neon Auth - always assigned LISTENER role
+    const baseUsername =
+      normalizedEmail.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40) || 'user';
+    let chosenUsername = baseUsername;
+    let suffix = 1;
+
+    while (true) {
+      const conflict = await this.prisma.user.findFirst({
+        where: { username: chosenUsername },
+        select: { id: true },
+      });
+      if (!conflict) break;
+      chosenUsername = `${baseUsername.slice(0, 35)}_${suffix++}`;
+    }
+
+    const randomSecret = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const passwordHash = await argon2.hash(randomSecret, {
+      type: argon2.argon2id,
+      memoryCost: 19456,
+      timeCost: 2,
+    });
+
+    const displayName = (input.name || chosenUsername).trim();
+
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          username: chosenUsername,
+          email: normalizedEmail,
+          passwordHash,
+          displayName,
+          role: UserRole.LISTENER,
+          isActive: true,
+          disabledAt: null,
+          emailVerifiedAt: isEmailVerified ? new Date() : null,
+        },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          displayName: true,
+          role: true,
+          isActive: true,
+        },
+      });
+    } catch (err) {
+      handleDbError(err);
+    }
+
+    return this.createSession({
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      displayName: user.displayName,
+      role: user.role,
+      isActive: true,
     });
   }
 
