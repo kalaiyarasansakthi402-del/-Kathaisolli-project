@@ -38,7 +38,7 @@ describe('RolesGuard', () => {
           },
         }),
       }),
-    } as ExecutionContext;
+    } as unknown as ExecutionContext;
 
     expect(() => guard.canActivate(context)).toThrow(
       'You do not have permission',
@@ -58,7 +58,7 @@ describe('RolesGuard', () => {
           },
         }),
       }),
-    } as ExecutionContext;
+    } as unknown as ExecutionContext;
 
     expect(guard.canActivate(context)).toBe(true);
   });

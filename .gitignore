@@ -69,3 +69,6 @@ apps/api/prisma/dev.db-journal
 
 .vercel
 .neon
+
+# Scratch / temp agent files
+scratch/

@@ -42,7 +42,7 @@ describe('Auth & RBAC Integration (e2e)', () => {
     return out;
   };
 
-  const mockPrisma = {
+  const mockPrisma: any = {
     user: {
       findFirst: jest.fn(async ({ where, select }: any) => {
         const list = [...users.values()];
@@ -137,7 +137,7 @@ describe('Auth & RBAC Integration (e2e)', () => {
       }),
     },
     $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
-    $transaction: jest.fn(async (arg: any) =>
+    $transaction: jest.fn(async (arg: any): Promise<any> =>
       typeof arg === 'function' ? arg(mockPrisma) : Promise.all(arg),
     ),
   };

@@ -25,6 +25,7 @@ const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
 // Lazy-loaded routes for code splitting
 const LandingPage = lazyWithRetry(() => import('./pages/LandingPage').then((m) => ({ default: m.LandingPage })));
 const HomePage = lazyWithRetry(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
+const ExplorePage = lazyWithRetry(() => import('./pages/ExplorePage').then((m) => ({ default: m.ExplorePage })));
 const MyLibraryPage = lazyWithRetry(() => import('./pages/MyLibraryPage').then((m) => ({ default: m.MyLibraryPage })));
 const SearchPage = lazyWithRetry(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })));
 const CategoriesPage = lazyWithRetry(() => import('./pages/CategoriesPage').then((m) => ({ default: m.CategoriesPage })));
@@ -108,7 +109,7 @@ const AppContent: React.FC = () => {
               <Route path="/" element={<HomePage />} />
               <Route path="/home" element={<HomePage />} />
               <Route path="/landing" element={<LandingPage />} />
-              <Route path="/explore" element={<Navigate to="/categories" replace />} />
+              <Route path="/explore" element={<ExplorePage />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/categories" element={<CategoriesPage />} />
               <Route path="/languages" element={<LanguagesPage />} />
