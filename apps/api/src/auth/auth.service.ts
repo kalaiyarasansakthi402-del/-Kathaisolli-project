@@ -48,9 +48,10 @@ function isDatabaseConnectionError(error: any): boolean {
 function handleDbError(error: any): never {
   const code = error?.code || error?.name || 'DB_ERROR';
   const rawMsg = error?.message ? String(error.message).split('\n')[0].slice(0, 150) : 'Unknown database error';
+  console.error(`[AuthService] Database connection error [${code}]:`, rawMsg);
   if (isDatabaseConnectionError(error)) {
     throw new ServiceUnavailableException(
-      `Authentication database is temporarily unreachable [${code}: ${rawMsg}]. Please verify the production DATABASE_URL.`,
+      'Unable to connect right now. Please try again shortly.',
     );
   }
   throw error;

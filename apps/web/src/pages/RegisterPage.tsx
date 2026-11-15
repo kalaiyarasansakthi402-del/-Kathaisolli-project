@@ -83,7 +83,7 @@ export const RegisterPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      if (trimmedUsername.includes('@') && registerWithNeon) {
+      if (trimmedUsername.includes('@') && registerWithNeon && import.meta.env.VITE_NEON_AUTH_URL) {
         try {
           await registerWithNeon({
             email: trimmedUsername,
@@ -128,9 +128,10 @@ export const RegisterPage: React.FC = () => {
         err?.response?.status === 503 ||
         (serverMessage &&
           (serverMessage.includes('database') ||
-            serverMessage.includes('DATABASE_URL')))
+            serverMessage.includes('DATABASE_URL') ||
+            serverMessage.includes('Unable to connect')))
       ) {
-        setError('Database service temporarily unavailable. Please try again shortly.');
+        setError('Unable to connect right now. Please try again shortly.');
       } else if (err?.message === 'Network Error' || err?.code === 'ERR_NETWORK') {
         setError('Network error: Unable to reach server. Please check your connection.');
       } else {
@@ -234,7 +235,18 @@ export const RegisterPage: React.FC = () => {
                 className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-3 text-rose-700 dark:text-rose-400 text-xs sm:text-sm animate-in fade-in duration-200"
               >
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span className="font-medium leading-relaxed">{error}</span>
+                <div className="flex-1 font-medium leading-relaxed flex items-center justify-between">
+                  <span>{error}</span>
+                  {error.includes('Unable to connect') && (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      className="ml-2 px-2.5 py-1 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 hover:bg-rose-300 dark:hover:bg-rose-800 font-bold text-xs transition-colors shrink-0"
+                    >
+                      Retry
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

@@ -74,7 +74,7 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      if (trimmedUsername.includes('@') && loginWithNeon) {
+      if (trimmedUsername.includes('@') && loginWithNeon && import.meta.env.VITE_NEON_AUTH_URL) {
         try {
           await loginWithNeon({
             email: trimmedUsername,
@@ -105,9 +105,10 @@ export const LoginPage: React.FC = () => {
       } else if (
         err?.response?.status === 503 ||
         serverMessage.includes('database') ||
-        serverMessage.includes('DATABASE_URL')
+        serverMessage.includes('DATABASE_URL') ||
+        serverMessage.includes('Unable to connect')
       ) {
-        setError('Database service temporarily unavailable. Please try again shortly.');
+        setError('Unable to connect right now. Please try again shortly.');
       } else if (err?.message === 'Network Error' || err?.code === 'ERR_NETWORK') {
         setError('Network error: Unable to reach server. Please check your connection.');
       } else {
@@ -200,7 +201,18 @@ export const LoginPage: React.FC = () => {
             {error && (
               <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-3 text-xs sm:text-sm text-rose-700 dark:text-rose-300 animate-in fade-in">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-rose-600" />
-                <span className="flex-1 font-medium">{error}</span>
+                <div className="flex-1 font-medium flex items-center justify-between">
+                  <span>{error}</span>
+                  {error.includes('Unable to connect') && (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      className="ml-2 px-2.5 py-1 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 hover:bg-rose-300 dark:hover:bg-rose-800 font-bold text-xs transition-colors shrink-0"
+                    >
+                      Retry
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

@@ -23,15 +23,23 @@ export function sanitizeDatabaseUrl(rawUrl?: string): string | undefined {
     // Prisma's Rust engine does not support channel_binding=require reliably on Neon
     parsed.searchParams.delete('channel_binding');
     const currentConnectTimeout = parseInt(parsed.searchParams.get('connect_timeout') || '0', 10);
-    if (currentConnectTimeout < 60) {
-      parsed.searchParams.set('connect_timeout', '60');
+    if (currentConnectTimeout < 30) {
+      parsed.searchParams.set('connect_timeout', '30');
     }
     const currentPoolTimeout = parseInt(parsed.searchParams.get('pool_timeout') || '0', 10);
-    if (currentPoolTimeout < 60) {
-      parsed.searchParams.set('pool_timeout', '60');
+    if (currentPoolTimeout < 30) {
+      parsed.searchParams.set('pool_timeout', '30');
     }
     if (!parsed.searchParams.has('connection_limit')) {
       parsed.searchParams.set('connection_limit', '1');
+    }
+    // Neon pooled connection (PgBouncer) requires pgbouncer=true to prevent prepared statement errors in Prisma
+    if (parsed.hostname.includes('-pooler') && !parsed.searchParams.has('pgbouncer')) {
+      parsed.searchParams.set('pgbouncer', 'true');
+    }
+    // Ensure sslmode=require for Neon PostgreSQL
+    if (!parsed.searchParams.has('sslmode')) {
+      parsed.searchParams.set('sslmode', 'require');
     }
     return parsed.toString();
   } catch {

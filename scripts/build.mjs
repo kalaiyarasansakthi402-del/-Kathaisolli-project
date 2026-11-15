@@ -22,6 +22,46 @@ function run(cmd, desc) {
 // 1. Build Backend API
 run('pnpm --filter @kathaisolli/api build', 'API Build (Prisma + NestJS)');
 
+// Sync Prisma Client artifacts into root node_modules and distribution folders
+console.log('[ASSEMBLE] Syncing Prisma client engines and metadata for serverless bundling...');
+try {
+  const pnpmPrismaDir = path.join(rootDir, 'node_modules/.pnpm');
+  let sourcePrismaDir = null;
+
+  // Search for the generated .prisma directory in pnpm
+  if (fs.existsSync(pnpmPrismaDir)) {
+    const entries = fs.readdirSync(pnpmPrismaDir);
+    for (const entry of entries) {
+      if (entry.startsWith('@prisma+client@')) {
+        const candidate = path.join(pnpmPrismaDir, entry, 'node_modules/.prisma');
+        if (fs.existsSync(candidate)) {
+          sourcePrismaDir = candidate;
+          break;
+        }
+      }
+    }
+  }
+
+  if (sourcePrismaDir) {
+    const targetDirs = [
+      path.join(rootDir, 'node_modules/.prisma'),
+      path.join(rootDir, 'apps/api/node_modules/.prisma'),
+      path.join(rootDir, 'apps/api/dist/.prisma'),
+      path.join(rootDir, 'api-dist/.prisma'),
+    ];
+
+    for (const target of targetDirs) {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+      fs.cpSync(sourcePrismaDir, target, { recursive: true });
+      console.log(`  -> Copied .prisma to ${path.relative(rootDir, target)}`);
+    }
+  } else {
+    console.warn('[WARN] Could not find generated .prisma directory in .pnpm.');
+  }
+} catch (err) {
+  console.warn('[WARN] Non-fatal error while syncing .prisma:', err.message);
+}
+
 // Copy API dist into apps/web/api-dist and root api-dist for Vercel Serverless Function bundling
 console.log('[ASSEMBLE] Syncing API distribution artifacts for serverless bundling...');
 const apiDistDir = path.join(rootDir, 'apps/api/dist');
