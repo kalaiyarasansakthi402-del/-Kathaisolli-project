@@ -99,6 +99,25 @@ function sanitizeDatabaseUrl(rawUrl?: string): string | undefined {
   }
 }
 
+function resolveDatabaseUrl(): string | undefined {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL,
+    process.env.NEON_DATABASE_URL,
+    process.env.DIRECT_URL,
+    process.env.DATABASE_URL_UNPOOLED,
+    process.env.POSTGRES_URL_NON_POOLING,
+  ];
+
+  for (const candidate of candidates) {
+    const sanitized = sanitizeDatabaseUrl(candidate);
+    if (sanitized) return sanitized;
+  }
+
+  return undefined;
+}
+
 function redactDatabaseCredentials(msg: string): string {
   return msg
     .replace(/postgres(?:ql)?:\/\/[^\s'"]+/gi, '[REDACTED_DATABASE_URL]')
@@ -333,7 +352,7 @@ export default async function handler(req: Request, res: Response) {
     return res.status(204).end();
   }
 
-  const sanitizedDbUrl = sanitizeDatabaseUrl(process.env.DATABASE_URL);
+  const sanitizedDbUrl = resolveDatabaseUrl();
   if (sanitizedDbUrl && sanitizedDbUrl !== process.env.DATABASE_URL) {
     process.env.DATABASE_URL = sanitizedDbUrl;
   }
@@ -349,16 +368,16 @@ export default async function handler(req: Request, res: Response) {
     cleanUrl === '/api/v1/health/ready';
 
   if (isDatabaseHealthCheck) {
+    const isConfigured = Boolean(sanitizedDbUrl);
     const dbStatus: Record<string, any> = {
-      isConfigured: Boolean(process.env.DATABASE_URL),
+      isConfigured,
       connected: false,
-      status: 'unconfigured',
+      status: isConfigured ? 'connecting' : 'unconfigured',
     };
 
     if (!sanitizedDbUrl) {
-      dbStatus.error = process.env.DATABASE_URL
-        ? 'MALFORMED_DATABASE_URL'
-        : 'DATABASE_URL is not configured in Vercel environment variables.';
+      dbStatus.error =
+        'DATABASE_URL is not configured in Vercel environment variables. Please add DATABASE_URL in Vercel Dashboard > Settings > Environment Variables.';
       return res.status(503).json({
         status: 'degraded',
         service: 'Kathaisolli API (Vercel Serverless)',

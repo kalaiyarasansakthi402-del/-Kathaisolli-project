@@ -272,7 +272,7 @@ export const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Remember Me Checkbox */}
+              {/* Remember Me Checkbox & Forgot Password Link */}
               <div className="pt-1 flex items-center justify-between">
                 <label className="flex items-center gap-2.5 cursor-pointer select-none">
                   <input
@@ -285,6 +285,12 @@ export const LoginPage: React.FC = () => {
                     Remember Me
                   </span>
                 </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+                >
+                  Forgot Password?
+                </Link>
               </div>
 
               {/* Login Button */}

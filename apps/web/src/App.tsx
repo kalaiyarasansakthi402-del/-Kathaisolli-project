@@ -98,12 +98,12 @@ const AppContent: React.FC = () => {
         <ErrorBoundary>
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
-              {/* Authentication Routes (Admin-controlled user accounts) */}
+              {/* Authentication Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/signup" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<Navigate to="/login" replace />} />
-              <Route path="/reset-password" element={<Navigate to="/login" replace />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Public Main Website routes (Open & Accessible) */}
               <Route path="/" element={<HomePage />} />

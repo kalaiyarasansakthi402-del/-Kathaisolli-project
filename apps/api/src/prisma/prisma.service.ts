@@ -47,6 +47,25 @@ export function sanitizeDatabaseUrl(rawUrl?: string): string | undefined {
   }
 }
 
+export function resolveDatabaseUrl(): string | undefined {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL,
+    process.env.NEON_DATABASE_URL,
+    process.env.DIRECT_URL,
+    process.env.DATABASE_URL_UNPOOLED,
+    process.env.POSTGRES_URL_NON_POOLING,
+  ];
+
+  for (const candidate of candidates) {
+    const sanitized = sanitizeDatabaseUrl(candidate);
+    if (sanitized) return sanitized;
+  }
+
+  return undefined;
+}
+
 @Injectable()
 export class PrismaService
   extends PrismaClient
@@ -55,13 +74,13 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    const sanitizedUrl = sanitizeDatabaseUrl(process.env.DATABASE_URL);
-    if (sanitizedUrl && sanitizedUrl !== process.env.DATABASE_URL) {
-      process.env.DATABASE_URL = sanitizedUrl;
+    const resolvedUrl = resolveDatabaseUrl();
+    if (resolvedUrl && resolvedUrl !== process.env.DATABASE_URL) {
+      process.env.DATABASE_URL = resolvedUrl;
     }
     super(
-      sanitizedUrl
-        ? { datasources: { db: { url: sanitizedUrl } } }
+      resolvedUrl
+        ? { datasources: { db: { url: resolvedUrl } } }
         : undefined,
     );
   }
