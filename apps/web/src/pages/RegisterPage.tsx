@@ -46,18 +46,26 @@ export const RegisterPage: React.FC = () => {
     const trimmedUsername = username.trim().toLowerCase();
 
     if (!trimmedUsername) {
-      setError('Please enter your username.');
+      setError('Please enter your username or email address.');
       return;
     }
 
-    if (trimmedUsername.length < 3) {
-      setError('Username must be at least 3 characters long.');
-      return;
-    }
+    if (trimmedUsername.includes('@')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedUsername)) {
+        setError('Please enter a valid email address.');
+        return;
+      }
+    } else {
+      if (trimmedUsername.length < 3) {
+        setError('Username must be at least 3 characters long.');
+        return;
+      }
 
-    if (trimmedUsername.length > 60) {
-      setError('Username must not exceed 60 characters.');
-      return;
+      if (trimmedUsername.length > 60) {
+        setError('Username must not exceed 60 characters.');
+        return;
+      }
     }
 
     if (!password) {
@@ -262,10 +270,10 @@ export const RegisterPage: React.FC = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Field 1: Username */}
+              {/* Field 1: Username / Email */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
-                  Username
+                  Username or Email
                 </label>
                 <div className="relative">
                   <UserIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
@@ -273,7 +281,7 @@ export const RegisterPage: React.FC = () => {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username."
+                    placeholder="Enter your username or email"
                     required
                     autoComplete="username"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"

@@ -62,8 +62,16 @@ export const LoginPage: React.FC = () => {
 
     const trimmedUsername = username.trim().toLowerCase();
     if (!trimmedUsername) {
-      setError('Please enter your username.');
+      setError('Please enter your username or email address.');
       return;
+    }
+
+    if (trimmedUsername.includes('@')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedUsername)) {
+        setError('Please enter a valid email address.');
+        return;
+      }
     }
 
     if (!password) {
@@ -226,17 +234,17 @@ export const LoginPage: React.FC = () => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Field 1: Username */}
+              {/* Field 1: Username / Email */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">
-                  Username
+                  Username or Email
                 </label>
                 <div className="relative">
                   <UserIcon className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     required
-                    placeholder="Enter your username."
+                    placeholder="Enter your username or email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
