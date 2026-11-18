@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   User as UserIcon,
@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Headphones,
   BookOpen,
-  Sparkles,
+  LayoutGrid,
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -32,7 +32,7 @@ export const RegisterPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // If already logged in, redirect to home
-  React.useEffect(() => {
+  useEffect(() => {
     if (user && !authLoading) {
       navigate('/', { replace: true });
     }
@@ -131,7 +131,7 @@ export const RegisterPage: React.FC = () => {
             serverMessage.includes('already exists') ||
             serverMessage.includes('duplicate')))
       ) {
-        setError('This username is already taken. Please choose another username.');
+        setError('This username or email is already taken. Please choose another.');
       } else if (
         err?.response?.status === 503 ||
         (serverMessage &&
@@ -151,83 +151,100 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#FAF7EE] dark:bg-[#03261C] transition-colors">
-      <div className="w-full max-w-5xl bg-white dark:bg-[#04281E] rounded-3xl shadow-2xl border border-[#E8E1CE] dark:border-[#0F4738] overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all">
+    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-3 sm:p-6 lg:p-8 bg-[#FAF7EE] dark:bg-[#03261C] transition-colors">
+      <div className="w-full max-w-4xl bg-white dark:bg-[#04281E] rounded-3xl shadow-2xl border border-[#E8E1CE] dark:border-[#0F4738] overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all">
         
-        {/* LEFT SECTION: Brand Storytelling & Mascot */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-[#064E3B] via-[#043E2F] to-[#02261C] p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#166534]/30">
-          {/* Subtle Background Glows */}
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-[#D97706]/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-[#A7F3D0]/10 rounded-full blur-3xl pointer-events-none" />
-
+        {/* LEFT SECTION: Botanical Green Brand Panel with Clean Mascot */}
+        <div className="lg:col-span-5 bg-[#064E3B] p-6 sm:p-8 lg:p-10 text-white flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#166534]/30">
+          
           {/* Top Brand Header */}
-          <div className="relative z-10 space-y-2">
-            <Link to="/" className="inline-flex items-center gap-2.5 group">
-              <span className="text-2xl font-black font-serif tracking-tight text-[#FAF7EE] group-hover:text-[#A7F3D0] transition-colors">
+          <div className="relative z-10 space-y-1">
+            <Link to="/" className="inline-flex items-baseline gap-2 group">
+              <span className="text-xl sm:text-2xl font-black font-serif tracking-tight text-white group-hover:text-[#A7F3D0] transition-colors">
                 Kathaisolli
               </span>
-              <span className="text-sm font-bold font-tamil text-[#D97706]">
+              <span className="text-sm sm:text-base font-bold font-tamil text-[#FDE047]">
                 கதைசொல்லி
               </span>
             </Link>
-            <p className="text-xs text-[#A7F3D0]/80 tracking-wide">
-              ஒவ்வொரு கதைக்கும் ஒரு குரல் • Every Story Has A Voice
+            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#A7F3D0]">
+              BY ANZLES · 100% FREE PLATFORM
             </p>
           </div>
 
-          {/* Center: Friendly Mascot Visual */}
+          {/* Center: Friendly Mascot with Soundwaves (Clean transparent artwork, NO white box, NO scribble) */}
           <div className="relative z-10 py-6 sm:py-8 flex flex-col items-center text-center">
-            <div className="relative mb-5 group">
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-[#0F5132] to-[#1E7E34] border-4 border-[#A7F3D0]/30 shadow-2xl flex items-center justify-center p-3 transform transition-transform group-hover:scale-105 duration-300">
-                <img
-                  src="/mascot.png"
-                  alt="Kathaisolli Parrot Mascot"
-                  className="w-full h-full object-contain filter drop-shadow-md"
-                  onError={(e) => {
-                    // Fallback to stylized headphones icon if mascot image is missing
-                    (e.target as HTMLElement).style.display = 'none';
-                    e.currentTarget.parentElement!.innerHTML = `
-                      <div class="flex items-center justify-center text-[#FAF7EE]">
-                        <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 2a9 9 0 0 0-9 9v7a3 3 0 0 0 3 3h1a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H5a7 7 0 1 1 14 0h-2a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h1a3 3 0 0 0 3-3v-7a9 9 0 0 0-9-9z"></path>
-                        </svg>
-                      </div>
-                    `;
-                  }}
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-[#D97706] text-white p-2 rounded-full shadow-lg border-2 border-[#064E3B]">
-                <Sparkles className="w-4 h-4" />
-              </div>
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
+              {/* Sound waves left */}
+              <svg
+                className="w-5 h-12 text-[#FDE047]/90 transform -scale-x-100 flex-shrink-0"
+                viewBox="0 0 24 50"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <path d="M18 10 C10 18, 10 32, 18 40" />
+                <path d="M12 16 C6 21, 6 29, 12 34" strokeWidth="2" />
+                <path d="M6 22 C3 24, 3 26, 6 28" strokeWidth="1.5" />
+              </svg>
+
+              {/* Clean Transparent Mascot (120-160px) */}
+              <img
+                src="/mascot.png"
+                alt="Kathaisolli Mascot"
+                className="w-32 h-32 sm:w-36 sm:h-36 object-contain flex-shrink-0 drop-shadow-lg"
+              />
+
+              {/* Sound waves right */}
+              <svg
+                className="w-5 h-12 text-[#FDE047]/90 flex-shrink-0"
+                viewBox="0 0 24 50"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <path d="M18 10 C10 18, 10 32, 18 40" />
+                <path d="M12 16 C6 21, 6 29, 12 34" strokeWidth="2" />
+                <path d="M6 22 C3 24, 3 26, 6 28" strokeWidth="1.5" />
+              </svg>
             </div>
 
-            <h3 className="text-lg sm:text-xl font-bold font-serif text-[#FAF7EE] tracking-tight">
+            <h2 className="text-lg sm:text-xl font-bold font-tamil text-white leading-tight">
+              கதைகளின் உலகில் இணைந்திடுங்கள்!
+            </h2>
+            <p className="text-sm font-serif font-bold text-white mt-1">
               Join Kathaisolli
-            </h3>
-            <p className="text-xs sm:text-sm text-[#A7F3D0]/80 mt-1 max-w-xs font-tamil">
+            </p>
+            <p className="text-xs text-[#A7F3D0] mt-0.5">
               Your stories, your world.
             </p>
           </div>
 
           {/* Bottom Features List */}
-          <div className="relative z-10 pt-4 border-t border-emerald-800/40 space-y-2">
-            <div className="flex items-center gap-2.5 text-xs text-[#E8F0E2]">
-              <Headphones className="w-4 h-4 text-[#D97706]" />
-              <span>Unlimited streaming of thousands of audio stories</span>
+          <div className="relative z-10 pt-4 border-t border-emerald-700/50 space-y-2.5 text-xs text-stone-100">
+            <div className="flex items-center gap-2.5">
+              <Headphones className="w-4 h-4 text-[#FDE047] flex-shrink-0" />
+              <span>Unlimited streaming of audiobooks</span>
             </div>
-            <div className="flex items-center gap-2.5 text-xs text-[#E8F0E2]">
-              <BookOpen className="w-4 h-4 text-[#D97706]" />
-              <span>Full access to classical & modern Tamil literature</span>
+            <div className="flex items-center gap-2.5">
+              <BookOpen className="w-4 h-4 text-[#FDE047] flex-shrink-0" />
+              <span>Classical & modern Tamil literature</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <LayoutGrid className="w-4 h-4 text-[#FDE047] flex-shrink-0" />
+              <span>Build your personal library</span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT SECTION: Sign Up Form */}
-        <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
-          <div className="max-w-md w-full mx-auto space-y-6">
+        {/* RIGHT SECTION: Sign Up Form Card */}
+        <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
+          <div className="max-w-md w-full mx-auto space-y-5">
             
             {/* Form Title & Subtitle */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-stone-900 dark:text-white tracking-tight">
                 Create Your Account
               </h1>
@@ -240,21 +257,10 @@ export const RegisterPage: React.FC = () => {
             {error && (
               <div
                 role="alert"
-                className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-3 text-rose-700 dark:text-rose-400 text-xs sm:text-sm animate-in fade-in duration-200"
+                className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-2.5 text-rose-700 dark:text-rose-400 text-xs sm:text-sm animate-in fade-in duration-200"
               >
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 font-medium leading-relaxed flex items-center justify-between">
-                  <span>{error}</span>
-                  {error.includes('Unable to connect') && (
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      className="ml-2 px-2.5 py-1 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 hover:bg-rose-300 dark:hover:bg-rose-800 font-bold text-xs transition-colors shrink-0"
-                    >
-                      Retry
-                    </button>
-                  )}
-                </div>
+                <span className="flex-1 font-medium">{error}</span>
               </div>
             )}
 
@@ -262,17 +268,17 @@ export const RegisterPage: React.FC = () => {
             {success && (
               <div
                 role="status"
-                className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-start gap-3 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm animate-in fade-in duration-200"
+                className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-start gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm animate-in fade-in duration-200"
               >
                 <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-semibold leading-relaxed">{success}</span>
+                <span className="font-semibold">{success}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Field 1: Username / Email */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
                   Username or Email
                 </label>
                 <div className="relative">
@@ -284,14 +290,14 @@ export const RegisterPage: React.FC = () => {
                     placeholder="Enter your username or email"
                     required
                     autoComplete="username"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
                   />
                 </div>
               </div>
 
               {/* Field 2: Password */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
                   Password
                 </label>
                 <div className="relative">
@@ -300,10 +306,10 @@ export const RegisterPage: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create your password."
+                    placeholder="Create your password"
                     required
                     autoComplete="new-password"
-                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
                   />
                   <button
                     type="button"
@@ -318,7 +324,7 @@ export const RegisterPage: React.FC = () => {
 
               {/* Field 3: Confirm Password */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -327,10 +333,10 @@ export const RegisterPage: React.FC = () => {
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-enter your password."
+                    placeholder="Re-enter your password"
                     required
                     autoComplete="new-password"
-                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
                   />
                   <button
                     type="button"
@@ -345,28 +351,30 @@ export const RegisterPage: React.FC = () => {
 
               {/* Field 4: Phone Number (Optional) */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider flex items-center justify-between">
-                  <span>Phone Number</span>
-                  <span className="text-[10px] text-stone-400 font-normal lowercase">(optional)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
+                    Phone Number
+                  </label>
+                  <span className="text-[11px] text-stone-400 font-medium">(Optional)</span>
+                </div>
                 <div className="relative">
                   <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
                   <input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Enter your phone number."
+                    placeholder="Enter your phone number"
                     autoComplete="tel"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
                   />
                 </div>
               </div>
 
-              {/* Create Account Button */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 px-6 rounded-full font-bold text-sm bg-[#064E3B] hover:bg-[#166534] text-white shadow-lg shadow-emerald-950/20 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2 mt-4"
+                className="w-full mt-2 py-3 px-6 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-sm shadow-md shadow-emerald-950/20 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
@@ -382,22 +390,18 @@ export const RegisterPage: React.FC = () => {
               </button>
             </form>
 
-            {/* Link to Login Page */}
-            <div className="pt-4 border-t border-stone-200 dark:border-[#104434] text-center">
-              <p className="text-xs text-stone-600 dark:text-stone-400 font-medium">
-                Already have an account?{' '}
-                <Link
-                  to="/login"
-                  className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline transition-colors"
-                >
-                  Login
-                </Link>
-              </p>
-            </div>
-
+            {/* Bottom Login Link */}
+            <p className="text-center text-xs sm:text-sm text-stone-600 dark:text-stone-400 pt-2">
+              Already have an account?{' '}
+              <Link
+                to="/login"
+                className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+              >
+                Login
+              </Link>
+            </p>
           </div>
         </div>
-
       </div>
     </div>
   );

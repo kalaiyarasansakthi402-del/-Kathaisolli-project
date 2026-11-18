@@ -7,6 +7,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { AudioPlayer } from './components/AudioPlayer';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Resilient lazy route loader with automatic retry on chunk fetch failure
 const lazyWithRetry = <T extends { default: React.ComponentType<any> }>(
@@ -125,18 +126,60 @@ const AppContent: React.FC = () => {
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsConditionsPage />} />
 
-              {/* Personal Library & Settings */}
-              <Route path="/my-library" element={<MyLibraryPage />} />
+              {/* Personal Library & Settings (Protected) */}
+              <Route
+                path="/my-library"
+                element={
+                  <ProtectedRoute>
+                    <MyLibraryPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/library" element={<Navigate to="/my-library" replace />} />
               <Route path="/favorites" element={<Navigate to="/my-library?tab=favorites" replace />} />
               <Route path="/history" element={<Navigate to="/my-library?tab=history" replace />} />
-              <Route path="/playlists" element={<PlaylistsPage />} />
-              <Route path="/playlists/:id" element={<PlaylistsPage />} />
-              <Route path="/notifications" element={<NotificationsPage />} />
+              <Route
+                path="/playlists"
+                element={
+                  <ProtectedRoute>
+                    <PlaylistsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/playlists/:id"
+                element={
+                  <ProtectedRoute>
+                    <PlaylistsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <NotificationsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/creator/apply" element={<Navigate to="/" replace />} />
               <Route path="/creator/*" element={<Navigate to="/" replace />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Stories alias */}
               <Route path="/stories" element={<Navigate to="/categories" replace />} />

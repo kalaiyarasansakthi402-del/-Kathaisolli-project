@@ -7,11 +7,10 @@ import {
   EyeOff,
   AlertCircle,
   CheckCircle2,
-  Sparkles,
-  ArrowRight,
   Headphones,
   BookOpen,
-  Info,
+  LayoutGrid,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -134,146 +133,162 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#FAF7EE] dark:bg-[#03261C] transition-colors">
+    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center p-3 sm:p-6 lg:p-8 bg-[#FAF7EE] dark:bg-[#03261C] transition-colors">
       <div className="w-full max-w-4xl bg-white dark:bg-[#04281E] rounded-3xl shadow-2xl border border-[#E8E1CE] dark:border-[#0F4738] overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all">
         
-        {/* LEFT SECTION: Mascot & Brand Welcome */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-[#064E3B] via-[#043E2F] to-[#02261C] p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#166534]/30">
-          {/* Subtle Background Glows */}
-          <div className="absolute -top-24 -left-24 w-64 h-64 bg-[#D97706]/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-[#A7F3D0]/10 rounded-full blur-3xl pointer-events-none" />
-
+        {/* LEFT SECTION: Botanical Green Brand Panel with Clean Mascot (Matching Signup) */}
+        <div className="lg:col-span-5 bg-[#064E3B] p-6 sm:p-8 lg:p-10 text-white flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-[#166534]/30">
+          
           {/* Top Brand Header */}
-          <div className="relative z-10 space-y-2">
-            <Link to="/" className="inline-flex items-center gap-2.5 group">
-              <span className="text-2xl font-black font-serif tracking-tight text-[#FAF7EE] group-hover:text-[#A7F3D0] transition-colors">
+          <div className="relative z-10 space-y-1">
+            <Link to="/" className="inline-flex items-baseline gap-2 group">
+              <span className="text-xl sm:text-2xl font-black font-serif tracking-tight text-white group-hover:text-[#A7F3D0] transition-colors">
                 Kathaisolli
               </span>
-              <span className="text-sm font-bold font-tamil text-[#D97706]">
+              <span className="text-sm sm:text-base font-bold font-tamil text-[#FDE047]">
                 கதைசொல்லி
               </span>
             </Link>
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#A7F3D0]">
-              By Anzles · 100% Free Platform
+            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#A7F3D0]">
+              BY ANZLES · 100% FREE PLATFORM
             </p>
           </div>
 
-          {/* Mascot Centerpiece */}
-          <div className="my-8 flex flex-col items-center text-center relative z-10">
-            <div className="relative group">
-              <div className="absolute -inset-4 bg-gradient-to-r from-[#F59E0B]/30 to-[#10B981]/30 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500 animate-pulse" />
+          {/* Center: Friendly Mascot with Soundwaves (Clean transparent artwork, NO white box, NO scribble) */}
+          <div className="relative z-10 py-6 sm:py-8 flex flex-col items-center text-center">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
+              {/* Sound waves left */}
+              <svg
+                className="w-5 h-12 text-[#FDE047]/90 transform -scale-x-100 flex-shrink-0"
+                viewBox="0 0 24 50"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <path d="M18 10 C10 18, 10 32, 18 40" />
+                <path d="M12 16 C6 21, 6 29, 12 34" strokeWidth="2" />
+                <path d="M6 22 C3 24, 3 26, 6 28" strokeWidth="1.5" />
+              </svg>
+
+              {/* Clean Transparent Mascot (150-190px on login) */}
               <img
-                src="/images/mascot.png"
-                alt="Kathaisolli Yellow Mascot with Headphones"
-                className="w-40 h-40 sm:w-48 sm:h-48 object-contain rounded-2xl relative z-10 shadow-2xl shadow-black/40 border-2 border-[#F59E0B]/50 transform hover:scale-105 transition-transform duration-300 bg-[#FAF7EE]/90 p-1"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/app-icon.png';
-                }}
+                src="/mascot.png"
+                alt="Kathaisolli Mascot"
+                className="w-36 h-36 sm:w-44 sm:h-44 object-contain flex-shrink-0 drop-shadow-lg"
               />
+
+              {/* Sound waves right */}
+              <svg
+                className="w-5 h-12 text-[#FDE047]/90 flex-shrink-0"
+                viewBox="0 0 24 50"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
+                <path d="M18 10 C10 18, 10 32, 18 40" />
+                <path d="M12 16 C6 21, 6 29, 12 34" strokeWidth="2" />
+                <path d="M6 22 C3 24, 3 26, 6 28" strokeWidth="1.5" />
+              </svg>
             </div>
 
-            <h3 className="mt-6 text-xl font-black font-serif text-[#FAF7EE] tracking-wide">
-              மீண்டும் நல்வரவு!
-            </h3>
-            <p className="mt-2 text-xs sm:text-sm font-tamil text-[#A7F3D0] max-w-xs leading-relaxed">
-              உங்கள் சேமித்த கதைகள் மற்றும் கேட்ட வரலாற்றைத் தொடர உள்நுழையவும்.
+            <h2 className="text-xl sm:text-2xl font-bold font-tamil text-white leading-tight">
+              மீண்டும் வரவேற்கிறோம்!
+            </h2>
+            <p className="text-sm sm:text-base font-serif font-bold text-white mt-1">
+              Welcome Back to Kathaisolli!
             </p>
           </div>
 
-          {/* Quick Info */}
-          <div className="space-y-2 relative z-10 border-t border-[#166534]/50 pt-5 text-xs text-stone-200">
-            <div className="flex items-center gap-2">
-              <Headphones className="w-4 h-4 text-[#A7F3D0]" />
-              <span>தொடர் ஆடியோ அனுபவம் (Continuous Listening)</span>
+          {/* Bottom Features List */}
+          <div className="relative z-10 pt-4 border-t border-emerald-700/50 space-y-2.5 text-xs text-stone-100">
+            <div className="flex items-center gap-2.5">
+              <Headphones className="w-4 h-4 text-[#FDE047] flex-shrink-0" />
+              <span>Thousands of Tamil Stories</span>
             </div>
-            <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-[#F59E0B]" />
-              <span>சாதனங்கள் முழுவதும் தனிப்பயன் நூலகம்</span>
+            <div className="flex items-center gap-2.5">
+              <BookOpen className="w-4 h-4 text-[#FDE047] flex-shrink-0" />
+              <span>Classical & modern Literature</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <LayoutGrid className="w-4 h-4 text-[#FDE047] flex-shrink-0" />
+              <span>Your Personal Library</span>
             </div>
           </div>
         </div>
 
-        {/* RIGHT SECTION: Login Form */}
-        <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-center">
-          <div className="max-w-md mx-auto w-full space-y-6">
+        {/* RIGHT SECTION: Login Form Card */}
+        <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
+          <div className="max-w-md w-full mx-auto space-y-5">
             
-            {/* Header: Title & Subtitle */}
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E8F0E2] dark:bg-[#083325] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
-                <span>KATHAISOLLI</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#064E3B] dark:text-[#FAF7EE]">
+            {/* Title & Subtitle */}
+            <div className="space-y-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold font-serif text-stone-900 dark:text-white tracking-tight">
                 Welcome to Kathaisolli
-              </h2>
-              <p className="mt-1 text-xs sm:text-sm text-stone-600 dark:text-stone-300">
+              </h1>
+              <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400">
                 Your stories, your world.
               </p>
             </div>
 
-            {/* Error / Success Alerts */}
+            {/* Error Alert */}
             {error && (
-              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-3 text-xs sm:text-sm text-rose-700 dark:text-rose-300 animate-in fade-in">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-rose-600" />
-                <div className="flex-1 font-medium flex items-center justify-between">
-                  <span>{error}</span>
-                  {error.includes('Unable to connect') && (
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      className="ml-2 px-2.5 py-1 rounded-lg bg-rose-200/80 dark:bg-rose-900/80 hover:bg-rose-300 dark:hover:bg-rose-800 font-bold text-xs transition-colors shrink-0"
-                    >
-                      Retry
-                    </button>
-                  )}
-                </div>
+              <div
+                role="alert"
+                className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 flex items-start gap-2.5 text-rose-700 dark:text-rose-400 text-xs sm:text-sm animate-in fade-in duration-200"
+              >
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span className="flex-1 font-medium">{error}</span>
               </div>
             )}
 
+            {/* Success Alert */}
             {success && (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-start gap-3 text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-600" />
-                <span className="flex-1 font-medium">{success}</span>
+              <div
+                role="status"
+                className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 flex items-start gap-2.5 text-emerald-800 dark:text-emerald-300 text-xs sm:text-sm animate-in fade-in duration-200"
+              >
+                <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-semibold">{success}</span>
               </div>
             )}
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              
               {/* Field 1: Username / Email */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
                   Username or Email
                 </label>
                 <div className="relative">
-                  <UserIcon className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <UserIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
                   <input
                     type="text"
-                    required
-                    placeholder="Enter your username or email"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter your username or email"
+                    required
                     autoComplete="username"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
                   />
                 </div>
               </div>
 
               {/* Field 2: Password */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300 mb-1.5">
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wider">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    required
-                    placeholder="Enter your password."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
                     autoComplete="current-password"
-                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm font-medium"
+                    className="w-full pl-10 pr-11 py-2.5 rounded-xl border border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] text-stone-900 dark:text-stone-100 placeholder:text-stone-400 text-sm focus:outline-none focus:ring-2 focus:ring-[#064E3B] focus:border-transparent transition-all shadow-sm"
                   />
                   <button
                     type="button"
@@ -286,37 +301,35 @@ export const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Remember Me Checkbox & Forgot Password Link */}
-              <div className="pt-1 flex items-center justify-between">
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              {/* Remember Me & Forgot Password Row */}
+              <div className="flex items-center justify-between text-xs pt-0.5">
+                <label className="flex items-center gap-2 cursor-pointer text-stone-700 dark:text-stone-300 select-none">
                   <input
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#064E3B] focus:ring-[#064E3B] border-stone-300 dark:border-[#104434] bg-white dark:bg-[#073224] cursor-pointer"
+                    className="w-4 h-4 rounded border-stone-300 text-[#064E3B] focus:ring-[#064E3B] accent-[#064E3B]"
                   />
-                  <span className="text-xs text-stone-600 dark:text-stone-300 font-medium">
-                    Remember Me
-                  </span>
+                  <span className="font-medium">Remember Me</span>
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+                  className="font-semibold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
                 >
                   Forgot Password?
                 </Link>
               </div>
 
-              {/* Login Button */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 px-6 rounded-full font-bold text-sm bg-[#064E3B] hover:bg-[#166534] text-white shadow-lg shadow-emerald-950/20 hover:scale-[1.01] active:scale-[0.98] transition-all disabled:opacity-60 disabled:pointer-events-none flex items-center justify-center gap-2 mt-4"
+                className="w-full mt-2 py-3 px-6 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-sm shadow-md shadow-emerald-950/20 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Signing in...</span>
+                    <span>Logging in...</span>
                   </>
                 ) : (
                   <>
@@ -327,25 +340,18 @@ export const LoginPage: React.FC = () => {
               </button>
             </form>
 
-            {/* Sign Up Link & Guidance Section Below Login Button */}
-            <div className="pt-4 border-t border-stone-200 dark:border-[#104434] space-y-3 text-center">
-              <p className="text-xs text-stone-600 dark:text-stone-300 font-medium">
-                New to Kathaisolli?{' '}
-                <Link
-                  to="/signup"
-                  className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline transition-colors"
-                >
-                  Create your account.
-                </Link>
-              </p>
-              <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                Forgot Password? Contact Admin.
-              </p>
-            </div>
-
+            {/* Bottom Create Account Link */}
+            <p className="text-center text-xs sm:text-sm text-stone-600 dark:text-stone-400 pt-2">
+              New to Kathaisolli?{' '}
+              <Link
+                to="/signup"
+                className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+              >
+                Create your account.
+              </Link>
+            </p>
           </div>
         </div>
-
       </div>
     </div>
   );

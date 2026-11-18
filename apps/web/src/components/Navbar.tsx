@@ -15,7 +15,6 @@ import {
   LogOut,
   ChevronDown,
   Settings,
-  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
@@ -101,17 +100,18 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#FAF7EE]/95 dark:bg-[#04281E]/95 border-b border-[#E8E1CE] dark:border-[#0F4738] transition-colors shadow-sm">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-3 lg:gap-6">
-        {/* Brand Logo with App Icon */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
+        
+        {/* Brand Logo with Clean Mascot (No background square, natural proportions) */}
         <Link
           to="/"
           onClick={() => setMobileMenuOpen(false)}
-          className="flex items-center gap-2 sm:gap-3 group min-w-0"
+          className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-shrink-0"
         >
           <img
-            src="/app-icon.png"
-            alt="Kathaisolli Logo"
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl object-contain shadow-md shadow-emerald-950/20 group-hover:scale-105 transition-transform bg-[#F8F5E9] p-0.5 border border-[#166534]/30 flex-shrink-0"
+            src="/mascot.png"
+            alt="Kathaisolli Mascot"
+            className="w-10 h-10 sm:w-12 sm:h-12 object-contain group-hover:scale-105 transition-transform flex-shrink-0 drop-shadow-sm"
           />
           <div className="min-w-0">
             <div className="flex items-baseline gap-1 sm:gap-1.5">
@@ -128,102 +128,106 @@ export const Navbar: React.FC = () => {
           </div>
         </Link>
 
-        {/* Center Desktop Navigation Links with Icons */}
-        <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
-          <Link
-            to="/"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              isHomeActive
-                ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
-                : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
-            }`}
-          >
-            <Home
-              className={`w-4 h-4 ${
-                isHomeActive ? 'text-[#064E3B] dark:text-[#A7F3D0]' : 'text-stone-500 dark:text-stone-400'
+        {/* Center Desktop Navigation Links with Icons — VISIBLE ONLY WHEN AUTHENTICATED */}
+        {user && (
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+            <Link
+              to="/"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                isHomeActive
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
               }`}
-            />
-            <span>Home</span>
-          </Link>
+            >
+              <Home
+                className={`w-4 h-4 ${
+                  isHomeActive ? 'text-[#064E3B] dark:text-[#A7F3D0]' : 'text-stone-500 dark:text-stone-400'
+                }`}
+              />
+              <span>Home</span>
+            </Link>
 
-          <Link
-            to="/categories"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              isCategoriesActive
-                ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
-                : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
-            }`}
-          >
-            <LayoutGrid
-              className={`w-4 h-4 ${
+            <Link
+              to="/categories"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                 isCategoriesActive
-                  ? 'text-[#064E3B] dark:text-[#A7F3D0]'
-                  : 'text-stone-500 dark:text-stone-400'
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
               }`}
-            />
-            <span>Categories</span>
-          </Link>
+            >
+              <LayoutGrid
+                className={`w-4 h-4 ${
+                  isCategoriesActive
+                    ? 'text-[#064E3B] dark:text-[#A7F3D0]'
+                    : 'text-stone-500 dark:text-stone-400'
+                }`}
+              />
+              <span>Categories</span>
+            </Link>
 
-          <Link
-            to="/my-library"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              isLibraryActive
-                ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
-                : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
-            }`}
-          >
-            <Bookmark
-              className={`w-4 h-4 ${
+            <Link
+              to="/my-library"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
                 isLibraryActive
-                  ? 'text-[#064E3B] dark:text-[#A7F3D0]'
-                  : 'text-stone-500 dark:text-stone-400'
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
               }`}
+            >
+              <Bookmark
+                className={`w-4 h-4 ${
+                  isLibraryActive
+                    ? 'text-[#064E3B] dark:text-[#A7F3D0]'
+                    : 'text-stone-500 dark:text-stone-400'
+                }`}
+              />
+              <span>Library</span>
+            </Link>
+
+            <Link
+              to="/about"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                isAboutActive
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
+              }`}
+            >
+              <Info className="w-4 h-4" />
+              <span>About</span>
+            </Link>
+
+            <Link
+              to="/contact"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                isContactActive
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              <span>Contact</span>
+            </Link>
+          </nav>
+        )}
+
+        {/* Desktop Search Bar — VISIBLE ONLY WHEN AUTHENTICATED */}
+        {user && (
+          <form
+            onSubmit={handleSearch}
+            className="hidden md:flex relative flex-1 max-w-[220px] xl:max-w-xs"
+          >
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+            <input
+              type="search"
+              placeholder="Search books..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-1.5 text-xs xl:text-sm rounded-full bg-white/90 dark:bg-[#073224] border border-[#DDD5C0] dark:border-[#0E4738] focus:border-[#064E3B] focus:ring-1 focus:ring-[#064E3B] outline-none transition-all placeholder:text-stone-400 text-stone-800 dark:text-stone-100 shadow-inner"
             />
-            <span>Library</span>
-          </Link>
-
-          <Link
-            to="/about"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              isAboutActive
-                ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
-                : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
-            }`}
-          >
-            <Info className="w-4 h-4" />
-            <span>About</span>
-          </Link>
-
-          <Link
-            to="/contact"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              isContactActive
-                ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
-                : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
-            }`}
-          >
-            <Mail className="w-4 h-4" />
-            <span>Contact</span>
-          </Link>
-        </nav>
-
-        {/* Search Bar */}
-        <form
-          onSubmit={handleSearch}
-          className="hidden md:flex relative flex-1 max-w-[240px] xl:max-w-xs"
-        >
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
-          <input
-            type="search"
-            placeholder="Search Tamil Stories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs xl:text-sm rounded-full bg-white/90 dark:bg-[#073224] border border-[#DDD5C0] dark:border-[#0E4738] focus:border-[#064E3B] focus:ring-1 focus:ring-[#064E3B] outline-none transition-all placeholder:text-stone-400 text-stone-800 dark:text-stone-100 shadow-inner"
-          />
-        </form>
+          </form>
+        )}
 
         {/* Right Section: Theme Toggle & User Auth */}
-        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <button
             onClick={toggleTheme}
             aria-label="Toggle Theme"
@@ -248,7 +252,7 @@ export const Navbar: React.FC = () => {
                   {user.displayName?.slice(0, 1) || user.email?.slice(0, 1)?.toUpperCase() || 'K'}
                 </div>
                 <span className="text-xs font-semibold max-w-[100px] truncate text-stone-800 dark:text-stone-100 hidden sm:inline">
-                  {user.displayName || 'கதை நேயர்'}
+                  {user.displayName || user.email?.split('@')[0] || 'User'}
                 </span>
                 <ChevronDown
                   className={`w-3.5 h-3.5 text-stone-500 transition-transform ${
@@ -262,7 +266,7 @@ export const Navbar: React.FC = () => {
                 <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#FAF7EE] dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] shadow-2xl p-2 space-y-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="p-3 rounded-xl bg-white/80 dark:bg-[#03261C]/80 border border-[#E8E1CE] dark:border-[#104434]">
                     <p className="text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] truncate">
-                      {user.displayName || 'கதை நேயர்'}
+                      {user.displayName || user.email?.split('@')[0] || 'கதை நேயர்'}
                     </p>
                     <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
                       {user.email}
@@ -313,24 +317,24 @@ export const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            /* User NOT Logged In: Login & Sign Up Buttons */
-            <div className="hidden sm:flex items-center gap-2 sm:gap-3">
+            /* User NOT Logged In (Guest View): Clean [Sign Up] Outline and [Login] Filled Pill Buttons */
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 to="/signup"
-                className="px-4 py-2 rounded-full text-xs sm:text-sm font-semibold text-[#064E3B] dark:text-[#A7F3D0] hover:bg-stone-200/50 dark:hover:bg-[#073224] transition-all"
+                className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B] dark:border-[#A7F3D0] hover:bg-[#064E3B]/10 dark:hover:bg-[#A7F3D0]/10 transition-all"
               >
                 Sign Up
               </Link>
               <Link
                 to="/login"
-                className="px-5 py-2 rounded-full text-xs sm:text-sm font-bold bg-[#064E3B] text-white hover:bg-[#166534] shadow-md shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm font-bold bg-[#064E3B] text-white hover:bg-[#166534] shadow-md shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Login
               </Link>
             </div>
           )}
 
-          {/* Mobile Menu Hamburger */}
+          {/* Mobile Menu Hamburger (Visible on mobile/tablet) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2 rounded-lg text-stone-700 dark:text-stone-200 hover:bg-stone-200/60 dark:hover:bg-[#073224]"
@@ -343,61 +347,84 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-[#E3DCBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#033B2B] px-4 pt-3 pb-6 space-y-3">
-          <form onSubmit={handleSearch} className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#166534]" />
-            <input
-              type="search"
-              placeholder="Search Tamil stories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#173D2E] dark:text-stone-100"
-            />
-          </form>
+        <div className="lg:hidden border-t border-[#E3DCBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#033B2B] px-4 pt-3 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-150">
+          {user && (
+            <form onSubmit={handleSearch} className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#166534]" />
+              <input
+                type="search"
+                placeholder="Search books..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-full bg-white dark:bg-[#083325] border border-[#D5CEBA] dark:border-[#124835] text-[#173D2E] dark:text-stone-100"
+              />
+            </form>
+          )}
 
-          <nav className="flex flex-col space-y-1 pt-2">
-            <Link
-              to="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              Home (முகப்பு)
-            </Link>
-            <Link
-              to="/categories"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              Categories (வகைகள்)
-            </Link>
-            <Link
-              to="/profile"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              Profile (சுயவிவரம்)
-            </Link>
-            <Link
-              to="/my-library"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              My Library (எனது நூலகம்)
-            </Link>
-            <Link
-              to="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              About (எங்களை பற்றி)
-            </Link>
-            <Link
-              to="/contact"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
-            >
-              Contact (தொடர்புக்கு)
-            </Link>
+          <nav className="flex flex-col space-y-1 pt-1">
+            {user ? (
+              <>
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  Home (முகப்பு)
+                </Link>
+                <Link
+                  to="/categories"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  Categories (வகைகள்)
+                </Link>
+                <Link
+                  to="/my-library"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  My Library (எனது நூலகம்)
+                </Link>
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  Profile (சுயவிவரம்)
+                </Link>
+                <Link
+                  to="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  About (எங்களை பற்றி)
+                </Link>
+                <Link
+                  to="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  Contact (தொடர்புக்கு)
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  About (எங்களை பற்றி)
+                </Link>
+                <Link
+                  to="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  Contact (தொடர்புக்கு)
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* User Actions in Mobile Drawer */}
@@ -409,7 +436,7 @@ export const Navbar: React.FC = () => {
                 </div>
                 <div className="overflow-hidden">
                   <p className="text-xs font-bold text-[#173D2E] dark:text-[#F8F5E9] truncate">
-                    {user.displayName || 'Profile'}
+                    {user.displayName || user.email?.split('@')[0] || 'User'}
                   </p>
                   <p className="text-[10px] text-stone-500 dark:text-stone-400 truncate">
                     {user.email}
@@ -429,18 +456,18 @@ export const Navbar: React.FC = () => {
           ) : (
             <div className="pt-2 border-t border-[#E3DCBA] dark:border-[#124835] space-y-2">
               <Link
+                to="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full block text-center py-2.5 rounded-full text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B] dark:border-[#A7F3D0]"
+              >
+                Sign Up
+              </Link>
+              <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full block text-center py-2.5 rounded-full text-xs font-bold bg-[#064E3B] text-white"
               >
                 Login
-              </Link>
-              <Link
-                to="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full block text-center py-2 rounded-full text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B] dark:border-[#A7F3D0]"
-              >
-                Sign Up
               </Link>
             </div>
           )}
