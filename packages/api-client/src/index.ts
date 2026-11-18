@@ -95,7 +95,9 @@ export class KathaisolliApiClient {
       this.client.post<AuthSessionResponse>('/auth/register', data).then((r) => r.data),
 
     login: (data: { email?: string; username?: string; password: string }) =>
-      this.client.post<AuthSessionResponse>('/auth/login', data).then((r) => r.data),
+      this.client
+        .post<AuthSessionResponse>('/auth/login', data, { timeout: 25_000 })
+        .then((r) => r.data),
 
     neonSync: (data: {
       email: string;

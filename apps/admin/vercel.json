@@ -15,7 +15,25 @@
       ]
     },
     {
+      "source": "/admin/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
       "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/admin/index.html",
       "headers": [
         {
           "key": "Cache-Control",
@@ -25,6 +43,66 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/admin/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/admin/app-icon.png",
+      "destination": "/app-icon.png"
+    },
+    {
+      "source": "/admin/logo.png",
+      "destination": "/logo.png"
+    },
+    {
+      "source": "/admin/mascot.png",
+      "destination": "/mascot.png"
+    },
+    {
+      "source": "/admin/3.png",
+      "destination": "/3.png"
+    },
+    {
+      "source": "/admin/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/admin/favicon-16x16.png",
+      "destination": "/favicon-16x16.png"
+    },
+    {
+      "source": "/admin/favicon-32x32.png",
+      "destination": "/favicon-32x32.png"
+    },
+    {
+      "source": "/admin/apple-touch-icon.png",
+      "destination": "/apple-touch-icon.png"
+    },
+    {
+      "source": "/admin/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "https://web-blush-gamma-47.vercel.app/api/$1"
+    },
+    {
+      "source": "/api",
+      "destination": "https://web-blush-gamma-47.vercel.app/api"
+    },
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/admin/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

@@ -99,19 +99,25 @@ export const LoginPage: React.FC = () => {
       setSuccess('Login successful! Redirecting...');
       navigate(resolvePostLoginPath(location.state), { replace: true });
     } catch (err: any) {
-      console.error('[Login] Error:', err);
+      console.error('[Login] Request failed', {
+        code: err?.code,
+        status: err?.response?.status,
+      });
       const serverMessage = err?.response?.data?.message || err?.message || '';
+      const status = err?.response?.status;
 
       if (serverMessage.includes('inactive') || serverMessage.includes('disabled')) {
         setError('Your account is inactive. Please contact Admin.');
+      } else if (err?.code === 'ECONNABORTED' || err?.code === 'ETIMEDOUT') {
+        setError('The login request timed out. Please try again shortly.');
       } else if (
-        err?.response?.status === 401 ||
+        status === 401 ||
         serverMessage.includes('Invalid') ||
         serverMessage.includes('credentials')
       ) {
         setError('Invalid username or password.');
       } else if (
-        err?.response?.status === 503 ||
+        (typeof status === 'number' && status >= 500) ||
         serverMessage.includes('database') ||
         serverMessage.includes('DATABASE_URL') ||
         serverMessage.includes('Unable to connect')

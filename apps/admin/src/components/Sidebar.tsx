@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  UploadCloud,
+  Home,
   BookOpen,
+  Library,
+  FileText,
+  Headphones,
+  Image as ImageIcon,
   Layers,
-  HardDrive,
-  BarChart3,
-  ShieldCheck,
   Users,
   Settings,
   LogOut,
@@ -30,59 +30,76 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
     navigate('/admin/login');
   };
 
+  const handleImageFallback = (e: React.SyntheticEvent<HTMLImageElement, Event>, fallbackSrc: string) => {
+    const el = e.currentTarget;
+    if (!el.dataset.fallbackApplied) {
+      el.dataset.fallbackApplied = 'true';
+      el.src = fallbackSrc;
+    }
+  };
+
   const navItems = [
     {
       to: '/admin',
-      label: 'மேலோட்டம் (Dashboard)',
-      icon: LayoutDashboard,
+      label: 'Dashboard',
+      sublabel: 'மேலோட்டம்',
+      icon: Home,
       allowed: true,
       end: true,
     },
     {
-      to: '/admin/audio-upload',
-      label: 'ஆடியோ பதிவேற்றம் (Audiobook Upload)',
-      icon: UploadCloud,
-      allowed: permissions.canUploadAudio,
-    },
-    {
-      to: '/admin/stories',
-      label: 'கதைகள் மேலாண்மை (Story Management)',
+      to: '/admin/stories/new',
+      label: 'Upload Book',
+      sublabel: 'புதிய கதை',
       icon: BookOpen,
       allowed: permissions.canManageStories,
     },
     {
+      to: '/admin/stories',
+      label: 'Manage Books',
+      sublabel: 'கதைகள்',
+      icon: Library,
+      allowed: permissions.canManageStories,
+    },
+    {
+      to: '/admin/books',
+      label: 'Chapters',
+      sublabel: 'அத்தியாயங்கள்',
+      icon: FileText,
+      allowed: permissions.canManageStories,
+    },
+    {
+      to: '/admin/audio-upload',
+      label: 'Audio Files',
+      sublabel: 'ஆடியோ பதிவேற்றம்',
+      icon: Headphones,
+      allowed: permissions.canUploadAudio,
+    },
+    {
+      to: '/admin/storage',
+      label: 'Images',
+      sublabel: 'படங்கள் & சேமிப்பகம்',
+      icon: ImageIcon,
+      allowed: permissions.canManageStorage,
+    },
+    {
       to: '/admin/categories',
-      label: 'வகைப்பாடுகள் (Category Management)',
+      label: 'Categories',
+      sublabel: 'வகைப்பாடுகள்',
       icon: Layers,
       allowed: permissions.canManageCategories,
     },
     {
-      to: '/admin/storage',
-      label: 'ஆடியோ சேமிப்பகம் (Audio Storage)',
-      icon: HardDrive,
-      allowed: permissions.canManageStorage,
-    },
-    {
-      to: '/admin/reports',
-      label: 'அறிக்கைகள் & பகுப்பாய்வு (Reports & Analytics)',
-      icon: BarChart3,
-      allowed: permissions.canViewReports,
-    },
-    {
-      to: '/admin/roles',
-      label: 'நிர்வாகப் பொறுப்புகள் (Admin Roles & Permissions)',
-      icon: ShieldCheck,
-      allowed: permissions.canManageStaff,
-    },
-    {
       to: '/admin/users',
-      label: 'பயனர் மேலாண்மை (User Management)',
+      label: 'Users',
+      sublabel: 'பயனர்கள்',
       icon: Users,
       allowed: permissions.canManageUsers,
     },
     {
       to: '/admin/settings',
-      label: 'அமைப்புகள் & பாதுகாப்பு (Settings & Security)',
+      label: 'Settings',
+      sublabel: 'அமைப்புகள்',
       icon: Settings,
       allowed: permissions.canManageSettings,
     },
@@ -93,13 +110,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed lg:static top-0 left-0 z-50 h-full w-72 shrink-0 bg-[#064E3B] text-emerald-100 flex flex-col justify-between border-r border-[#047857]/40 shadow-xl lg:shadow-none transition-transform duration-300 ease-in-out ${
+        className={`fixed lg:static top-0 left-0 z-50 h-full w-64 shrink-0 bg-[#063826] text-emerald-100 flex flex-col justify-between border-r border-emerald-800/40 shadow-2xl lg:shadow-none transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -107,17 +124,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         <div className="p-5 space-y-6 overflow-y-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img
-                src="/admin/app-icon.png"
-                alt="Kathaisolli Logo"
-                className="h-10 w-10 rounded-2xl object-contain bg-white/10 p-0.5 border border-[#10B981]/40 shadow-md shadow-emerald-950/40"
-              />
-              <div>
-                <h2 className="font-extrabold text-base text-white tracking-wide font-serif">
-                  Kathaisolli
+              <div className="w-10 h-10 rounded-2xl bg-white/10 border border-emerald-400/40 p-1 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                <img
+                  src="/admin/app-icon.png"
+                  onError={(e) => handleImageFallback(e, '/app-icon.png')}
+                  alt="Kathaisolli Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-black text-sm text-white tracking-wide font-sans truncate">
+                  Kathaisolli Admin
                 </h2>
-                <p className="text-[11px] text-[#A7F3D0] font-tamil font-semibold">
-                  கதைசொல்லி நிர்வாக மையம்
+                <p className="text-[10px] text-emerald-300 font-tamil font-semibold truncate">
+                  கதைசொல்லி நிர்வாகம்
                 </p>
               </div>
             </div>
@@ -133,65 +153,58 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             )}
           </div>
 
-          {/* Navigation Section Title */}
-          <div>
-            <div className="text-[10px] font-bold text-[#A7F3D0] uppercase tracking-wider px-3 mb-2 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#34D399]" />
-              <span>முதன்மை நிர்வாகம் (Admin Navigation)</span>
-            </div>
-
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                if (!item.allowed) return null;
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.end}
-                    onClick={() => onClose && onClose()}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                        isActive
-                          ? 'bg-[#047857] text-white shadow-sm font-bold'
-                          : 'text-emerald-100/90 hover:bg-[#033A2C] hover:text-white'
-                      }`
-                    }
-                  >
-                    <Icon className="h-4 w-4 shrink-0 text-[#A7F3D0]" />
-                    <span className="truncate">{item.label}</span>
-                  </NavLink>
-                );
-              })}
-            </nav>
-          </div>
+          {/* Navigation Section */}
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              if (!item.allowed) return null;
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => onClose && onClose()}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-[#15803d] text-white shadow-md font-bold'
+                        : 'text-emerald-100/80 hover:bg-emerald-900/50 hover:text-white'
+                    }`
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0 text-[#A7F3D0]" />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
         </div>
 
         {/* Bottom User Profile Card & Logout */}
-        <div className="p-4 border-t border-[#047857]/40 bg-[#043E2F]">
+        <div className="p-4 border-t border-emerald-800/40 bg-[#04281e]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="h-9 w-9 rounded-xl bg-[#047857] text-[#A7F3D0] flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
                 {user?.displayName?.charAt(0) || 'A'}
               </div>
               <div className="text-left overflow-hidden min-w-0">
-                <p className="text-xs font-bold text-white truncate max-w-[130px]">
-                  {user?.displayName || 'நிர்வாகி'}
+                <p className="text-xs font-bold text-white truncate max-w-[110px]">
+                  {user?.displayName || 'Admin'}
                 </p>
-                <span className="text-[10px] text-[#A7F3D0] block truncate">
+                <span className="text-[10px] text-emerald-300 block truncate">
                   {user?.role === 'SUPER_ADMIN'
-                    ? 'தலைமை நிர்வாகி'
+                    ? 'Super Admin'
                     : user?.role === 'ADMIN'
-                    ? 'நிர்வாகி'
-                    : 'உள்ளடக்க ஆசிரியர்'}
+                    ? 'Admin'
+                    : 'Editor'}
                 </span>
               </div>
             </div>
 
             <button
               onClick={handleLogout}
-              title="வெளியேறு (Logout)"
-              className="p-2 rounded-xl text-emerald-300 hover:text-white hover:bg-rose-900/40 transition-colors shrink-0"
+              title="Logout"
+              className="p-2 rounded-xl text-emerald-300 hover:text-white hover:bg-rose-900/50 transition-colors shrink-0 flex items-center gap-1.5"
             >
               <LogOut className="h-4 w-4" />
             </button>

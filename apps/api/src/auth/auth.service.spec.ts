@@ -7,6 +7,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 
+function createTestPasswordHash(password: string): Promise<string> {
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 1024,
+    timeCost: 1,
+    parallelism: 1,
+  });
+}
+
 describe('AuthService', () => {
   const prisma = {
     user: {
@@ -99,9 +108,7 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('logs in successfully with valid credentials and returns JWT session', async () => {
-      const passwordHash = await argon2.hash('myCorrectPassword123', {
-        type: argon2.argon2id,
-      });
+      const passwordHash = await createTestPasswordHash('myCorrectPassword123');
       prisma.user.findFirst.mockResolvedValue({
         id: 'user-123',
         username: 'listener1',
@@ -144,9 +151,7 @@ describe('AuthService', () => {
     });
 
     it('logs in successfully with username', async () => {
-      const passwordHash = await argon2.hash('myCorrectPassword123', {
-        type: argon2.argon2id,
-      });
+      const passwordHash = await createTestPasswordHash('myCorrectPassword123');
       prisma.user.findFirst.mockResolvedValue({
         id: 'user-456',
         username: 'sakthi',
@@ -176,9 +181,7 @@ describe('AuthService', () => {
     });
 
     it('rejects invalid password without issuing a token', async () => {
-      const passwordHash = await argon2.hash('correct-password', {
-        type: argon2.argon2id,
-      });
+      const passwordHash = await createTestPasswordHash('correct-password');
       prisma.user.findFirst.mockResolvedValue({
         id: 'user-id',
         username: 'listener',
@@ -212,9 +215,7 @@ describe('AuthService', () => {
     });
 
     it('rejects login when user is disabled', async () => {
-      const passwordHash = await argon2.hash('password123', {
-        type: argon2.argon2id,
-      });
+      const passwordHash = await createTestPasswordHash('password123');
       prisma.user.findFirst.mockResolvedValue({
         id: 'user-disabled',
         username: 'disabled_user',
