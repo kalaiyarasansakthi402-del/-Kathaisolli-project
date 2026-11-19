@@ -119,9 +119,10 @@ export const LoginPage: React.FC = () => {
         (typeof status === 'number' && status >= 500) ||
         serverMessage.includes('database') ||
         serverMessage.includes('DATABASE_URL') ||
+        serverMessage.includes('serverless execution') ||
         serverMessage.includes('Unable to connect')
       ) {
-        setError('Unable to connect right now. Please try again shortly.');
+        setError('Database connection error. If you recently updated Vercel environment variables, please redeploy in Vercel to apply changes.');
       } else if (err?.message === 'Network Error' || err?.code === 'ERR_NETWORK') {
         setError('Network error: Unable to reach server. Please check your connection.');
       } else {

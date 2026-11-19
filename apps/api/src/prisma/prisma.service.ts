@@ -60,11 +60,22 @@ export function resolveDatabaseUrl(): string | undefined {
 
   for (const candidate of candidates) {
     const sanitized = sanitizeDatabaseUrl(candidate);
-    if (sanitized) return sanitized;
+    if (sanitized) {
+      if (process.env.DATABASE_URL !== sanitized) {
+        process.env.DATABASE_URL = sanitized;
+      }
+      if (!process.env.DIRECT_URL) {
+        process.env.DIRECT_URL = sanitized;
+      }
+      return sanitized;
+    }
   }
 
   return undefined;
 }
+
+// Eagerly resolve at module load time
+resolveDatabaseUrl();
 
 @Injectable()
 export class PrismaService
