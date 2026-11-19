@@ -35,6 +35,7 @@
     "clsx": "^2.1.1",
     "ioredis": "^6.0.0",
     "firebase": "13.1.0",
+    "firebase-admin": "14.5.1",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

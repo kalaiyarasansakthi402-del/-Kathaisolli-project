@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "{api-dist/**,apps/api/dist/**,apps/api/package.json,apps/api/prisma/**,node_modules/.prisma/**,node_modules/@prisma/**,node_modules/.pnpm/@prisma+client*/**}",
+      "includeFiles": "{api-dist/**,apps/api/dist/**,apps/api/package.json,apps/api/prisma/**,node_modules/.prisma/**,node_modules/@prisma/**,node_modules/.pnpm/@prisma+client*/**,node_modules/firebase-admin/**,node_modules/.pnpm/firebase-admin*/**}",
       "maxDuration": 30
     }
   },

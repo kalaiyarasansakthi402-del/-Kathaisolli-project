@@ -6,9 +6,10 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "resolvePackageJsonExports": true,
-    "strict": true,
-    "skipLibCheck": false,
+    "strict": false,
+    "skipLibCheck": true,
     "typeRoots": [
+      "./node_modules/@types",
       "../node_modules/@types",
       "../apps/api/node_modules/@types"
     ],

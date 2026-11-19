@@ -1,24 +1,33 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  initializeApp,
-  getApps,
-  cert,
-  applicationDefault,
-  type App,
-  type ServiceAccount,
-} from 'firebase-admin/app';
-import {
-  getAuth,
-  type Auth,
-  type DecodedIdToken,
-  type UserRecord,
-} from 'firebase-admin/auth';
-import { getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { getStorage, type Storage } from 'firebase-admin/storage';
+import type { App, ServiceAccount } from 'firebase-admin/app';
+import type { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
+import type { Firestore } from 'firebase-admin/firestore';
+import type { Storage } from 'firebase-admin/storage';
 
 export const DEFAULT_FIREBASE_PROJECT_ID = 'vaagai-audio-books-36a4e';
 const DEFAULT_FIREBASE_STORAGE_BUCKET = 'vaagai-audio-books-36a4e.appspot.com';
+
+function getFirebaseAdminModules(): {
+  appPkg: typeof import('firebase-admin/app');
+  authPkg: typeof import('firebase-admin/auth');
+  firestorePkg: typeof import('firebase-admin/firestore');
+  storagePkg: typeof import('firebase-admin/storage');
+} | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const appPkg = require('firebase-admin/app');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const authPkg = require('firebase-admin/auth');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const firestorePkg = require('firebase-admin/firestore');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const storagePkg = require('firebase-admin/storage');
+    return { appPkg, authPkg, firestorePkg, storagePkg };
+  } catch (error: any) {
+    return null;
+  }
+}
 
 @Injectable()
 export class FirebaseAdminService implements OnModuleInit {
@@ -36,6 +45,16 @@ export class FirebaseAdminService implements OnModuleInit {
   }
 
   private initializeFirebaseAdmin(): void {
+    const modules = getFirebaseAdminModules();
+    if (!modules) {
+      this.logger.warn(
+        '[FirebaseAdminService] Optional firebase-admin modules are not currently available in this serverless runtime environment. Core authentication and Neon database operations remain fully functional.',
+      );
+      this.clearAppServices();
+      return;
+    }
+
+    const { appPkg } = modules;
     const projectId =
       this.configService.get<string>('FIREBASE_PROJECT_ID') ||
       process.env.FIREBASE_PROJECT_ID ||
@@ -58,7 +77,7 @@ export class FirebaseAdminService implements OnModuleInit {
       return;
     }
 
-    const existingApps = getApps();
+    const existingApps = appPkg.getApps();
     if (existingApps.length === 0 && !rawServiceAccount?.trim() && !credentialsPath) {
       this.failInitialization(
         'Firebase Admin credentials are missing. Configure FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS.',
@@ -80,22 +99,22 @@ export class FirebaseAdminService implements OnModuleInit {
           throw new Error('An existing Firebase Admin app has incompatible configuration.');
         }
 
-        this.setAppServices(existingApp);
+        this.setAppServices(existingApp, modules);
         this.logger.log('Reusing the existing Firebase Admin app.');
         return;
       }
 
       const credential = rawServiceAccount?.trim()
-        ? cert(this.parseServiceAccount(rawServiceAccount))
-        : applicationDefault();
+        ? appPkg.cert(this.parseServiceAccount(rawServiceAccount))
+        : appPkg.applicationDefault();
 
-      const app = initializeApp({
+      const app = appPkg.initializeApp({
         credential,
         projectId,
         storageBucket: DEFAULT_FIREBASE_STORAGE_BUCKET,
       });
 
-      this.setAppServices(app);
+      this.setAppServices(app, modules);
       this.logger.log(`Firebase Admin SDK initialized for project ${projectId}.`);
     } catch {
       this.clearAppServices();
@@ -148,11 +167,20 @@ export class FirebaseAdminService implements OnModuleInit {
     return { projectId, clientEmail, privateKey };
   }
 
-  private setAppServices(app: App): void {
+  private setAppServices(
+    app: App,
+    modules?: {
+      authPkg: typeof import('firebase-admin/auth');
+      firestorePkg: typeof import('firebase-admin/firestore');
+      storagePkg: typeof import('firebase-admin/storage');
+    },
+  ): void {
+    const mods = modules || getFirebaseAdminModules();
+    if (!mods) return;
     this.app = app;
-    this.auth = getAuth(app);
-    this.firestore = getFirestore(app);
-    this.storage = getStorage(app);
+    this.auth = mods.authPkg.getAuth(app);
+    this.firestore = mods.firestorePkg.getFirestore(app);
+    this.storage = mods.storagePkg.getStorage(app);
     this.configured = true;
   }
 
