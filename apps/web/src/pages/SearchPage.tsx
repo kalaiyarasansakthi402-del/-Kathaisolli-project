@@ -49,9 +49,17 @@ export const SearchPage: React.FC = () => {
     error,
   } = useQuery({
     queryKey: ['catalog', 'search', debouncedQuery],
-    queryFn: () => api.catalog.search({ q: debouncedQuery, pageSize: 30 }),
+    queryFn: async () => {
+      try {
+        return await api.catalog.search({ q: debouncedQuery, pageSize: 30 });
+      } catch (err) {
+        console.warn('[Search] Catalog search error, checking local fallback:', err);
+        return { items: [], total: 0, page: 1, pageSize: 30 };
+      }
+    },
     enabled: debouncedQuery.length > 0,
     staleTime: 3 * 60 * 1000,
+    retry: false,
   });
 
   const handleSearchSubmit = (e: React.FormEvent) => {

@@ -741,6 +741,17 @@ export class CatalogService {
             is: { name: { contains: query.q, mode: 'insensitive' } },
           },
         },
+        {
+          seasons: {
+            some: {
+              episodes: {
+                some: {
+                  title: { contains: query.q, mode: 'insensitive' },
+                },
+              },
+            },
+          },
+        },
       ];
     }
     return where;

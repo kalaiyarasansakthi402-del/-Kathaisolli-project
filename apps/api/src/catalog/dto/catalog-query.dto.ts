@@ -13,6 +13,9 @@ import { ContentType } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CatalogQueryDto {
+  @IsOptional()
+  path?: any;
+
   @ApiPropertyOptional({ description: 'Tamil or other catalog search text' })
   @IsOptional()
   @Transform(({ value }) =>

@@ -281,7 +281,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
     }),
   );
@@ -315,6 +315,11 @@ export default async function handler(req: Request, res: Response) {
     const qs = queryParams.toString();
     if (qs) {
       targetUrl = `${targetUrl}?${qs}`;
+    }
+
+    // Strip internal routing 'path' parameter so Express / Nest validation does not reject it
+    if ((req as any).query && 'path' in (req as any).query) {
+      delete (req as any).query.path;
     }
   } else {
     const originalUrlHeader =
