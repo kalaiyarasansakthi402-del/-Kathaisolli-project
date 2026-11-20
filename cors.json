@@ -1,7 +1,7 @@
 [
   {
     "origin": ["*"],
-    "method": ["GET", "HEAD", "OPTIONS"],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
     "responseHeader": [
       "Content-Type",
       "Content-Range",
@@ -9,7 +9,9 @@
       "Accept-Ranges",
       "Origin",
       "X-Requested-With",
-      "Access-Control-Allow-Origin"
+      "Access-Control-Allow-Origin",
+      "ETag",
+      "x-goog-resumable"
     ],
     "maxAgeSeconds": 3600
   }

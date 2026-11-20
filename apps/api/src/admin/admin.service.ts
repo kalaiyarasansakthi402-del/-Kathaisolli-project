@@ -27,6 +27,18 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetUserPasswordDto } from './dto/reset-user-password.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(val?: string | null): boolean {
+  return typeof val === 'string' && UUID_REGEX.test(val.trim());
+}
+
+function formatMediaUrl(objectKey?: string | null): string {
+  if (!objectKey) return '';
+  if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) return objectKey;
+  const bucket = process.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com';
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
+}
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -324,7 +336,7 @@ export class AdminService {
             title: ep.title,
             durationSec: ep.durationSec || 0,
             fileSizeBytes: ep.mediaAsset ? Number(ep.mediaAsset.sizeBytes) : 0,
-            audioUrl: ep.mediaAsset?.objectKey || null,
+            audioUrl: formatMediaUrl(ep.mediaAsset?.objectKey),
             status: ep.status,
           });
         }
@@ -365,10 +377,12 @@ export class AdminService {
   }
 
   async getStory(id: string) {
+    const storyWhere: Prisma.SeriesWhereInput = isUuid(id)
+      ? { OR: [{ id }, { slug: id }] }
+      : { slug: id };
+
     const story = await this.prisma.series.findFirst({
-      where: {
-        OR: [{ id: id }, { slug: id }],
-      },
+      where: storyWhere,
       include: {
         category: true,
         language: true,
@@ -397,7 +411,7 @@ export class AdminService {
         description: ep.description || '',
         durationSec: ep.durationSec || 0,
         fileSizeBytes: ep.mediaAsset ? Number(ep.mediaAsset.sizeBytes) : 0,
-        audioUrl: ep.mediaAsset?.objectKey || '',
+        audioUrl: formatMediaUrl(ep.mediaAsset?.objectKey),
         status: ep.status,
         publishedAt: ep.publishedAt,
         createdAt: ep.createdAt,
@@ -428,11 +442,14 @@ export class AdminService {
   }
 
   async createStory(input: CreateStoryDto, actorId?: string) {
-    // 1. Resolve Category
+    // 1. Resolve Category safely without UUID cast error
+    const catVal = input.categoryId?.trim() || 'general';
+    const catWhere: Prisma.CategoryWhereInput = isUuid(catVal)
+      ? { OR: [{ id: catVal }, { slug: catVal.toLowerCase() }] }
+      : { slug: catVal.toLowerCase() };
+
     let category = await this.prisma.category.findFirst({
-      where: {
-        OR: [{ id: input.categoryId }, { slug: input.categoryId.toLowerCase() }],
-      },
+      where: catWhere,
     });
     if (!category) {
       category = await this.prisma.category.findFirst({
@@ -445,11 +462,14 @@ export class AdminService {
       }
     }
 
-    // 2. Resolve Language
+    // 2. Resolve Language safely without UUID cast error
+    const langVal = input.languageId?.trim() || 'ta';
+    const langWhere: Prisma.LanguageWhereInput = isUuid(langVal)
+      ? { OR: [{ id: langVal }, { code: langVal.toLowerCase() }] }
+      : { code: langVal.toLowerCase() };
+
     let language = await this.prisma.language.findFirst({
-      where: input.languageId
-        ? { OR: [{ id: input.languageId }, { code: input.languageId.toLowerCase() }] }
-        : { code: 'ta' },
+      where: langWhere,
     });
     if (!language) {
       language = await this.prisma.language.findFirst({ where: { code: 'ta' } });
@@ -519,8 +539,12 @@ export class AdminService {
   }
 
   async updateStory(id: string, input: UpdateStoryDto, actorId?: string) {
+    const storyWhere: Prisma.SeriesWhereInput = isUuid(id)
+      ? { OR: [{ id }, { slug: id }] }
+      : { slug: id };
+
     const existing = await this.prisma.series.findFirst({
-      where: { OR: [{ id }, { slug: id }] },
+      where: storyWhere,
     });
     if (!existing) {
       throw new NotFoundException(`Story "${id}" not found.`);
@@ -537,19 +561,25 @@ export class AdminService {
     if (input.tags !== undefined) data.tags = input.tags;
 
     if (input.categoryId) {
+      const catVal = input.categoryId.trim();
+      const catWhere: Prisma.CategoryWhereInput = isUuid(catVal)
+        ? { OR: [{ id: catVal }, { slug: catVal.toLowerCase() }] }
+        : { slug: catVal.toLowerCase() };
+
       const cat = await this.prisma.category.findFirst({
-        where: {
-          OR: [{ id: input.categoryId }, { slug: input.categoryId.toLowerCase() }],
-        },
+        where: catWhere,
       });
       if (cat) data.category = { connect: { id: cat.id } };
     }
 
     if (input.languageId) {
+      const langVal = input.languageId.trim();
+      const langWhere: Prisma.LanguageWhereInput = isUuid(langVal)
+        ? { OR: [{ id: langVal }, { code: langVal.toLowerCase() }] }
+        : { code: langVal.toLowerCase() };
+
       const lang = await this.prisma.language.findFirst({
-        where: {
-          OR: [{ id: input.languageId }, { code: input.languageId.toLowerCase() }],
-        },
+        where: langWhere,
       });
       if (lang) data.language = { connect: { id: lang.id } };
     }
@@ -579,8 +609,12 @@ export class AdminService {
   }
 
   async deleteStory(id: string, actorId?: string) {
+    const storyWhere: Prisma.SeriesWhereInput = isUuid(id)
+      ? { OR: [{ id }, { slug: id }] }
+      : { slug: id };
+
     const story = await this.prisma.series.findFirst({
-      where: { OR: [{ id }, { slug: id }] },
+      where: storyWhere,
       select: { id: true, title: true },
     });
     if (!story) {
@@ -600,8 +634,12 @@ export class AdminService {
   }
 
   async toggleStoryPublish(id: string, actorId?: string) {
+    const storyWhere: Prisma.SeriesWhereInput = isUuid(id)
+      ? { OR: [{ id }, { slug: id }] }
+      : { slug: id };
+
     const story = await this.prisma.series.findFirst({
-      where: { OR: [{ id }, { slug: id }] },
+      where: storyWhere,
       select: { id: true, title: true, status: true },
     });
     if (!story) {
@@ -648,8 +686,12 @@ export class AdminService {
   // 4. CHAPTER & AUDIO MANAGEMENT
   // ==========================================
   async createChapter(storyId: string, input: CreateChapterDto, actorId?: string) {
+    const storyWhere: Prisma.SeriesWhereInput = isUuid(storyId)
+      ? { OR: [{ id: storyId }, { slug: storyId }] }
+      : { slug: storyId };
+
     const story = await this.prisma.series.findFirst({
-      where: { OR: [{ id: storyId }, { slug: storyId }] },
+      where: storyWhere,
       include: { seasons: { orderBy: { number: 'asc' }, take: 1 } },
     });
     if (!story) {
@@ -780,13 +822,17 @@ export class AdminService {
       throw new NotFoundException(`Chapter "${chapterId}" not found.`);
     }
 
-    const objectKey = input.storagePath || input.audioUrl;
+    const defaultStoragePath = `kathaisolli/books/${storyId}/chapters/${chapterId}.mp3`;
+    const rawKey = input.storagePath?.trim() || defaultStoragePath;
+    // Bound objectKey length to maximum 500 characters so it never exceeds DB column limit
+    const objectKey = rawKey.length > 500 ? rawKey.slice(0, 500) : rawKey;
     const sizeBytes = BigInt(input.fileSizeBytes || 0);
     const durationSec = input.durationSec || 0;
 
     let mediaAssetId = episode.mediaAssetId;
 
     if (mediaAssetId) {
+      // Update existing media asset linked to this episode
       await this.prisma.mediaAsset.update({
         where: { id: mediaAssetId },
         data: {
@@ -798,20 +844,27 @@ export class AdminService {
         },
       });
     } else {
-      // Check if media asset with this objectKey already exists
+      // Check if media asset with this objectKey already exists in DB
       const existingAsset = await this.prisma.mediaAsset.findUnique({
         where: { objectKey },
+        include: { episode: true },
       });
-      if (existingAsset) {
+
+      if (existingAsset && (!existingAsset.episode || existingAsset.episode.id === chapterId)) {
         mediaAssetId = existingAsset.id;
         await this.prisma.mediaAsset.update({
           where: { id: mediaAssetId },
           data: { sizeBytes, durationSec, isProcessed: true },
         });
       } else {
+        // Scoped unique key if previous key belonged to another episode
+        const uniqueKey = existingAsset
+          ? `${objectKey.replace(/\.mp3$/i, '')}-${chapterId.slice(0, 8)}.mp3`
+          : objectKey;
+
         const created = await this.prisma.mediaAsset.create({
           data: {
-            objectKey,
+            objectKey: uniqueKey,
             contentType: 'audio/mpeg',
             sizeBytes,
             durationSec,
@@ -847,7 +900,7 @@ export class AdminService {
         id: updated.id,
         title: updated.title,
         durationSec: updated.durationSec,
-        audioUrl: input.audioUrl,
+        audioUrl: formatMediaUrl(input.audioUrl || objectKey),
         storagePath: objectKey,
         fileSizeBytes: input.fileSizeBytes,
         status: updated.status,

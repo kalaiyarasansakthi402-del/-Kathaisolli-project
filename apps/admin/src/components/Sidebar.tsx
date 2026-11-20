@@ -49,7 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       end: true,
     },
     {
-      to: '/admin/stories/new',
+      to: '/admin/books/new',
       label: 'Upload Book',
       sublabel: 'புதிய கதை',
       icon: BookOpen,
