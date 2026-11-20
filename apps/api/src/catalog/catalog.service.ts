@@ -47,6 +47,13 @@ const publiclyAccessibleSeries: Prisma.SeriesWhereInput = {
   },
 };
 
+function formatMediaUrl(objectKey?: string | null): string {
+  if (!objectKey) return '';
+  if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) return objectKey;
+  const bucket = process.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com';
+  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
+}
+
 @Injectable()
 export class CatalogService {
   constructor(
@@ -112,6 +119,11 @@ export class CatalogService {
                 previewDuration: true,
                 premiumFlag: true,
                 releaseDate: true,
+                mediaAsset: {
+                  select: {
+                    objectKey: true,
+                  },
+                },
               },
             },
           },
@@ -122,10 +134,21 @@ export class CatalogService {
     if (!series) {
       throw new NotFoundException('Story series not found.');
     }
+    const formattedSeries = {
+      ...series,
+      seasons: series.seasons.map((season) => ({
+        ...season,
+        episodes: season.episodes.map((ep) => ({
+          ...ep,
+          audioUrl: formatMediaUrl(ep.mediaAsset?.objectKey),
+        })),
+      })),
+    };
+
     if (this.cache) {
-      await this.cache.set(cacheKey, series, 300);
+      await this.cache.set(cacheKey, formattedSeries, 300);
     }
-    return series;
+    return formattedSeries;
   }
 
   async listEpisodes(slug: string) {
@@ -173,14 +196,28 @@ export class CatalogService {
             previewDuration: true,
             premiumFlag: true,
             releaseDate: true,
+            mediaAsset: {
+              select: {
+                objectKey: true,
+              },
+            },
           },
         },
       },
     });
+
+    const formattedEpisodes = episodes.map((season) => ({
+      ...season,
+      episodes: season.episodes.map((ep) => ({
+        ...ep,
+        audioUrl: formatMediaUrl(ep.mediaAsset?.objectKey),
+      })),
+    }));
+
     if (this.cache) {
-      await this.cache.set(cacheKey, episodes, 300);
+      await this.cache.set(cacheKey, formattedEpisodes, 300);
     }
-    return episodes;
+    return formattedEpisodes;
   }
 
   async getHome() {

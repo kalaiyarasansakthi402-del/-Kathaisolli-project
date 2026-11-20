@@ -141,6 +141,10 @@ export class S3ObjectStorageService
     if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) {
       return objectKey;
     }
+    if (objectKey.startsWith('kathaisolli/') || objectKey.includes('firebasestorage')) {
+      const bucket = this.config.get<string>('VITE_FIREBASE_STORAGE_BUCKET') || 'vaagai-audio-books-36a4e.appspot.com';
+      return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
+    }
     try {
       return await getSignedUrl(
         this.client,

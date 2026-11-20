@@ -69,7 +69,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [narratorName, setNarratorName] = useState('By Anzles Studio');
   const [categoryId, setCategoryId] = useState('');
   const [languageId, setLanguageId] = useState('ta');
-  const [storyStatus, setStoryStatus] = useState<'DRAFT' | 'PUBLISHED'>('DRAFT');
+  const [storyStatus, setStoryStatus] = useState<'DRAFT' | 'PUBLISHED'>('PUBLISHED');
 
   // Cover Image
   const [coverFile, setCoverFile] = useState<File | null>(null);

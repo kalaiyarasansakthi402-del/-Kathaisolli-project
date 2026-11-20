@@ -96,8 +96,19 @@ export const AudioPlayer: React.FC = () => {
               onClick={toggleCollapse}
               title="பிளேயரை விரிவாக்கு (Click to expand)"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#0A261D] flex items-center justify-center flex-shrink-0 border border-[#145642]">
-                <Headphones className="w-4 h-4 text-[#A7F3D0]" />
+              <div className="w-8 h-8 rounded-lg bg-[#0A261D] flex items-center justify-center flex-shrink-0 border border-[#145642] overflow-hidden">
+                {currentTrack.coverImage || currentTrack.coverImageUrl ? (
+                  <img
+                    src={(currentTrack.coverImage || currentTrack.coverImageUrl) ?? undefined}
+                    alt={currentTrack.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <Headphones className="w-4 h-4 text-[#A7F3D0]" />
+                )}
               </div>
               <div className="min-w-0 flex items-center gap-2">
                 <span className="text-xs font-semibold truncate font-tamil text-white group-hover:text-[#A7F3D0]">
@@ -163,8 +174,19 @@ export const AudioPlayer: React.FC = () => {
               onClick={handleOpenPlayer}
               title="Click to expand player"
             >
-              <div className="w-12 h-12 rounded-xl bg-[#0A261D] flex items-center justify-center flex-shrink-0 shadow-md border border-[#145642] group-hover:scale-105 transition-transform">
-                <Headphones className="w-6 h-6 text-[#A7F3D0]" />
+              <div className="w-12 h-12 rounded-xl bg-[#0A261D] flex items-center justify-center flex-shrink-0 shadow-md border border-[#145642] group-hover:scale-105 transition-transform overflow-hidden">
+                {currentTrack.coverImage || currentTrack.coverImageUrl ? (
+                  <img
+                    src={(currentTrack.coverImage || currentTrack.coverImageUrl) ?? undefined}
+                    alt={currentTrack.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <Headphones className="w-6 h-6 text-[#A7F3D0]" />
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate font-tamil text-white group-hover:text-[#A7F3D0] transition-colors">

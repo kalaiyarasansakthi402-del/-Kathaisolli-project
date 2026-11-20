@@ -1,23 +1,102 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Sparkles,
+  Search,
   Headphones,
   BookOpen,
+  Star,
   ArrowRight,
   Infinity,
   Flame,
   Landmark,
   Layers,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { COMPLETE_LIBRARY_CATALOG } from '../data/libraryCatalog';
 
 export const HomePage: React.FC = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, api } = useAuth();
+  const [homeSearchQuery, setHomeSearchQuery] = useState('');
+
+  const { data: apiHome } = useQuery({
+    queryKey: ['catalog', 'home-preview'],
+    queryFn: async () => {
+      try {
+        return await api.catalog.getHome();
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  const featuredStories = useMemo(() => {
+    // 1. Gather all published stories from API (both featured and latest)
+    const rawApi = [
+      ...((apiHome as any)?.featured || []),
+      ...((apiHome as any)?.latest || []),
+      ...((apiHome as any)?.collections?.[0]?.items || []),
+    ];
+
+    const seen = new Set<string>();
+    const apiStories: any[] = [];
+    for (const s of rawApi) {
+      const key = s.slug || s.id;
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        apiStories.push({
+          id: s.id,
+          slug: s.slug || s.id,
+          title: s.title,
+          coverImage: s.coverImage || s.coverImageUrl,
+          coverImageUrl: s.coverImage || s.coverImageUrl,
+          authorName: s.authorName || 'குகநாதன்',
+          category: s.category?.name || 'வரலாறு',
+          durationMinutes: Math.max(5, Math.round((s.totalDurationSeconds || 600) / 60)),
+        });
+      }
+    }
+
+    // 2. Curated standard library catalog fallback
+    const sampleStories = COMPLETE_LIBRARY_CATALOG.map((book) => ({
+      id: book.id,
+      slug: book.slug,
+      title: book.tamilTitle ? `${book.tamilTitle} (${book.title})` : book.title,
+      coverImage: book.coverImageUrl,
+      coverImageUrl: book.coverImageUrl,
+      authorName: book.authorName,
+      category: book.category,
+      durationMinutes: Math.max(5, Math.round((book.totalDurationSeconds || 600) / 60)),
+    }));
+
+    if (apiStories.length > 0) {
+      const remainingNeeded = Math.max(0, 6 - apiStories.length);
+      const filteredSamples = sampleStories
+        .filter((sample) => !seen.has(sample.slug) && !seen.has(sample.id))
+        .slice(0, remainingNeeded);
+      return [...apiStories.slice(0, 6), ...filteredSamples];
+    }
+
+    return sampleStories.slice(0, 6);
+  }, [apiHome]);
+
+  const handleHomeSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = homeSearchQuery.trim();
+    if (trimmed) {
+      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+    } else {
+      navigate('/categories');
+    }
+  };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors py-6 sm:py-10">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-10">
         
         {/* ========================================================================= */}
         {/* VIEW 1: FIRST-TIME VISIT (GUEST VIEW) — WHEN USER IS NOT LOGGED IN         */}
@@ -39,14 +118,8 @@ export const HomePage: React.FC = () => {
                   <p className="text-2xl sm:text-3xl font-bold font-tamil text-[#FDE047] mt-1">
                     கதைசொல்லி
                   </p>
-                  <p className="text-base sm:text-xl font-medium text-[#A7F3D0] mt-2 tracking-wide flex items-center gap-2">
-                    <span>Tamil Audiobooks for Every Reader</span>
-                    <span className="inline-flex items-center gap-0.5 text-[#34D399]" aria-hidden="true">
-                      <span className="w-0.5 h-2.5 bg-current rounded-full animate-pulse" />
-                      <span className="w-0.5 h-4 bg-current rounded-full" />
-                      <span className="w-0.5 h-2 bg-current rounded-full" />
-                      <span className="w-0.5 h-3 bg-current rounded-full animate-pulse" />
-                    </span>
+                  <p className="text-base sm:text-xl font-medium text-[#A7F3D0] mt-2 tracking-wide">
+                    Tamil Audiobooks for Every Reader
                   </p>
                 </div>
 
@@ -83,25 +156,17 @@ export const HomePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column: Cartoon Child Reading Magical Storybook */}
-              <div className="lg:col-span-5 flex justify-center lg:justify-end items-center w-full">
-                <div className="relative w-full max-w-[380px] sm:max-w-[440px] lg:max-w-[480px] group">
-                  <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-white/90 bg-[#064E3B] transition-transform duration-300 group-hover:scale-[1.02]">
-                    <img
-                      src="/images/hero-storybook-child.png"
-                      alt="Child reading magical Tamil audiobook storybook with enchanted castle and forest"
-                      className="w-full h-auto object-contain block drop-shadow-md"
-                      loading="eager"
-                      fetchPriority="high"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (!target.dataset.fallback) {
-                          target.dataset.fallback = '1';
-                          target.src = '/hero-storybook-child.png';
-                        }
-                      }}
-                    />
-                  </div>
+              {/* Right Column: Joyful Mascot & Audio Visual (Matching View 1) */}
+              <div className="lg:col-span-5 flex justify-center items-center">
+                <div className="relative group">
+                  <img
+                    src="/3.png"
+                    alt="Kathaisolli Storytelling Mascot"
+                    className="w-full max-w-[340px] sm:max-w-[420px] h-auto object-contain drop-shadow-2xl rounded-2xl transform group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/mascot.png';
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -132,20 +197,14 @@ export const HomePage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-5 flex justify-center lg:justify-end items-center w-full">
-                  <div className="relative w-full max-w-[360px] sm:max-w-[420px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border-2 border-white/80 bg-[#064E3B] transition-transform duration-300 hover:scale-[1.02]">
+                <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                  <div className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-white/10">
                     <img
-                      src="/images/hero-storybook-child.png"
-                      alt="Child reading magical Tamil audiobook storybook"
-                      className="w-full h-auto object-contain block drop-shadow-md"
-                      loading="eager"
-                      fetchPriority="high"
+                      src="/images/story-books-stack.jpg"
+                      alt="Tamil Audiobooks Stack"
+                      className="w-full h-48 sm:h-56 object-cover"
                       onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        if (!target.dataset.fallback) {
-                          target.dataset.fallback = '1';
-                          target.src = '/hero-storybook-child.png';
-                        }
+                        (e.target as HTMLImageElement).src = '/3.png';
                       }}
                     />
                   </div>
@@ -240,6 +299,118 @@ export const HomePage: React.FC = () => {
             </section>
           </div>
         )}
+
+        {/* ========================================================================= */}
+        {/* SHARED SECTION: FEATURED AUDIOBOOKS CATALOG                               */}
+        {/* ========================================================================= */}
+        <section className="pt-4 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#E3DCBA] dark:border-[#0F4738] pb-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#166534] dark:text-[#A7F3D0]">
+                <Sparkles className="w-3.5 h-3.5 text-[#F59E0B]" />
+                <span>Featured Audiobooks</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-black font-serif text-[#064E3B] dark:text-[#F8F5E9]">
+                சிறப்பு தமிழ் கதைகள் (Popular Audiobooks)
+              </h2>
+            </div>
+
+            <form
+              onSubmit={handleHomeSearch}
+              className="flex items-center gap-2 w-full md:w-auto md:min-w-[280px]"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                <input
+                  type="search"
+                  value={homeSearchQuery}
+                  onChange={(e) => setHomeSearchQuery(e.target.value)}
+                  placeholder="Search books..."
+                  aria-label="Search featured stories"
+                  className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm rounded-full bg-white dark:bg-[#073224] border border-[#DDD5C0] dark:border-[#0E4738] focus:border-[#064E3B] focus:ring-1 focus:ring-[#064E3B] outline-none text-stone-800 dark:text-stone-100"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white text-xs sm:text-sm font-bold transition-colors shrink-0"
+              >
+                Search
+              </button>
+            </form>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+            {featuredStories.map((story) => (
+              <Link
+                key={story.id}
+                to={`/stories/${story.slug}`}
+                className="group flex flex-col justify-between rounded-2xl bg-white dark:bg-[#083325] border border-[#E3DCBA] dark:border-[#124835] overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+              >
+                {/* Cover Art Banner */}
+                <div className="relative h-44 bg-gradient-to-br from-[#064E3B] to-[#02281D] overflow-hidden flex items-center justify-center">
+                  {story.coverImage || story.coverImageUrl ? (
+                    <img
+                      src={story.coverImage || story.coverImageUrl}
+                      alt={story.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="text-center p-4 text-emerald-200/60">
+                      <BookOpen className="w-10 h-10 mx-auto mb-1 stroke-1" />
+                      <span className="text-xs font-serif font-bold">கதைசொல்லி</span>
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3">
+                    <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-white shadow-sm border border-white/20">
+                      {story.category}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8F0E2] dark:bg-[#032419] px-3 py-1 text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0]">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span className="truncate max-w-[140px]">{story.category}</span>
+                      </span>
+                      <span className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                        <Star className="w-3.5 h-3.5 fill-current" />
+                        4.9
+                      </span>
+                    </div>
+                    <h3 className="font-bold font-serif text-base sm:text-lg leading-snug text-[#064E3B] dark:text-[#F8F5E9] group-hover:text-[#166534] transition-colors line-clamp-2">
+                      {story.title}
+                    </h3>
+                    <p className="text-xs font-medium text-stone-600 dark:text-stone-300 line-clamp-1">
+                      {story.authorName}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#E3DCBA]/60 dark:border-[#124835] flex items-center justify-between text-xs font-semibold text-[#064E3B] dark:text-[#A7F3D0]">
+                    <span className="flex items-center gap-1.5 text-stone-500 dark:text-stone-400">
+                      <Headphones className="w-3.5 h-3.5 text-[#166534] dark:text-emerald-400" />
+                      {story.durationMinutes} mins · Free
+                    </span>
+                    <span className="inline-flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                      Listen Now <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex justify-center pt-4">
+            <Link
+              to="/categories"
+              className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-xs sm:text-sm shadow-md hover:scale-[1.02] transition-all"
+            >
+              <span>Explore All Categories & Stories</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </section>
       </div>
     </div>
   );
