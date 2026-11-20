@@ -13,6 +13,7 @@ import {
   LogOut,
   X,
   Sparkles,
+  PlusCircle,
 } from 'lucide-react';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
@@ -66,6 +67,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       label: 'Chapters',
       sublabel: 'அத்தியாயங்கள்',
       icon: FileText,
+      allowed: permissions.canManageStories,
+    },
+    {
+      to: '/admin/stories/new',
+      label: 'Create Story & Upload Audio',
+      sublabel: 'புதிய கதை உருவாக்கம் & ஆடியோ',
+      icon: PlusCircle,
+      isProminent: true,
       allowed: permissions.canManageStories,
     },
     {
@@ -158,6 +167,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             {navItems.map((item) => {
               if (!item.allowed) return null;
               const Icon = item.icon;
+              if (item.isProminent) {
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    onClick={() => onClose && onClose()}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2.5 px-3.5 py-2.5 my-2 rounded-2xl text-xs font-bold transition-all shadow-md ${
+                        isActive
+                          ? 'bg-emerald-500 text-white ring-2 ring-emerald-300'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:shadow-lg'
+                      }`
+                    }
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-white" />
+                    <span className="truncate">{item.label}</span>
+                  </NavLink>
+                );
+              }
               return (
                 <NavLink
                   key={item.to}

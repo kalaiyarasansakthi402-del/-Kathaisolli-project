@@ -202,15 +202,25 @@ export const AdminAudioUploadPage: React.FC = () => {
           </p>
         </div>
 
-        {selectedStoryId && (
-          <button
-            onClick={() => navigate(`/admin/stories/${selectedStoryId}/chapters`)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#064E3B] hover:bg-[#047857] text-white font-bold text-xs sm:text-sm shadow-md transition-all hover:scale-105 shrink-0"
+        <div className="flex items-center gap-3">
+          <Link
+            to="/admin/stories/new"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-800 to-[#064E3B] hover:from-emerald-700 hover:to-emerald-800 text-white font-bold text-xs sm:text-sm shadow-md transition-all hover:scale-105 shrink-0"
           >
-            <FolderOpen className="w-4 h-4" />
-            <span>முழு அத்தியாயங்கள் பட்டியல் காண்க</span>
-          </button>
-        )}
+            <Plus className="w-4 h-4" />
+            <span className="font-tamil">புதிய கதை & ஆடியோ (Unified)</span>
+          </Link>
+
+          {selectedStoryId && (
+            <button
+              onClick={() => navigate(`/admin/stories/${selectedStoryId}/chapters`)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs sm:text-sm shadow-sm transition-all shrink-0"
+            >
+              <FolderOpen className="w-4 h-4" />
+              <span>அத்தியாயங்கள்</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Active Audio Preview */}

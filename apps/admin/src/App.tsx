@@ -44,6 +44,9 @@ const AdminBooksPage = lazyWithRetry(() =>
 const CreateBookPage = lazyWithRetry(() =>
   import('./pages/CreateBookPage').then((m) => ({ default: m.CreateBookPage }))
 );
+const CreateStoryUnifiedPage = lazyWithRetry(() =>
+  import('./pages/CreateStoryUnifiedPage').then((m) => ({ default: m.CreateStoryUnifiedPage }))
+);
 
 // Module 5: Category Management
 const AdminCategoriesPage = lazyWithRetry(() =>
@@ -157,12 +160,14 @@ export const App: React.FC = () => {
               <Route path="/admin/stories" element={<AdminBooksPage />} />
               <Route path="/admin/books" element={<AdminBooksPage />} />
               <Route path="/books" element={<Navigate to="/admin/stories" replace />} />
-              <Route path="/admin/stories/new" element={<CreateBookPage />} />
-              <Route path="/admin/books/new" element={<CreateBookPage />} />
-              <Route path="/admin/books/create" element={<CreateBookPage />} />
+              <Route path="/admin/stories/new" element={<CreateStoryUnifiedPage />} />
+              <Route path="/admin/create-story-audio" element={<CreateStoryUnifiedPage />} />
+              <Route path="/admin/create-story" element={<CreateStoryUnifiedPage />} />
+              <Route path="/admin/books/new" element={<CreateStoryUnifiedPage />} />
+              <Route path="/admin/books/create" element={<CreateStoryUnifiedPage />} />
               <Route path="/books/new" element={<Navigate to="/admin/stories/new" replace />} />
-              <Route path="/admin/stories/:bookId" element={<CreateBookPage />} />
-              <Route path="/admin/books/:bookId" element={<CreateBookPage />} />
+              <Route path="/admin/stories/:bookId" element={<CreateStoryUnifiedPage />} />
+              <Route path="/admin/books/:bookId" element={<CreateStoryUnifiedPage />} />
               <Route path="/admin/stories/:bookId/chapters" element={<AdminBookChaptersPage />} />
               <Route path="/admin/books/:bookId/chapters" element={<AdminBookChaptersPage />} />
               <Route path="/books/:bookId/chapters" element={<AdminBookChaptersPage />} />

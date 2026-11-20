@@ -23,7 +23,7 @@ const ROUTE_LABELS: Record<string, string> = {
   'audio-upload': 'ஆடியோ பதிவேற்றம் (Audiobook Upload)',
   stories: 'கதைகள் மேலாண்மை (Story Management)',
   books: 'கதைகள் மேலாண்மை (Story Management)',
-  new: 'புதிய கதை சேர் (Add Story)',
+  new: 'புதிய கதை உருவாக்கம் & ஆடியோ பதிவேற்றம்',
   chapters: 'அத்தியாயங்கள் மேலாண்மை (Chapters)',
   categories: 'வகைப்பாடுகள் (Category Management)',
   storage: 'ஆடியோ சேமிப்பகம் (Audio Storage)',
