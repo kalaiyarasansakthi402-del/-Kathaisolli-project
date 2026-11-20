@@ -141,10 +141,21 @@ export class S3ObjectStorageService
     if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) {
       return objectKey;
     }
-    if (objectKey.startsWith('kathaisolli/') || objectKey.includes('firebasestorage')) {
-      const bucket = this.config.get<string>('VITE_FIREBASE_STORAGE_BUCKET') || 'vaagai-audio-books-36a4e.appspot.com';
+    const bucket =
+      this.config.get<string>('VITE_FIREBASE_STORAGE_BUCKET') ||
+      this.config.get<string>('FIREBASE_STORAGE_BUCKET') ||
+      process.env.VITE_FIREBASE_STORAGE_BUCKET ||
+      process.env.FIREBASE_STORAGE_BUCKET ||
+      'vaagai-audio-books-36a4e.appspot.com';
+
+    if (
+      objectKey.startsWith('kathaisolli/') ||
+      objectKey.includes('firebasestorage') ||
+      !this.config.get<string>('AWS_ACCESS_KEY_ID')
+    ) {
       return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
     }
+
     try {
       return await getSignedUrl(
         this.client,
@@ -152,10 +163,7 @@ export class S3ObjectStorageService
         { expiresIn: expiresInSeconds },
       );
     } catch {
-      const endpoint = (
-        this.config.get<string>('S3_ENDPOINT') || 'https://s3.amazonaws.com'
-      ).replace(/\/+$/, '');
-      return `${endpoint}/${this.bucket}/${encodeURIComponent(objectKey)}`;
+      return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
     }
   }
 

@@ -158,6 +158,7 @@ export const ExplorePage: React.FC = () => {
       language: book.language === 'Tamil' ? 'தமிழ்' : book.language,
       totalEpisodes: book.totalEpisodes || book.chapters.length || 1,
       totalDurationSeconds: book.totalDurationSeconds,
+      firstEpisodeId: book.chapters[0]?.id,
       audioUrl: book.chapters[0]?.audioUrl,
       source: 'catalog',
     }));
@@ -177,7 +178,8 @@ export const ExplorePage: React.FC = () => {
       categoryName: s.category?.name || s.categoryName || 'General',
       language: typeof s.language === 'string' ? s.language : (s.language?.name || 'தமிழ்'),
       totalEpisodes: s.totalEpisodes || 1,
-      totalDurationSeconds: s.totalDurationSeconds || 600,
+      totalDurationSeconds: s.totalDurationSeconds || s.durationSec || 600,
+      firstEpisodeId: s.firstEpisodeId || s.seasons?.[0]?.episodes?.[0]?.id,
       audioUrl: s.audioUrl,
       source: 'api',
     }));
@@ -497,6 +499,7 @@ export const ExplorePage: React.FC = () => {
               language={story.language}
               totalEpisodes={story.totalEpisodes}
               totalDurationSeconds={story.totalDurationSeconds}
+              firstEpisodeId={story.firstEpisodeId}
               audioUrl={story.audioUrl}
             />
           ))}

@@ -235,8 +235,15 @@ export const CategoriesPage: React.FC = () => {
       categoryName: s.category?.name || s.categoryName || 'General',
       language: typeof s.language === 'string' ? s.language : s.language?.name || 'Tamil',
       totalEpisodes: s.totalEpisodes || 1,
-      totalDurationSeconds: s.totalDurationSeconds || 600,
-      audioUrl: s.audioUrl,
+      totalDurationSeconds: s.totalDurationSeconds || s.durationSec || 600,
+      firstEpisodeId: s.firstEpisodeId || s.seasons?.[0]?.episodes?.[0]?.id,
+      audioUrl:
+        s.audioUrl ||
+        (s.seasons?.[0]?.episodes?.[0]?.mediaAsset?.objectKey
+          ? `https://firebasestorage.googleapis.com/v0/b/vaagai-audio-books-36a4e.appspot.com/o/${encodeURIComponent(
+              s.seasons[0].episodes[0].mediaAsset.objectKey,
+            )}?alt=media`
+          : undefined),
       source: 'api',
       createdAt: s.createdAt || new Date().toISOString(),
     }));
@@ -254,6 +261,7 @@ export const CategoriesPage: React.FC = () => {
       language: book.language,
       totalEpisodes: book.totalEpisodes || book.chapters.length || 1,
       totalDurationSeconds: book.totalDurationSeconds,
+      firstEpisodeId: book.chapters[0]?.id,
       audioUrl: book.chapters[0]?.audioUrl,
       source: 'catalog',
       // Generate deterministic created date for sorting
@@ -478,6 +486,7 @@ export const CategoriesPage: React.FC = () => {
                 totalEpisodes={story.totalEpisodes}
                 totalDurationSeconds={story.totalDurationSeconds}
                 coverImageUrl={story.coverImageUrl}
+                firstEpisodeId={story.firstEpisodeId}
                 audioUrl={story.audioUrl}
               />
             ))}

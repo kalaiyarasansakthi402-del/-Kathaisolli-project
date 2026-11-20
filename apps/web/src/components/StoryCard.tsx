@@ -71,23 +71,22 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   const handlePlayClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (firstEpisodeId) {
-      playEpisode(firstEpisodeId, id);
-    } else {
-      playEpisode(
-        {
-          id: id || slug,
-          episodeId: id || slug,
-          title,
-          seriesId: id || slug,
-          seriesTitle: categoryName || 'Kathaisolli Story',
-          narratorName: authorName || 'By Anzles Studio',
-          durationSec: totalDurationSeconds || 300,
-          audioUrl,
-        },
-        id || slug,
-      );
-    }
+    const episodeIdentifier = firstEpisodeId || id || slug;
+    playEpisode(
+      {
+        id: episodeIdentifier,
+        episodeId: episodeIdentifier,
+        title,
+        seriesId: id || slug,
+        seriesTitle: categoryName || 'Kathaisolli Story',
+        narratorName: authorName || 'By Anzles Studio',
+        durationSec: totalDurationSeconds || 300,
+        coverImage: coverImage || coverImageUrl,
+        coverImageUrl: coverImage || coverImageUrl,
+        audioUrl: audioUrl || undefined,
+      },
+      id || slug,
+    );
   };
 
   const formattedDuration =

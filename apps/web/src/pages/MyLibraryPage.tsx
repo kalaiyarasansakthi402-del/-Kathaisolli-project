@@ -282,6 +282,8 @@ export const MyLibraryPage: React.FC = () => {
                 language={story.language}
                 totalEpisodes={story.totalEpisodes || 1}
                 totalDurationSeconds={story.totalDurationSeconds}
+                firstEpisodeId={story.firstEpisodeId || story.seasons?.[0]?.episodes?.[0]?.id}
+                audioUrl={story.audioUrl}
               />
             ))
           ) : (

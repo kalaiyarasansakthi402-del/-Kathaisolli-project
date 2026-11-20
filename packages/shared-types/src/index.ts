@@ -160,6 +160,10 @@ export interface Series {
   category?: Category;
   seasons?: Season[];
   creator?: User | null;
+  firstEpisodeId?: string | null;
+  audioUrl?: string | null;
+  durationSec?: number | null;
+  totalEpisodes?: number;
 }
 
 export interface PlaybackAuthResponse {

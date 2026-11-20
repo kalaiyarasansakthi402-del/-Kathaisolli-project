@@ -31,6 +31,33 @@ const seriesSelection = {
   publishedAt: true,
   language: { select: { code: true, name: true, nativeName: true } },
   category: { select: { slug: true, name: true } },
+  seasons: {
+    where: {
+      episodes: {
+        some: {
+          status: ContentStatus.PUBLISHED,
+          mediaAsset: { is: { isProcessed: true } },
+        },
+      },
+    },
+    orderBy: { number: 'asc' },
+    take: 1,
+    select: {
+      episodes: {
+        where: {
+          status: ContentStatus.PUBLISHED,
+          mediaAsset: { is: { isProcessed: true } },
+        },
+        orderBy: { episodeNumber: 'asc' },
+        take: 1,
+        select: {
+          id: true,
+          durationSec: true,
+          mediaAsset: { select: { objectKey: true } },
+        },
+      },
+    },
+  },
 } satisfies Prisma.SeriesSelect;
 
 const publiclyAccessibleSeries: Prisma.SeriesWhereInput = {
@@ -50,7 +77,10 @@ const publiclyAccessibleSeries: Prisma.SeriesWhereInput = {
 function formatMediaUrl(objectKey?: string | null): string {
   if (!objectKey) return '';
   if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) return objectKey;
-  const bucket = process.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com';
+  const bucket =
+    process.env.FIREBASE_STORAGE_BUCKET ||
+    process.env.VITE_FIREBASE_STORAGE_BUCKET ||
+    'vaagai-audio-books-36a4e.appspot.com';
   return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
 }
 
@@ -61,9 +91,21 @@ export class CatalogService {
     @Optional() private readonly cache?: CatalogCacheService,
   ) {}
 
+  private formatSeriesSummary(s: any) {
+    const firstEp = s.seasons?.[0]?.episodes?.[0];
+    return {
+      ...s,
+      firstEpisodeId: firstEp?.id || null,
+      audioUrl: firstEp?.mediaAsset?.objectKey
+        ? formatMediaUrl(firstEp.mediaAsset.objectKey)
+        : null,
+      durationSec: firstEp?.durationSec || null,
+    };
+  }
+
   async listSeries(query: CatalogQueryDto) {
     const where = this.buildPublicSeriesFilter(query);
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       this.prisma.series.findMany({
         where,
         select: seriesSelection,
@@ -74,6 +116,7 @@ export class CatalogService {
       this.prisma.series.count({ where }),
     ]);
 
+    const items = rawItems.map((s) => this.formatSeriesSummary(s));
     return this.pageResult(items, total, query);
   }
 
@@ -134,8 +177,14 @@ export class CatalogService {
     if (!series) {
       throw new NotFoundException('Story series not found.');
     }
+    const firstEp = series.seasons?.[0]?.episodes?.[0];
     const formattedSeries = {
       ...series,
+      firstEpisodeId: firstEp?.id || null,
+      audioUrl: firstEp?.mediaAsset?.objectKey
+        ? formatMediaUrl(firstEp.mediaAsset.objectKey)
+        : null,
+      durationSec: firstEp?.durationSec || null,
       seasons: series.seasons.map((season) => ({
         ...season,
         episodes: season.episodes.map((ep) => ({
@@ -249,7 +298,11 @@ export class CatalogService {
         select: { slug: true, name: true },
       }),
     ]);
-    const homeData = { featured, latest, categories };
+    const homeData = {
+      featured: featured.map((s) => this.formatSeriesSummary(s)),
+      latest: latest.map((s) => this.formatSeriesSummary(s)),
+      categories,
+    };
     if (this.cache) {
       await this.cache.set(cacheKey, homeData, 180);
     }

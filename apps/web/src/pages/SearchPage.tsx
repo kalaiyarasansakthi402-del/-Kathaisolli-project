@@ -100,6 +100,7 @@ export const SearchPage: React.FC = () => {
       category: { name: b.category },
       language: { nativeName: b.language === 'Tamil' ? 'தமிழ்' : b.language, name: b.language },
       totalEpisodes: b.totalEpisodes || b.chapters.length || 1,
+      firstEpisodeId: b.chapters[0]?.id,
       audioUrl: b.chapters[0]?.audioUrl,
     }));
   }, [debouncedQuery]);
@@ -198,7 +199,7 @@ export const SearchPage: React.FC = () => {
 
           {results.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-              {results.map((story) => (
+              {results.map((story: any) => (
                 <StoryCard
                   key={story.id}
                   id={story.id}
@@ -208,7 +209,10 @@ export const SearchPage: React.FC = () => {
                   coverImage={story.coverImage}
                   categoryName={story.category?.name}
                   language={story.language?.nativeName || story.language?.name}
-                  totalEpisodes={1}
+                  totalEpisodes={story.totalEpisodes || 1}
+                  totalDurationSeconds={story.totalDurationSeconds || story.durationSec}
+                  firstEpisodeId={story.firstEpisodeId || story.seasons?.[0]?.episodes?.[0]?.id}
+                  audioUrl={story.audioUrl}
                 />
               ))}
             </div>
