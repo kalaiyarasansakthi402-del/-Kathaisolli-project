@@ -104,9 +104,12 @@ const ProtectedLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FAF7EE] text-zinc-900 font-sans antialiased">
+    <div className="min-h-screen bg-[#FAF7EE] text-zinc-900 font-sans antialiased">
+      {/* Sidebar: Fixed on desktop, slide-over drawer on mobile/tablet */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
+
+      {/* Main Content Area: Offset by 256px on lg screens to prevent any overlap */}
+      <div className="lg:pl-64 flex flex-col min-h-screen min-w-0">
         <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
         <main className="flex-1 overflow-y-auto">
           <Suspense fallback={<RouteLoadingFallback />}>

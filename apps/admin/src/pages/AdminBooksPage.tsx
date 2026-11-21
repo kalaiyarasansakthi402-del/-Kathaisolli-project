@@ -208,7 +208,7 @@ export const AdminBooksPage: React.FC = () => {
 
       {/* Loading & Error States */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="h-64 rounded-3xl bg-gray-200 animate-pulse" />
           ))}
@@ -251,7 +251,7 @@ export const AdminBooksPage: React.FC = () => {
         </div>
       ) : (
         /* Stories Grid Cards */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
           {stories.map((story) => {
             const isPublished = story.status === 'PUBLISHED';
             return (
@@ -261,7 +261,7 @@ export const AdminBooksPage: React.FC = () => {
               >
                 <div>
                   {/* Card Header Banner & Cover */}
-                  <div className="relative h-44 bg-gradient-to-br from-emerald-900 to-emerald-950 overflow-hidden flex items-center justify-center">
+                  <div className="relative h-48 bg-gradient-to-br from-emerald-900 to-emerald-950 overflow-hidden flex items-center justify-center">
                     {story.coverImage || story.coverImageUrl ? (
                       <img
                         src={story.coverImage || story.coverImageUrl}
@@ -276,9 +276,9 @@ export const AdminBooksPage: React.FC = () => {
                     )}
 
                     {/* Status Pill Badge */}
-                    <div className="absolute top-3 left-3">
+                    <div className="absolute top-3 left-3 max-w-[62%]">
                       <span
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold tracking-wide shadow-md ${
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide shadow-md truncate ${
                           isPublished
                             ? 'bg-emerald-600 text-white'
                             : 'bg-gray-800 text-gray-200'
@@ -286,21 +286,21 @@ export const AdminBooksPage: React.FC = () => {
                       >
                         {isPublished ? (
                           <>
-                            <CheckCircle2 className="w-3 h-3 text-[#A7F3D0]" />
-                            <span>வெளியானது (Published)</span>
+                            <CheckCircle2 className="w-3 h-3 text-[#A7F3D0] shrink-0" />
+                            <span className="truncate">வெளியானது (Published)</span>
                           </>
                         ) : (
                           <>
-                            <Clock className="w-3 h-3 text-amber-300" />
-                            <span>வரைவு (Draft)</span>
+                            <Clock className="w-3 h-3 text-amber-300 shrink-0" />
+                            <span className="truncate">வரைவு (Draft)</span>
                           </>
                         )}
                       </span>
                     </div>
 
                     {/* Category Pill Badge */}
-                    <div className="absolute top-3 right-3">
-                      <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-white shadow-sm border border-white/20">
+                    <div className="absolute top-3 right-3 max-w-[35%]">
+                      <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-white shadow-sm border border-white/20 truncate block">
                         {story.categoryName || 'General'}
                       </span>
                     </div>
@@ -333,15 +333,15 @@ export const AdminBooksPage: React.FC = () => {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
+                <div className="p-3.5 sm:p-4 bg-gray-50/70 border-t border-gray-100 flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {/* Manage Chapters */}
                     <Link
                       to={`/admin/stories/${story.id}/chapters`}
-                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-gray-700 hover:text-[#064E3B] border border-gray-200 text-xs font-bold transition-colors shadow-sm flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-gray-700 hover:text-[#064E3B] border border-gray-200 text-xs font-bold transition-colors shadow-sm flex items-center gap-1 shrink-0"
                       title="அத்தியாயங்கள் மற்றும் ஆடியோ மேலாண்மை"
                     >
-                      <Headphones className="w-3.5 h-3.5 text-[#047857]" />
+                      <Headphones className="w-3.5 h-3.5 text-[#047857] shrink-0" />
                       <span>அத்தியாயங்கள்</span>
                     </Link>
 
@@ -349,7 +349,7 @@ export const AdminBooksPage: React.FC = () => {
                     {permissions.canManageStories && (
                       <Link
                         to={`/admin/stories/${story.id}`}
-                        className="p-1.5 rounded-xl bg-white hover:bg-gray-100 text-gray-600 border border-gray-200 transition-colors shadow-sm"
+                        className="p-1.5 rounded-xl bg-white hover:bg-gray-100 text-gray-600 border border-gray-200 transition-colors shadow-sm shrink-0"
                         title="விவரங்களைத் திருத்து (Edit)"
                       >
                         <Edit className="w-4 h-4" />
@@ -357,13 +357,13 @@ export const AdminBooksPage: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {/* Publish Toggle Button */}
                     {permissions.canManageStories && (
                       <button
                         onClick={() => togglePublishMutation.mutate(story.id)}
                         disabled={togglePublishMutation.isPending}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-sm ${
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-sm shrink-0 ${
                           isPublished
                             ? 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
                             : 'bg-[#064E3B] text-white hover:bg-[#047857]'
@@ -378,7 +378,7 @@ export const AdminBooksPage: React.FC = () => {
                       <button
                         onClick={() => handleDelete(story)}
                         disabled={deleteStoryMutation.isPending}
-                        className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors shrink-0"
                         title="நீக்கு (Delete)"
                       >
                         <Trash2 className="w-4 h-4" />
