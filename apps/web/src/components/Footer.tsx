@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Headphones, Heart, Leaf, ShieldCheck, Sparkles } from 'lucide-react';
+import { Heart, ShieldCheck } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -9,19 +9,21 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           {/* Brand info */}
           <div className="md:col-span-2 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#064E3B] text-white flex items-center justify-center border-2 border-[#D6A83F]/40 shadow-sm">
-                <Leaf className="w-5 h-5 text-[#A7F3D0] fill-current" />
-              </div>
-              <div>
-                <span className="text-2xl font-black font-serif text-[#064E3B] dark:text-[#A7F3D0]">
+            <Link to="/" className="inline-flex items-center gap-3 group">
+              <img
+                src="/mascot.png"
+                alt="Kathaisolli Mascot"
+                className="w-12 h-12 sm:w-14 sm:h-14 object-contain flex-shrink-0 group-hover:scale-105 transition-transform"
+              />
+              <div className="min-w-0">
+                <span className="text-2xl font-black font-serif text-[#064E3B] dark:text-[#A7F3D0] block leading-tight">
                   Kathaisolli
                 </span>
-                <span className="block text-xs font-semibold font-tamil text-[#166534] dark:text-[#E8F0E2]">
+                <span className="block text-xs font-semibold font-tamil text-[#166534] dark:text-[#E8F0E2] mt-0.5">
                   கற்றலின் கேட்டலே நன்று
                 </span>
               </div>
-            </div>
+            </Link>
             <p className="text-sm font-tamil text-[#173D2E]/80 dark:text-stone-300 max-w-md leading-relaxed">
               ஒவ்வொரு கதைக்கும் ஒரு குரல். தமிழ் கலாச்சாரம், வரலாறு, பஞ்சதந்திரம், நன்னெறி மற்றும் அறிவியலின் தலைசிறந்த ஆடியோ படைப்புகள். முற்றிலும் இலவசம்.
             </p>
