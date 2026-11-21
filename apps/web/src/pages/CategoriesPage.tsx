@@ -221,32 +221,49 @@ export const CategoriesPage: React.FC = () => {
     retry: false,
   });
 
+  // Helper to filter out unwanted test/draft cards from public Categories display
+  const isExcludedFromPublicCatalog = (item: any) => {
+    const titleLower = (item.title || '').toLowerCase();
+    const slugLower = (item.slug || '').toLowerCase();
+    const rawTamil = (item.rawTamil || '').toLowerCase();
+    return (
+      titleLower.includes('kalaiyarasan') ||
+      slugLower.includes('kalai') ||
+      rawTamil.includes('கலை') ||
+      titleLower.includes('periya puranam') ||
+      slugLower.includes('periya') ||
+      rawTamil.includes('பெரியபுராணம்')
+    );
+  };
+
   // Map complete database catalog
   const mappedCatalog = useMemo(() => {
-    // 1. From API items if available
-    const apiItems = (apiStoriesData?.items || []).map((s: any) => ({
-      id: s.id,
-      slug: s.slug || s.id,
-      title: s.title,
-      rawTamil: s.title,
-      rawEnglish: s.title,
-      authorName: s.authorName || 'By Anzles Studio',
-      coverImageUrl: s.coverImage || s.coverImageUrl || '/images/hero-art.jpg',
-      categoryName: s.category?.name || s.categoryName || 'General',
-      language: typeof s.language === 'string' ? s.language : s.language?.name || 'Tamil',
-      totalEpisodes: s.totalEpisodes || 1,
-      totalDurationSeconds: s.totalDurationSeconds || s.durationSec || 600,
-      firstEpisodeId: s.firstEpisodeId || s.seasons?.[0]?.episodes?.[0]?.id,
-      audioUrl:
-        s.audioUrl ||
-        (s.seasons?.[0]?.episodes?.[0]?.mediaAsset?.objectKey
-          ? `https://firebasestorage.googleapis.com/v0/b/vaagai-audio-books-36a4e.appspot.com/o/${encodeURIComponent(
-              s.seasons[0].episodes[0].mediaAsset.objectKey,
-            )}?alt=media`
-          : undefined),
-      source: 'api',
-      createdAt: s.createdAt || new Date().toISOString(),
-    }));
+    // 1. From API items if available (excluding marked unwanted public cards)
+    const apiItems = (apiStoriesData?.items || [])
+      .filter((s: any) => !isExcludedFromPublicCatalog(s))
+      .map((s: any) => ({
+        id: s.id,
+        slug: s.slug || s.id,
+        title: s.title,
+        rawTamil: s.title,
+        rawEnglish: s.title,
+        authorName: s.authorName || 'By Anzles Studio',
+        coverImageUrl: s.coverImage || s.coverImageUrl || '/images/hero-art.jpg',
+        categoryName: s.category?.name || s.categoryName || 'General',
+        language: typeof s.language === 'string' ? s.language : s.language?.name || 'Tamil',
+        totalEpisodes: s.totalEpisodes || 1,
+        totalDurationSeconds: s.totalDurationSeconds || s.durationSec || 600,
+        firstEpisodeId: s.firstEpisodeId || s.seasons?.[0]?.episodes?.[0]?.id,
+        audioUrl:
+          s.audioUrl ||
+          (s.seasons?.[0]?.episodes?.[0]?.mediaAsset?.objectKey
+            ? `https://firebasestorage.googleapis.com/v0/b/vaagai-audio-books-36a4e.appspot.com/o/${encodeURIComponent(
+                s.seasons[0].episodes[0].mediaAsset.objectKey,
+              )}?alt=media`
+            : undefined),
+        source: 'api',
+        createdAt: s.createdAt || new Date().toISOString(),
+      }));
 
     // 2. Curated standard library catalog
     const catalogItems = COMPLETE_LIBRARY_CATALOG.map((book: LibraryBook, idx: number) => ({
@@ -273,6 +290,7 @@ export const CategoriesPage: React.FC = () => {
     const merged = [];
 
     for (const item of [...apiItems, ...catalogItems]) {
+      if (isExcludedFromPublicCatalog(item)) continue;
       const key = item.slug || item.id;
       if (!seen.has(key)) {
         seen.add(key);
@@ -289,6 +307,11 @@ export const CategoriesPage: React.FC = () => {
     const query = debouncedQuery.trim().toLowerCase();
 
     let list = mappedCatalog.filter((story) => {
+      // Never display marked unwanted cards on the public Categories page
+      if (isExcludedFromPublicCatalog(story)) {
+        return false;
+      }
+
       // Category filter matching
       if (normalizedCat && normalizedCat !== 'all') {
         const catName = (story.categoryName || '').toLowerCase();

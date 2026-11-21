@@ -164,10 +164,23 @@ export const ExplorePage: React.FC = () => {
     }));
   }, []);
 
-  // Map API stories if available
+  // Map API stories if available (excluding marked unwanted test cards from public display)
   const apiMappedStories = useMemo(() => {
     if (!seriesData?.items || seriesData.items.length === 0) return [];
-    return seriesData.items.map((s: any) => ({
+    return seriesData.items
+      .filter((s: any) => {
+        const titleLower = (s.title || '').toLowerCase();
+        const slugLower = (s.slug || '').toLowerCase();
+        return !(
+          titleLower.includes('kalaiyarasan') ||
+          titleLower.includes('கலை') ||
+          slugLower.includes('kalai') ||
+          titleLower.includes('periya puranam') ||
+          titleLower.includes('பெரியபுராணம்') ||
+          slugLower.includes('periya')
+        );
+      })
+      .map((s: any) => ({
       id: s.id,
       slug: s.slug,
       title: s.title,

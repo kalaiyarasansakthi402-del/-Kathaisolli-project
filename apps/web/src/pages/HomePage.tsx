@@ -45,6 +45,17 @@ export const HomePage: React.FC = () => {
     const seen = new Set<string>();
     const apiStories: any[] = [];
     for (const s of rawApi) {
+      const titleLower = (s.title || '').toLowerCase();
+      const slugLower = (s.slug || '').toLowerCase();
+      const isUnwanted =
+        titleLower.includes('kalaiyarasan') ||
+        titleLower.includes('கலை') ||
+        slugLower.includes('kalai') ||
+        titleLower.includes('periya puranam') ||
+        titleLower.includes('பெரியபுராணம்') ||
+        slugLower.includes('periya');
+      if (isUnwanted) continue;
+
       const key = s.slug || s.id;
       if (key && !seen.has(key)) {
         seen.add(key);
