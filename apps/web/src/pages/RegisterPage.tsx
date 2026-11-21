@@ -169,8 +169,8 @@ export const RegisterPage: React.FC = () => {
                 கதைசொல்லி
               </span>
             </Link>
-            <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#A7F3D0]">
-              BY ANZLES · 100% FREE PLATFORM
+            <p className="text-[10px] sm:text-xs font-semibold font-tamil tracking-normal text-[#A7F3D0]">
+              கற்றலின் கேட்டலே நன்று
             </p>
           </div>
 

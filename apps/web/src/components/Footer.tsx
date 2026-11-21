@@ -17,8 +17,8 @@ export const Footer: React.FC = () => {
                 <span className="text-2xl font-black font-serif text-[#064E3B] dark:text-[#A7F3D0]">
                   Kathaisolli
                 </span>
-                <span className="block text-xs font-semibold uppercase tracking-wider text-[#166534] dark:text-[#E8F0E2]">
-                  By Anzles
+                <span className="block text-xs font-semibold font-tamil text-[#166534] dark:text-[#E8F0E2]">
+                  கற்றலின் கேட்டலே நன்று
                 </span>
               </div>
             </div>

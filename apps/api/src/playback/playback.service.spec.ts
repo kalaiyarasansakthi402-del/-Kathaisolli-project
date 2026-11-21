@@ -6,8 +6,32 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PlaybackService } from './playback.service';
 
 describe('PlaybackService', () => {
+  const mockEpisode = {
+    id: 'episode-id',
+    title: 'Tamil story',
+    premiumFlag: false,
+    durationSec: 30,
+    status: ContentStatus.PUBLISHED,
+    season: {
+      series: {
+        id: 'series-id',
+        slug: 'tamil-story',
+        status: ContentStatus.PUBLISHED,
+        premiumFlag: false,
+      },
+    },
+    mediaAsset: {
+      objectKey: 'private/source.mp3',
+      isProcessed: true,
+      contentType: 'audio/mpeg',
+    },
+  };
+
   const prisma = {
-    episode: { findUnique: jest.fn() },
+    episode: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+    },
     subscriptionEntitlement: { findFirst: jest.fn() },
   };
   const storage = { createReadUrl: jest.fn() };
@@ -27,6 +51,12 @@ describe('PlaybackService', () => {
   });
 
   it('does not authorize unpublished audio', async () => {
+    prisma.episode.findFirst.mockResolvedValue({
+      id: 'episode-id',
+      status: ContentStatus.PENDING_REVIEW,
+      season: { series: { status: ContentStatus.PUBLISHED } },
+      mediaAsset: { isProcessed: true, objectKey: 'private/source.mp3' },
+    });
     prisma.episode.findUnique.mockResolvedValue({
       id: 'episode-id',
       status: ContentStatus.PENDING_REVIEW,
@@ -41,26 +71,8 @@ describe('PlaybackService', () => {
   });
 
   it('authorizes any published episode freely without requiring any subscription or entitlement', async () => {
-    prisma.episode.findUnique.mockResolvedValue({
-      id: 'episode-id',
-      title: 'Tamil story',
-      premiumFlag: false,
-      durationSec: 30,
-      status: ContentStatus.PUBLISHED,
-      season: {
-        series: {
-          id: 'series-id',
-          slug: 'tamil-story',
-          status: ContentStatus.PUBLISHED,
-          premiumFlag: false,
-        },
-      },
-      mediaAsset: {
-        objectKey: 'private/source.mp3',
-        isProcessed: true,
-        contentType: 'audio/mpeg',
-      },
-    });
+    prisma.episode.findFirst.mockResolvedValue(mockEpisode);
+    prisma.episode.findUnique.mockResolvedValue(mockEpisode);
 
     const result = await playback.authorize('episode-id', 'listener-id');
 
@@ -76,7 +88,7 @@ describe('PlaybackService', () => {
   });
 
   it('allows guest playback freely without a userId', async () => {
-    prisma.episode.findUnique.mockResolvedValue({
+    const guestEpisode = {
       id: 'episode-id-guest',
       title: 'Public Tamil Story',
       premiumFlag: false,
@@ -95,7 +107,9 @@ describe('PlaybackService', () => {
         isProcessed: true,
         contentType: 'audio/mpeg',
       },
-    });
+    };
+    prisma.episode.findFirst.mockResolvedValue(guestEpisode);
+    prisma.episode.findUnique.mockResolvedValue(guestEpisode);
 
     const result = await playback.authorize('episode-id-guest');
 

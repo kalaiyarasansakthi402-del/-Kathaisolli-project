@@ -122,8 +122,8 @@ export const Navbar: React.FC = () => {
                 கதைசொல்லி
               </span>
             </div>
-            <span className="block text-[9px] sm:text-[10px] font-bold tracking-wider sm:tracking-widest uppercase text-[#166534]/70 dark:text-[#A7F3D0]/70 truncate">
-              BY ANZLES · 100% FREE
+            <span className="block text-[10px] sm:text-xs font-semibold font-tamil tracking-normal text-[#166534] dark:text-[#A7F3D0] truncate">
+              கற்றலின் கேட்டலே நன்று
             </span>
           </div>
         </Link>
