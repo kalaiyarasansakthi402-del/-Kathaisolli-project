@@ -5,6 +5,40 @@ import { usePlayer } from '../context/PlayerContext';
 import { useAuth } from '../context/AuthContext';
 import { isBookSaved, toggleSaveBook } from '../services/userLibrary';
 
+const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  motivation: '/images/story-motivational.jpg',
+  'self help': '/images/story-motivational.jpg',
+  'சுயமுன்னேற்றம்': '/images/story-motivational.jpg',
+  history: '/images/story-historical.jpg',
+  biography: '/images/story-historical.jpg',
+  'வரலாறு': '/images/story-historical.jpg',
+  mythology: '/images/krishna.jpg',
+  'புராணங்கள்': '/images/krishna.jpg',
+  literature: '/images/story-tamil-folk.jpg',
+  'இலக்கியம்': '/images/story-tamil-folk.jpg',
+  tamil: '/images/story-tamil-folk.jpg',
+  english: '/images/story-books-stack.jpg',
+  general: '/images/story-books-stack.jpg',
+};
+
+const getCategoryFallbackImage = (cat?: string): string => {
+  if (!cat) return '/images/story-books-stack.jpg';
+  const lower = cat.toLowerCase();
+  for (const [key, val] of Object.entries(CATEGORY_FALLBACK_IMAGES)) {
+    if (lower.includes(key)) return val;
+  }
+  return '/images/story-books-stack.jpg';
+};
+
+const sanitizeCoverUrl = (url?: string | null, fallback?: string): string => {
+  if (!url || typeof url !== 'string') return fallback || '/images/story-books-stack.jpg';
+  const trimmed = url.trim();
+  if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') {
+    return fallback || '/images/story-books-stack.jpg';
+  }
+  return trimmed;
+};
+
 export interface StoryCardProps {
   id: string;
   slug: string;
@@ -39,6 +73,25 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   const { playEpisode } = usePlayer();
   const { user, api } = useAuth();
   const [saved, setSaved] = useState(() => isBookSaved(id || slug, user?.id));
+
+  const fallbackSrc = getCategoryFallbackImage(categoryName);
+  const initialCover = sanitizeCoverUrl(coverImage || coverImageUrl, fallbackSrc);
+  const [imageSrc, setImageSrc] = useState<string>(initialCover);
+  const [hasImageError, setHasImageError] = useState<boolean>(false);
+
+  useEffect(() => {
+    const nextCover = sanitizeCoverUrl(coverImage || coverImageUrl, fallbackSrc);
+    setImageSrc(nextCover);
+    setHasImageError(false);
+  }, [coverImage, coverImageUrl, fallbackSrc]);
+
+  const handleImageError = () => {
+    if (imageSrc !== fallbackSrc) {
+      setImageSrc(fallbackSrc);
+    } else {
+      setHasImageError(true);
+    }
+  };
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -81,8 +134,8 @@ export const StoryCard: React.FC<StoryCardProps> = ({
         seriesTitle: categoryName || 'Kathaisolli Story',
         narratorName: authorName || 'By Anzles Studio',
         durationSec: totalDurationSeconds || 300,
-        coverImage: coverImage || coverImageUrl,
-        coverImageUrl: coverImage || coverImageUrl,
+        coverImage: imageSrc,
+        coverImageUrl: imageSrc,
         audioUrl: audioUrl || undefined,
       },
       id || slug,
@@ -94,79 +147,74 @@ export const StoryCard: React.FC<StoryCardProps> = ({
       ? `${Math.round(totalDurationSeconds / 60)} mins`
       : `${totalEpisodes} eps`;
 
-  const finalCover = coverImage || coverImageUrl;
-
   return (
-    <div className="group relative flex flex-col justify-between rounded-2xl bg-white dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-      {/* Cover Image Banner */}
-      {finalCover && (
-        <div className="relative h-44 w-full bg-emerald-950 overflow-hidden">
+    <div className="group relative flex flex-col justify-between h-full w-full rounded-2xl bg-white dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+      {/* Cover Image Banner with Graceful Category Fallback */}
+      <div className="relative h-44 sm:h-48 w-full bg-gradient-to-br from-[#064E3B] to-[#022419] overflow-hidden flex-shrink-0 flex items-center justify-center">
+        {!hasImageError ? (
           <img
-            src={finalCover}
+            src={imageSrc}
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
+            onError={handleImageError}
+            loading="lazy"
           />
-          <div className="absolute top-3 right-3">
-            <button
-              onClick={handleToggleSave}
-              aria-label={saved ? 'Remove from My Library' : 'Save to My Library'}
-              title={saved ? 'சேமிக்கப்பட்டது (Saved to My Library)' : 'நூலகத்தில் சேமி (Save to My Library)'}
-              className={`p-2 rounded-full border shadow-md backdrop-blur-md transition-all active:scale-95 ${
-                saved
-                  ? 'bg-[#064E3B] text-[#A7F3D0] border-[#064E3B]'
-                  : 'bg-black/40 border-white/20 text-white hover:bg-black/60'
-              }`}
-            >
-              <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
-            </button>
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-[#063826] to-[#042419] text-[#A7F3D0]">
+            <BookOpen className="w-10 h-10 mb-2 text-[#A7F3D0]/70 stroke-[1.5]" />
+            <span className="text-xs font-serif font-bold line-clamp-1">{title}</span>
+            <span className="text-[10px] text-emerald-300/80 font-tamil mt-0.5">{categoryName || 'கதைசொல்லி'}</span>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
-        {/* Top Header: Category & Save Bookmark (if no cover) */}
+        {/* Floating Bookmark Button on Cover Top-Right */}
+        <div className="absolute top-3 right-3 z-10">
+          <button
+            onClick={handleToggleSave}
+            aria-label={saved ? 'Remove from My Library' : 'Save to My Library'}
+            title={saved ? 'சேமிக்கப்பட்டது (Saved to My Library)' : 'நூலகத்தில் சேமி (Save to My Library)'}
+            className={`p-2 rounded-full border shadow-md backdrop-blur-md transition-all active:scale-95 ${
+              saved
+                ? 'bg-[#064E3B] text-[#A7F3D0] border-[#064E3B]'
+                : 'bg-black/40 border-white/20 text-white hover:bg-black/60'
+            }`}
+          >
+            <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Card Content: Structured & Uniform */}
+      <div className="p-4 sm:p-5 flex flex-col justify-between flex-1 space-y-3.5">
+        {/* Top Header: Category badge */}
         <div className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8F0E2] dark:bg-[#032419] px-3 py-1 text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B]/10">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8F0E2] dark:bg-[#032419] px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B]/10 self-start">
             <BookOpen className="w-3.5 h-3.5" />
-            <span className="truncate max-w-[130px]">{categoryName || 'General'}</span>
+            <span className="truncate max-w-[150px]">{categoryName || 'General'}</span>
           </span>
-
-          {!finalCover && (
-            <button
-              onClick={handleToggleSave}
-              aria-label={saved ? 'Remove from My Library' : 'Save to My Library'}
-              title={saved ? 'சேமிக்கப்பட்டது (Saved to My Library)' : 'நூலகத்தில் சேமி (Save to My Library)'}
-              className={`p-2 rounded-full border transition-all active:scale-95 ${
-                saved
-                  ? 'bg-[#064E3B] text-[#A7F3D0] border-[#064E3B]'
-                  : 'border-[#E3DCBA] dark:border-[#124835] text-stone-400 hover:text-[#064E3B] hover:border-[#064E3B]'
-              }`}
-            >
-              <Bookmark className={`h-4 w-4 ${saved ? 'fill-current' : ''}`} />
-            </button>
-          )}
         </div>
 
-        {/* Title & Author */}
+        {/* Title & Author with Fixed Minimum Heights for Exact Row Alignment */}
         <div className="space-y-1.5 flex-1">
-          <Link to={`/stories/${slug || id}`}>
-            <h3 className="font-bold font-serif text-lg leading-snug text-[#064E3B] dark:text-[#F8F5E9] group-hover:text-[#166534] transition-colors line-clamp-2">
+          <Link to={`/stories/${slug || id}`} className="block">
+            <h3
+              className="font-bold font-serif font-tamil text-base sm:text-lg leading-snug text-[#064E3B] dark:text-[#F8F5E9] group-hover:text-[#166534] transition-colors line-clamp-2 min-h-[2.8rem] sm:min-h-[3.25rem] flex items-start break-words"
+              title={title}
+            >
               {title}
             </h3>
           </Link>
-          {authorName && (
-            <p className="text-xs font-medium text-stone-600 dark:text-stone-300 line-clamp-1">
-              எழுத்தாளர்: <span className="font-semibold text-[#173D2E] dark:text-stone-100">{authorName}</span>
-            </p>
-          )}
+          <p className="text-xs font-medium text-stone-600 dark:text-stone-300 truncate h-5 flex items-center font-tamil">
+            எழுத்தாளர்:{' '}
+            <span className="font-semibold text-[#173D2E] dark:text-stone-100 ml-1 truncate">
+              {authorName || 'கதைசொல்லி ஆசிரியர்'}
+            </span>
+          </p>
         </div>
 
-        {/* Meta: Duration, Rating & Free Badge */}
-        <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 pt-2 border-t border-[#E3DCBA]/60 dark:border-[#124835]">
-          <span className="flex items-center gap-1 font-medium">
+        {/* Meta: Duration, Rating */}
+        <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 pt-2.5 border-t border-[#E3DCBA]/60 dark:border-[#124835]">
+          <span className="flex items-center gap-1 font-medium font-tamil">
             <Headphones className="h-3.5 w-3.5 text-[#166534] dark:text-emerald-400" />
             {formattedDuration}
           </span>
@@ -176,10 +224,10 @@ export const StoryCard: React.FC<StoryCardProps> = ({
           </span>
         </div>
 
-        {/* Bottom Action: Prominent Listen Button */}
+        {/* Bottom Action: Prominent Listen Button pinned to bottom */}
         <button
           onClick={handlePlayClick}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-xs shadow-md shadow-emerald-950/15 hover:scale-[1.02] active:scale-95 transition-all"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-950/15 hover:scale-[1.01] active:scale-95 transition-all mt-auto"
         >
           <Play className="h-4 w-4 fill-current ml-0.5 text-[#A7F3D0]" />
           <span>▶ Listen (கேள்)</span>
@@ -188,3 +236,5 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     </div>
   );
 };
+
+export default StoryCard;

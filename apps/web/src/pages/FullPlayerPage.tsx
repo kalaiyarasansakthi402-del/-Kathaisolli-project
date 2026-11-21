@@ -249,13 +249,13 @@ export const FullPlayerPage: React.FC = () => {
       {/* ============================================================== */}
       {/* 2. MAIN TWO-COLUMN STUDIO PLAYER INTERFACE                     */}
       {/* ============================================================== */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-12 py-8 pb-32 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="flex-1 max-w-[1500px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 sm:py-8 pb-32 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* ------------------------------------------------------------ */}
-        {/* LEFT COLUMN: TURNTABLE RECORD PLAYER CONSOLE (5 cols)         */}
+        {/* LEFT COLUMN: TURNTABLE RECORD PLAYER CONSOLE (5/4 cols)       */}
         {/* ------------------------------------------------------------ */}
-        <section className="lg:col-span-5 flex flex-col items-center justify-center p-6 sm:p-8 rounded-3xl bg-[#0F352C]/90 backdrop-blur-2xl border border-[#1C5749]/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-6">
+        <section className="lg:col-span-5 xl:col-span-4 flex flex-col items-center justify-center p-5 sm:p-7 rounded-3xl bg-[#0F352C]/90 backdrop-blur-2xl border border-[#1C5749]/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-5 sm:space-y-6 w-full">
           {/* Vinyl Record Turntable Frame */}
-          <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl bg-gradient-to-tr from-[#08221B] to-[#124237] p-5 shadow-2xl border-2 border-[#1E5C4E] flex items-center justify-center">
+          <div className="relative w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 max-w-full rounded-3xl bg-gradient-to-tr from-[#08221B] to-[#124237] p-4 sm:p-5 shadow-2xl border-2 border-[#1E5C4E] flex items-center justify-center">
             {/* Turntable Platter Outer Ring */}
             <div className="relative w-full h-full rounded-full bg-[#041410] border-4 border-[#1B5749] flex items-center justify-center shadow-inner overflow-hidden">
               {/* Subtle Vinyl Grooves Pattern */}
@@ -266,23 +266,36 @@ export const FullPlayerPage: React.FC = () => {
 
               {/* Rotating Center Vinyl Disc Label */}
               <div
-                className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-[#07241D] bg-gradient-to-br from-[#064E3B] via-[#0B3D2E] to-[#042419] shadow-2xl flex flex-col items-center justify-center p-3 text-center transition-transform duration-700 ${
+                className={`w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-[#07241D] bg-gradient-to-br from-[#064E3B] via-[#0B3D2E] to-[#042419] shadow-2xl flex flex-col items-center justify-center p-3 text-center transition-transform duration-700 relative ${
                   isPlaying ? 'animate-[spin_12s_linear_infinite]' : ''
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-[#032419]/90 border border-[#A7F3D0]/40 flex items-center justify-center mb-1">
-                  <Headphones className="w-5 h-5 text-[#A7F3D0]" />
-                </div>
-                <span className="text-[10px] font-bold font-serif text-[#A7F3D0] uppercase tracking-wider">
-                  கதைசொல்லி
-                </span>
-                <span className="text-[8px] text-white/70 font-mono">
-                  Tamil Audio
-                </span>
+                {currentTrack?.coverImageUrl ? (
+                  <img
+                    src={currentTrack.coverImageUrl}
+                    alt={currentTrack.title}
+                    className="w-full h-full object-cover rounded-full opacity-80"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/images/story-books-stack.jpg';
+                    }}
+                  />
+                ) : (
+                  <>
+                    <div className="w-10 h-10 rounded-full bg-[#032419]/90 border border-[#A7F3D0]/40 flex items-center justify-center mb-1">
+                      <Headphones className="w-5 h-5 text-[#A7F3D0]" />
+                    </div>
+                    <span className="text-[10px] font-bold font-serif text-[#A7F3D0] uppercase tracking-wider">
+                      கதைசொல்லி
+                    </span>
+                    <span className="text-[8px] text-white/70 font-mono">
+                      Tamil Audio
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Center Spindle Hole */}
-              <div className="absolute w-5 h-5 rounded-full bg-[#1B5749] border-2 border-[#A7F3D0] shadow-md z-10" />
+              <div className="absolute w-5 h-5 rounded-full bg-[#1B5749] border-2 border-[#A7F3D0] shadow-md z-10 pointer-events-none" />
             </div>
 
             {/* Stylized Tonearm (Turntable Needle) resting on record */}
@@ -302,7 +315,7 @@ export const FullPlayerPage: React.FC = () => {
 
           {/* Title & Narrator Metadata */}
           <div className="text-center space-y-1.5 w-full px-2">
-            <h2 className="text-2xl sm:text-3xl font-black font-serif text-[#F8F5E9] tracking-tight truncate drop-shadow">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-serif text-[#F8F5E9] tracking-tight line-clamp-2 leading-snug break-words drop-shadow">
               {currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ'}
             </h2>
             <p className="text-xs sm:text-sm font-semibold text-[#A7F3D0]/80 truncate">
@@ -311,11 +324,11 @@ export const FullPlayerPage: React.FC = () => {
           </div>
 
           {/* Interactive Playback Controls Bar */}
-          <div className="flex items-center justify-between w-full max-w-sm px-4 pt-1">
-            {/* Script / Lyrics toggle button (歌词 / தமிழ்) */}
+          <div className="flex items-center justify-between w-full max-w-sm px-2 sm:px-4 pt-1">
+            {/* Script / Lyrics toggle button */}
             <button
               onClick={() => setShowTranscript(!showTranscript)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                 showTranscript
                   ? 'bg-[#10B981] text-[#07241D] border-[#10B981]'
                   : 'bg-white/5 hover:bg-white/10 text-stone-300 border-white/10'
@@ -329,7 +342,7 @@ export const FullPlayerPage: React.FC = () => {
             <button
               onClick={playPrevious}
               disabled={!hasPrevious}
-              className={`p-3 rounded-full active:scale-95 transition-all ${
+              className={`p-2.5 sm:p-3 rounded-full active:scale-95 transition-all ${
                 hasPrevious
                   ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
                   : 'text-stone-600 opacity-40 cursor-not-allowed'
@@ -337,50 +350,50 @@ export const FullPlayerPage: React.FC = () => {
               title={hasPrevious ? 'முந்தைய அத்தியாயம் (Previous Chapter)' : 'முதல் அத்தியாயம் (First Chapter)'}
               aria-label="Previous Chapter"
             >
-              <SkipBack className="w-6 h-6 fill-current" />
+              <SkipBack className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
             </button>
 
             {/* Rewind 10 Seconds */}
             <button
               onClick={() => skipBackward(10)}
-              className="p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+              className="p-2 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
               title="10 விநாடிகள் பின்னே (Rewind 10s)"
               aria-label="Rewind 10 seconds"
             >
-              <RotateCcw className="w-5 h-5" />
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* Large Glowing Circular Play / Pause Button */}
             <button
               onClick={togglePlay}
-              className="w-16 h-16 rounded-full bg-white text-[#07241D] flex items-center justify-center hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white text-[#07241D] flex items-center justify-center hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all shrink-0"
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isBuffering ? (
                 <div className="w-6 h-6 border-3 border-[#07241D] border-t-transparent rounded-full animate-spin" />
               ) : isPlaying ? (
-                <Pause className="w-7 h-7 fill-current" />
+                <Pause className="w-6 h-6 sm:w-7 sm:h-7 fill-current" />
               ) : (
-                <Play className="w-7 h-7 fill-current ml-1" />
+                <Play className="w-6 h-6 sm:w-7 sm:h-7 fill-current ml-0.5 sm:ml-1" />
               )}
             </button>
 
             {/* Forward 10 Seconds */}
             <button
               onClick={() => skipForward(10)}
-              className="p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+              className="p-2 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
               title="10 விநாடிகள் முன்னே (Forward 10s)"
               aria-label="Forward 10 seconds"
             >
-              <RotateCw className="w-5 h-5" />
+              <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             {/* Next Chapter */}
             <button
               onClick={playNext}
               disabled={!hasNext}
-              className={`p-3 rounded-full active:scale-95 transition-all ${
+              className={`p-2.5 sm:p-3 rounded-full active:scale-95 transition-all ${
                 hasNext
                   ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
                   : 'text-stone-600 opacity-40 cursor-not-allowed'
@@ -388,7 +401,7 @@ export const FullPlayerPage: React.FC = () => {
               title={hasNext ? 'அடுத்த அத்தியாயம் (Next Chapter)' : 'கடைசி அத்தியாயம் (Last Chapter)'}
               aria-label="Next Chapter"
             >
-              <SkipForward className="w-6 h-6 fill-current" />
+              <SkipForward className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
             </button>
           </div>
 
@@ -434,13 +447,13 @@ export const FullPlayerPage: React.FC = () => {
         </section>
 
         {/* ------------------------------------------------------------ */}
-        {/* RIGHT COLUMN: CHAPTER & AUDIOBOOK 4-COLUMN GRID (7 cols)     */}
+        {/* RIGHT COLUMN: CHAPTER & AUDIOBOOK RESPONSIVE GRID (7/8 cols) */}
         {/* ------------------------------------------------------------ */}
-        <section className="lg:col-span-7 space-y-6">
-          {/* Top Filter Tabs & Search Pill (Matching Reference UI) */}
+        <section className="lg:col-span-7 xl:col-span-8 space-y-5 sm:space-y-6 w-full min-w-0">
+          {/* Top Filter Tabs & Search Pill */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             {/* Category Tabs */}
-            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-1 text-sm font-bold">
+            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-1 text-xs sm:text-sm font-bold scrollbar-none">
               {[
                 { id: 'all', label: 'அனைத்தும்' },
                 { id: 'moral', label: 'நீதிக்கதை' },
@@ -484,9 +497,9 @@ export const FullPlayerPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 4-Column Card Grid (Matching Reference UI Cards) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {filteredChapters.slice(0, 12).map(({ book, chapter }) => {
+          {/* Responsive Chapter Card Grid (1 col on mobile, 2 on tablet/laptop, 3 on xl, 4 on 2xl) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5 sm:gap-4">
+            {filteredChapters.slice(0, 16).map(({ book, chapter }) => {
               const isCardPlaying =
                 (currentTrack?.episodeId === chapter.id || currentTrack?.title?.includes(chapter.title)) &&
                 isPlaying;
@@ -495,36 +508,45 @@ export const FullPlayerPage: React.FC = () => {
                 <div
                   key={`${book.id}-${chapter.id}`}
                   onClick={() => handlePlayChapterItem(book, chapter)}
-                  className={`p-4 rounded-2xl cursor-pointer group shadow-md border transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between space-y-3 bg-[#08221B] ${
+                  className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer group shadow-sm border transition-all duration-200 flex flex-col justify-between min-h-[125px] sm:min-h-[135px] ${
                     isCardPlaying
-                      ? 'border-[#10B981] ring-1 ring-[#10B981] shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                      : 'border-white/10 hover:border-[#10B981]/50'
+                      ? 'border-[#10B981] bg-[#0E382C] ring-2 ring-[#10B981]/50 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+                      : 'border-white/10 bg-[#08221B] hover:border-[#10B981]/60 hover:bg-[#0B2C23] hover:shadow-md'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/10 text-[#A7F3D0] truncate max-w-[120px]">
-                      {book.category || 'General'}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-[#A7F3D0] truncate max-w-[110px]">
+                        {book.category || 'General'}
+                      </span>
+                      <span className="text-[10px] font-mono text-stone-400 shrink-0">
+                        {formatDuration(chapter.durationSeconds)}
+                      </span>
+                    </div>
                     <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${
                         isCardPlaying
-                          ? 'bg-[#10B981] text-[#07241D] scale-100 shadow-md'
+                          ? 'bg-[#10B981] text-[#07241D] scale-105 shadow-[0_0_10px_#10B981]'
                           : 'bg-white/10 text-white group-hover:bg-[#10B981] group-hover:text-[#07241D]'
                       }`}
                     >
                       {isCardPlaying ? (
-                        <div className="w-2.5 h-2.5 bg-[#07241D] rounded-sm animate-pulse" />
+                        <span className="flex items-end gap-0.5 h-3">
+                          <span className="w-0.5 bg-[#07241D] rounded-full animate-[pulse_0.6s_ease-in-out_infinite] h-2" />
+                          <span className="w-0.5 bg-[#07241D] rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-3" />
+                          <span className="w-0.5 bg-[#07241D] rounded-full animate-[pulse_0.5s_ease-in-out_infinite] h-2" />
+                        </span>
                       ) : (
                         <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
                       )}
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="font-bold text-sm text-[#F8F5E9] font-serif line-clamp-2 group-hover:text-[#A7F3D0] transition-colors">
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-xs sm:text-sm text-[#F8F5E9] font-serif line-clamp-2 leading-snug break-words group-hover:text-[#A7F3D0] transition-colors">
                       {chapter.tamilTitle || chapter.title}
                     </h3>
-                    <p className="text-[11px] text-stone-300/80 truncate mt-1 font-medium">
+                    <p className="text-[11px] text-stone-300/80 truncate font-medium">
                       {book.authorName}
                     </p>
                   </div>
@@ -536,51 +558,51 @@ export const FullPlayerPage: React.FC = () => {
       </main>
 
       {/* ============================================================== */}
-      {/* 3. STICKY BOTTOM MINI-PLAYER DOCK (Matching Reference UI)      */}
+      {/* 3. STICKY BOTTOM MINI-PLAYER DOCK                              */}
       {/* ============================================================== */}
-      <footer className="fixed bottom-0 left-0 right-0 z-50 bg-[#0A261F]/95 backdrop-blur-2xl border-t border-[#16493B]/80 px-6 py-3.5 flex items-center justify-between gap-4 shadow-[0_-10px_35px_rgba(0,0,0,0.6)]">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#0A261F]/95 backdrop-blur-2xl border-t border-[#16493B]/80 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 shadow-[0_-10px_35px_rgba(0,0,0,0.6)]">
         {/* Left: Green Circular Headphone Icon + Title */}
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-[#059669] text-[#07241D] flex items-center justify-center shrink-0 shadow-lg">
-            <Headphones className="w-5 h-5 stroke-[2.5]" />
+        <div className="flex items-center gap-3 min-w-0 flex-1 sm:flex-initial max-w-xs sm:max-w-sm">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#059669] text-[#07241D] flex items-center justify-center shrink-0 shadow-lg">
+            <Headphones className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold font-serif text-[#F8F5E9] truncate font-tamil">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs sm:text-sm font-bold font-serif text-[#F8F5E9] truncate font-tamil">
               {currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ'}
             </p>
-            <p className="text-xs text-[#A7F3D0]/70 truncate">
+            <p className="text-[11px] text-[#A7F3D0]/70 truncate">
               {currentTrack?.narratorName || currentTrack?.seriesTitle || 'By Anzles Studio'}
             </p>
           </div>
         </div>
 
         {/* Center: Controls, Speed, and Sleep Timer Pills */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Collapse / Expand icon */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Browse Stories Link */}
           <button
             onClick={() => navigate('/categories')}
-            className="p-2 rounded-full text-stone-400 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-1.5 sm:p-2 rounded-full text-stone-400 hover:text-white hover:bg-white/5 transition-colors"
             title="கதைகளை உலாவவும் (Browse Stories)"
           >
-            <ChevronUp className="w-5 h-5" />
+            <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* Mini Play / Pause */}
           <button
             onClick={togglePlay}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-sm"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-sm"
           >
             {isPlaying ? (
-              <Pause className="w-4 h-4 fill-current" />
+              <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
             ) : (
-              <Play className="w-4 h-4 fill-current ml-0.5" />
+              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ml-0.5" />
             )}
           </button>
 
           {/* Speed Selector Pill */}
           <button
             onClick={cycleRate}
-            className="px-3 py-1 rounded-full text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-[#A7F3D0] border border-white/10 transition-colors"
+            className="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-[#A7F3D0] border border-white/10 transition-colors"
             title="Playback Speed"
           >
             {playbackRate}x
@@ -589,15 +611,15 @@ export const FullPlayerPage: React.FC = () => {
           {/* Sleep Timer Pill */}
           <button
             onClick={cycleSleepTimer}
-            className="px-3 py-1 rounded-full text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-stone-300 border border-white/10 transition-colors"
+            className="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-stone-300 border border-white/10 transition-colors"
             title="Sleep Timer"
           >
             {sleepTimerMinutes ? `${sleepTimerMinutes}m` : 'Timer'}
           </button>
         </div>
 
-        {/* Right: Theme Toggle, Favorite, and Volume Slider */}
-        <div className="hidden sm:flex items-center gap-3">
+        {/* Right: Bookmark and Volume Slider (hidden on small mobile to prevent overflow) */}
+        <div className="hidden sm:flex items-center gap-3 shrink-0">
           {/* Favorite Toggle */}
           <button
             onClick={() => setIsFavorited(!isFavorited)}

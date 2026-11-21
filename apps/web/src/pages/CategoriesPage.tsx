@@ -20,6 +20,7 @@ import { StoryCard } from '../components/StoryCard';
 import { EmptyState } from '../components/EmptyState';
 import { StoryGridSkeleton } from '../components/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
+import { usePlayer } from '../context/PlayerContext';
 import {
   COMPLETE_LIBRARY_CATALOG,
   type LibraryBook,
@@ -85,6 +86,7 @@ export const CATALOG_CATEGORY_TABS: CategoryTab[] = [
 
 export const CategoriesPage: React.FC = () => {
   const { api } = useAuth();
+  const { currentTrack } = usePlayer();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const urlCategory = searchParams.get('category') || 'all';
@@ -384,7 +386,11 @@ export const CategoriesPage: React.FC = () => {
   const hasMore = visibleCount < filteredStories.length;
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors min-h-[80vh]">
+    <div
+      className={`py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors min-h-[80vh] ${
+        currentTrack ? 'pb-36 sm:pb-40' : 'pb-16 sm:pb-20'
+      }`}
+    >
       {/* Header section with Botanical Green badge */}
       <div className="space-y-3">
         <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#E2EFE9] dark:bg-[#073829] border border-[#C5DDD1] dark:border-[#0E4738] text-xs font-bold text-[#064E3B] dark:text-[#A7F3D0] uppercase tracking-wider">

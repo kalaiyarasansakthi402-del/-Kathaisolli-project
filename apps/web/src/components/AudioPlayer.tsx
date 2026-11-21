@@ -41,7 +41,6 @@ export const AudioPlayer: React.FC = () => {
     setPlayerVolume,
     toggleMute,
     setSleepTimerMinutes,
-    openFullPlayer,
     closeFullPlayer,
     toggleCollapse,
     clearError,
@@ -77,19 +76,32 @@ export const AudioPlayer: React.FC = () => {
     setSpeed(nextSpeed);
   };
 
+  const handleScrubberClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    seek(pct * validDuration);
+  };
+
   return (
     <>
-      {/* Collapsed Compact Mini Bar */}
+      {/* 1. Collapsed Compact Mini Bar (Sits fixed at bottom) */}
       {!isFullPlayerOpen && isPlayerCollapsed && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#073224]/95 backdrop-blur-md text-white border-t border-[#0F4738] shadow-2xl transition-all">
-          {/* Progress bar line along top edge */}
-          <div className="w-full h-1 bg-[#144738]">
+        <aside
+          aria-label="Audio player mini bar"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-[#073224]/95 backdrop-blur-md text-white border-t border-[#0F4738] shadow-2xl transition-all"
+        >
+          {/* Progress bar line along top edge with click-to-seek */}
+          <div
+            className="w-full h-1 bg-[#144738] cursor-pointer group"
+            onClick={handleScrubberClick}
+            title="தேட கிளிக் செய்க (Click to seek)"
+          >
             <div
-              className="h-full bg-[#10B981] transition-all"
+              className="h-full bg-[#10B981] group-hover:bg-[#34D399] transition-all"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-between gap-3">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 h-12 flex items-center justify-between gap-3">
             {/* Left: Thumbnail & Title */}
             <div
               className="flex items-center gap-2.5 min-w-0 cursor-pointer group flex-1"
@@ -114,7 +126,7 @@ export const AudioPlayer: React.FC = () => {
                 <span className="text-xs font-semibold truncate font-tamil text-white group-hover:text-[#A7F3D0]">
                   {currentTrack.title}
                 </span>
-                <span className="hidden sm:inline text-[11px] font-mono text-[#86EFAC]/70">
+                <span className="hidden sm:inline text-[11px] font-mono text-[#86EFAC]/70 shrink-0">
                   {formatDuration(currentTime)} / {formatDuration(validDuration)}
                 </span>
               </div>
@@ -138,7 +150,10 @@ export const AudioPlayer: React.FC = () => {
 
               <button
                 onClick={playNext}
-                className="p-1.5 rounded-full text-[#86EFAC] hover:text-white hover:bg-white/10 transition-colors"
+                disabled={!hasNext}
+                className={`p-1.5 rounded-full transition-colors ${
+                  hasNext ? 'text-[#86EFAC] hover:text-white hover:bg-white/10' : 'text-stone-500 opacity-40 cursor-not-allowed'
+                }`}
                 title="அடுத்த ஆடியோ (Next Audio)"
                 aria-label="Next Audio"
               >
@@ -154,12 +169,27 @@ export const AudioPlayer: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </aside>
       )}
 
-      {/* Mini Player (Fixed Bottom Dock matching reference screenshot) */}
+      {/* 2. Mini Player (Fixed Bottom Dock with Mobile-Optimized Layout) */}
       {!isFullPlayerOpen && !isPlayerCollapsed && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#073224] text-white border-t border-[#0F4738] shadow-2xl transition-all">
+        <aside
+          aria-label="Audio player dock"
+          className="fixed bottom-0 left-0 right-0 z-40 bg-[#073224] text-white border-t border-[#0F4738] shadow-2xl transition-all"
+        >
+          {/* Top edge scrubber progress bar - always interactive */}
+          <div
+            className="w-full h-1 bg-[#144738] cursor-pointer group"
+            onClick={handleScrubberClick}
+            title="தேட கிளிக் செய்க (Click to seek)"
+          >
+            <div
+              className="h-full bg-[#10B981] group-hover:bg-[#34D399] transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
           {playbackError && (
             <div className="bg-amber-600 text-white text-xs px-4 py-1.5 flex items-center justify-between font-tamil shadow-inner">
               <span className="truncate">{playbackError}</span>
@@ -167,14 +197,14 @@ export const AudioPlayer: React.FC = () => {
             </div>
           )}
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
-            {/* Left: Book Cover & Metadata */}
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
+            {/* Left: Book Cover & Metadata (Scales gracefully on mobile) */}
             <div
-              className="flex items-center gap-3 min-w-0 cursor-pointer flex-shrink-0 max-w-[280px] lg:max-w-xs group"
+              className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer flex-shrink group max-w-[150px] xs:max-w-[190px] sm:max-w-[240px] lg:max-w-xs"
               onClick={handleOpenPlayer}
-              title="Click to expand player"
+              title="முழு பிளேயரைத் திறக்க கிளிக் செய்க (Click to open full player)"
             >
-              <div className="w-12 h-12 rounded-xl bg-[#0A261D] flex items-center justify-center flex-shrink-0 shadow-md border border-[#145642] group-hover:scale-105 transition-transform overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#0A261D] flex items-center justify-center flex-shrink-0 shadow-md border border-[#145642] group-hover:scale-105 transition-transform overflow-hidden">
                 {currentTrack.coverImage || currentTrack.coverImageUrl ? (
                   <img
                     src={(currentTrack.coverImage || currentTrack.coverImageUrl) ?? undefined}
@@ -185,24 +215,23 @@ export const AudioPlayer: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <Headphones className="w-6 h-6 text-[#A7F3D0]" />
+                  <Headphones className="w-5 h-5 sm:w-6 sm:h-6 text-[#A7F3D0]" />
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold truncate font-tamil text-white group-hover:text-[#A7F3D0] transition-colors">
+                <p className="text-xs sm:text-sm font-semibold truncate font-tamil text-white group-hover:text-[#A7F3D0] transition-colors">
                   {currentTrack.title}
                 </p>
-                <p className="text-xs text-[#86EFAC]/80 truncate font-tamil">
+                <p className="text-[10px] sm:text-xs text-[#86EFAC]/80 truncate font-tamil">
                   {currentTrack.seriesTitle || currentTrack.narratorName || 'பாக்கியம் ராமசாமி'}
                 </p>
               </div>
             </div>
 
-            {/* Center: Playback Controls & Scrubber (Matching Section 18) */}
-            <div className="flex-1 max-w-xl flex flex-col items-center justify-center gap-1.5">
+            {/* Center: Playback Controls & Scrubber (Desktop & Tablet only) */}
+            <div className="hidden sm:flex flex-1 max-w-xl flex-col items-center justify-center gap-1.5">
               {/* Controls Top Row: [Previous] [-10s] [Play/Pause] [+10s] [Next] */}
               <div className="flex items-center gap-4 sm:gap-5">
-                {/* 1. Previous Chapter Navigation */}
                 <button
                   onClick={playPrevious}
                   disabled={!hasPrevious}
@@ -217,7 +246,6 @@ export const AudioPlayer: React.FC = () => {
                   <SkipBack className="w-4 h-4 fill-current" />
                 </button>
 
-                {/* 2. 10-Second Backward */}
                 <button
                   onClick={() => skipBackward(10)}
                   className="p-1.5 text-stone-300 hover:text-white transition-colors active:scale-95"
@@ -227,7 +255,6 @@ export const AudioPlayer: React.FC = () => {
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
 
-                {/* 3. Circular Mint Play/Pause */}
                 <button
                   onClick={togglePlay}
                   className="w-10 h-10 rounded-full bg-[#A7F3D0] hover:bg-[#6EE7B7] text-[#064E3B] flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 flex-shrink-0"
@@ -242,7 +269,6 @@ export const AudioPlayer: React.FC = () => {
                   )}
                 </button>
 
-                {/* 4. 10-Second Forward */}
                 <button
                   onClick={() => skipForward(10)}
                   className="p-1.5 text-stone-300 hover:text-white transition-colors active:scale-95"
@@ -252,7 +278,6 @@ export const AudioPlayer: React.FC = () => {
                   <RotateCw className="w-3.5 h-3.5" />
                 </button>
 
-                {/* 5. Next Chapter Navigation */}
                 <button
                   onClick={playNext}
                   disabled={!hasNext}
@@ -276,11 +301,7 @@ export const AudioPlayer: React.FC = () => {
 
                 <div
                   className="relative flex-1 h-1.5 bg-[#144738] rounded-full cursor-pointer group flex items-center"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    seek(pct * validDuration);
-                  }}
+                  onClick={handleScrubberClick}
                 >
                   <div
                     className="h-full bg-[#10B981] rounded-full relative transition-all"
@@ -296,7 +317,66 @@ export const AudioPlayer: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Speed, Volume & Maximize */}
+            {/* Mobile Controls Right: Compact, touch-friendly, no overflow */}
+            <div className="flex sm:hidden items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={playPrevious}
+                disabled={!hasPrevious}
+                className={`p-2 rounded-full transition-colors ${
+                  hasPrevious ? 'text-white active:bg-white/10' : 'text-stone-500 opacity-40 cursor-not-allowed'
+                }`}
+                title="முந்தையது"
+                aria-label="Previous"
+              >
+                <SkipBack className="w-4 h-4 fill-current" />
+              </button>
+
+              <button
+                onClick={togglePlay}
+                className="w-9 h-9 rounded-full bg-[#A7F3D0] active:bg-[#6EE7B7] text-[#064E3B] flex items-center justify-center shadow-md active:scale-95 transition-transform"
+                aria-label={isPlaying ? 'Pause' : 'Play'}
+              >
+                {isBuffering ? (
+                  <div className="w-3.5 h-3.5 border-2 border-[#064E3B] border-t-transparent rounded-full animate-spin" />
+                ) : isPlaying ? (
+                  <Pause className="w-4 h-4 fill-current" />
+                ) : (
+                  <Play className="w-4 h-4 fill-current ml-0.5" />
+                )}
+              </button>
+
+              <button
+                onClick={playNext}
+                disabled={!hasNext}
+                className={`p-2 rounded-full transition-colors ${
+                  hasNext ? 'text-white active:bg-white/10' : 'text-stone-500 opacity-40 cursor-not-allowed'
+                }`}
+                title="அடுத்தது"
+                aria-label="Next"
+              >
+                <SkipForward className="w-4 h-4 fill-current" />
+              </button>
+
+              <button
+                onClick={handleOpenPlayer}
+                className="p-2 rounded-full text-[#86EFAC] active:text-white"
+                title="முழு பிளேயர்"
+                aria-label="Open full player"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={toggleCollapse}
+                className="p-1.5 rounded-full text-[#86EFAC] active:text-white"
+                title="சுருக்கு"
+                aria-label="Collapse"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Desktop / Tablet Right Controls: Speed, Volume, Maximize, Collapse */}
             <div className="hidden sm:flex items-center gap-3.5 flex-shrink-0">
               {/* Speed Pill */}
               <button
@@ -347,10 +427,10 @@ export const AudioPlayer: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </aside>
       )}
 
-      {/* Full Screen Player Modal */}
+      {/* 3. Full Screen Player Modal (z-50) */}
       {isFullPlayerOpen && (
         <div className="fixed inset-0 z-50 bg-[#F8FAF7] dark:bg-[#101A16] flex flex-col justify-between p-6 sm:p-10 animate-in fade-in zoom-in-95 duration-200">
           {/* Header */}
@@ -399,14 +479,14 @@ export const AudioPlayer: React.FC = () => {
               <input
                 type="range"
                 min="0"
-                max={duration || 100}
+                max={validDuration || 100}
                 value={currentTime}
                 onChange={(e) => seek(parseFloat(e.target.value))}
                 className="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[#10B981]"
               />
               <div className="flex justify-between text-xs font-mono text-slate-500 mt-1">
                 <span>{formatDuration(currentTime)}</span>
-                <span>{formatDuration(duration)}</span>
+                <span>{formatDuration(validDuration)}</span>
               </div>
             </div>
 
@@ -549,3 +629,5 @@ export const AudioPlayer: React.FC = () => {
     </>
   );
 };
+
+export default AudioPlayer;

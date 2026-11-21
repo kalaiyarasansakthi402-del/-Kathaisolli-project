@@ -4,7 +4,7 @@ import { Headphones, Heart, Leaf, ShieldCheck, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer id="contact" className="border-t border-[#E3DCBA] dark:border-[#124835] bg-[#F3EFE0] dark:bg-[#022C22] mt-24 pt-16 pb-28 md:pb-16 text-[#173D2E] dark:text-[#E8F0E2]">
+    <footer id="contact" className="border-t border-[#E3DCBA] dark:border-[#124835] bg-[#F3EFE0] dark:bg-[#022C22] mt-24 pt-16 pb-32 sm:pb-28 md:pb-28 text-[#173D2E] dark:text-[#E8F0E2]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
           {/* Brand info */}
