@@ -110,10 +110,12 @@ function isOriginAllowed(origin: string | undefined, host?: string): boolean {
   if (allowedOrigins.includes(origin)) return true;
   if (process.env.APP_URL && origin === process.env.APP_URL.replace(/\/+$/, '')) return true;
   if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL.replace(/\/+$/, '')) return true;
+  if (process.env.CORS_ORIGINS) {
+    const extra = process.env.CORS_ORIGINS.split(',').map((o: string) => o.trim()).filter(Boolean);
+    if (extra.includes(origin)) return true;
+  }
   if (/^https:\/\/web(-[a-z0-9-]+)?-kalai21\.vercel\.app$/.test(origin)) return true;
-  if (/^https:\/\/web(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
-  if (/^https:\/\/admin(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
-  if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) return true;
+  if (/^https:\/\/admin(-[a-z0-9-]+)?-kalai21\.vercel\.app$/.test(origin)) return true;
   return false;
 }
 
