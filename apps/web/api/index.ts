@@ -84,11 +84,49 @@ function sanitizeDatabaseUrl(rawUrl?: string): string | undefined {
     if (!parsed.searchParams.has('pool_timeout')) {
       parsed.searchParams.set('pool_timeout', '30');
     }
+    if (!parsed.searchParams.has('connection_limit')) {
+      parsed.searchParams.set('connection_limit', '1');
+    }
+    if (parsed.hostname.includes('-pooler') && !parsed.searchParams.has('pgbouncer')) {
+      parsed.searchParams.set('pgbouncer', 'true');
+    }
+    if (!parsed.searchParams.has('sslmode')) {
+      parsed.searchParams.set('sslmode', 'require');
+    }
     return parsed.toString();
   } catch {
     return unquoted;
   }
 }
+
+function resolveDatabaseUrl(): string | undefined {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL,
+    process.env.NEON_DATABASE_URL,
+    process.env.DIRECT_URL,
+    process.env.DATABASE_URL_UNPOOLED,
+    process.env.POSTGRES_URL_NON_POOLING,
+  ];
+
+  for (const candidate of candidates) {
+    const sanitized = sanitizeDatabaseUrl(candidate);
+    if (sanitized) {
+      if (process.env.DATABASE_URL !== sanitized) {
+        process.env.DATABASE_URL = sanitized;
+      }
+      if (!process.env.DIRECT_URL) {
+        process.env.DIRECT_URL = sanitized;
+      }
+      return sanitized;
+    }
+  }
+
+  return undefined;
+}
+
+resolveDatabaseUrl();
 
 function redactDatabaseCredentials(msg: string): string {
   return msg
@@ -207,6 +245,7 @@ async function bootstrap(): Promise<void> {
   const AppModule = await getAppModule();
 
   const app = await NestFactory.create(AppModule, adapter, {
+    abortOnError: false,
     logger:
       process.env.NODE_ENV === 'production'
         ? ['error', 'warn', 'log']
@@ -241,7 +280,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false,
       transform: true,
     }),
   );
@@ -326,7 +365,7 @@ export default async function handler(req: Request, res: Response) {
     return res.status(204).end();
   }
 
-  const sanitizedDbUrl = sanitizeDatabaseUrl(process.env.DATABASE_URL);
+  const sanitizedDbUrl = resolveDatabaseUrl();
   if (sanitizedDbUrl && sanitizedDbUrl !== process.env.DATABASE_URL) {
     process.env.DATABASE_URL = sanitizedDbUrl;
   }

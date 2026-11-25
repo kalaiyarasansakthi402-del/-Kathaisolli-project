@@ -103,6 +103,8 @@ export const LoginPage: React.FC = () => {
         status: err?.response?.status,
       });
       const serverMessage = err?.response?.data?.message || err?.message || '';
+      const serverErrorDetail = err?.response?.data?.error || '';
+      const combinedDetail = `${serverMessage} ${serverErrorDetail}`;
       const status = err?.response?.status;
 
       if (serverMessage.includes('inactive') || serverMessage.includes('disabled')) {
@@ -116,13 +118,17 @@ export const LoginPage: React.FC = () => {
       ) {
         setError('Invalid username or password.');
       } else if (
-        (typeof status === 'number' && status >= 500) ||
-        serverMessage.includes('database') ||
-        serverMessage.includes('DATABASE_URL') ||
-        serverMessage.includes('serverless execution') ||
-        serverMessage.includes('Unable to connect')
+        status === 503 ||
+        /database|DATABASE_URL|Unable to connect|P1001|P1002/i.test(combinedDetail)
       ) {
         setError('Database connection error. If you recently updated Vercel environment variables, please redeploy in Vercel to apply changes.');
+      } else if (combinedDetail.includes('JWT_ACCESS_SECRET')) {
+        setError('Server authentication configuration error: JWT_ACCESS_SECRET is missing in Vercel environment variables.');
+      } else if (typeof status === 'number' && status >= 500) {
+        setError(
+          serverErrorDetail ||
+            'Authentication service error (HTTP 500). Check Vercel environment variables and deployment logs.',
+        );
       } else if (err?.message === 'Network Error' || err?.code === 'ERR_NETWORK') {
         setError('Network error: Unable to reach server. Please check your connection.');
       } else {

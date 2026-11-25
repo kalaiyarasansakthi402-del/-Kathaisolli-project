@@ -164,6 +164,7 @@ async function bootstrap(): Promise<void> {
   const AppModule = await getAppModule();
 
   const app = await NestFactory.create(AppModule, adapter, {
+    abortOnError: false,
     logger:
       process.env.NODE_ENV === 'production'
         ? ['error', 'warn', 'log']
