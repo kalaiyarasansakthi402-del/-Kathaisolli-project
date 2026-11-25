@@ -15,7 +15,7 @@ services:
       - key: PORT
         value: 10000
       - key: CORS_ORIGINS
-        value: https://web-a9wl0ahec-kalai21.vercel.app,https://admin-eight-theta-72.vercel.app,http://localhost:3000,http://localhost:5173
+        value: https://web-blush-gamma-47.vercel.app,https://web-kalai21.vercel.app,https://admin-eight-theta-72.vercel.app,http://localhost:3000,http://localhost:5173
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET

@@ -8,14 +8,20 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
-  const secret =
+  const configuredSecret =
     config.get<string>('JWT_ACCESS_SECRET') ||
     config.get<string>('JWT_SECRET') ||
     process.env.JWT_ACCESS_SECRET ||
-    process.env.JWT_SECRET ||
-    'kathaisolli-production-jwt-access-secret-fallback-minimum-32-chars-long';
+    process.env.JWT_SECRET;
+  const isProduction =
+    (config.get<string>('NODE_ENV') || process.env.NODE_ENV) === 'production';
 
-  if (secret.length < 32) {
+  if (isProduction && (!configuredSecret || configuredSecret.length < 32)) {
+    throw new Error(
+      'JWT_ACCESS_SECRET must be configured in production and at least 32 characters long.',
+    );
+  }
+  if (configuredSecret && configuredSecret.length < 32) {
     throw new Error('JWT_ACCESS_SECRET must be at least 32 characters long.');
   }
 
@@ -48,9 +54,7 @@ async function bootstrap() {
     if (!origin) return true;
     if (allowedSet.has(origin)) return true;
     if (/^https:\/\/web(-[a-z0-9-]+)?-kalai21\.vercel\.app$/.test(origin)) return true;
-    if (/^https:\/\/web(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
-    if (/^https:\/\/admin(-[a-z0-9-]+)?\.vercel\.app$/.test(origin)) return true;
-    if (/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin)) return true;
+    if (/^https:\/\/admin(-[a-z0-9-]+)?-kalai21\.vercel\.app$/.test(origin)) return true;
     if (config.get('NODE_ENV') !== 'production') return true;
     return false;
   };

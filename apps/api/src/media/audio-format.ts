@@ -2,11 +2,15 @@ import { BadRequestException } from '@nestjs/common';
 import { extname } from 'node:path';
 
 const supportedAudioFormats: Record<string, readonly string[]> = {
-  '.mp3': ['audio/mpeg'],
+  '.mp3': ['audio/mpeg', 'audio/mp3'],
   '.wav': ['audio/wav', 'audio/x-wav'],
-  '.m4a': ['audio/mp4'],
+  '.m4a': ['audio/mp4', 'audio/x-m4a'],
   '.aac': ['audio/aac'],
   '.flac': ['audio/flac', 'audio/x-flac'],
+  '.ogg': ['audio/ogg', 'application/ogg'],
+  '.wma': ['audio/x-ms-wma', 'audio/wma'],
+  '.aif': ['audio/aiff', 'audio/x-aiff'],
+  '.aiff': ['audio/aiff', 'audio/x-aiff'],
 };
 
 export function validateAudioUpload(
@@ -28,7 +32,7 @@ export function validateAudioUpload(
   const normalizedType = contentType.toLowerCase();
   if (!allowedTypes || !allowedTypes.includes(normalizedType)) {
     throw new BadRequestException(
-      'Supported audio files are MP3, WAV, M4A, AAC, and FLAC with a matching MIME type.',
+      'Supported audio files are MP3, WAV, FLAC, AAC, M4A, OGG, WMA, AIF, and AIFF with a matching MIME type.',
     );
   }
   if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > maxBytes) {

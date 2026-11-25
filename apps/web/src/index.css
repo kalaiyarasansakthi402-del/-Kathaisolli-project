@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   body {
     font-family: 'Inter', 'Mukta Malar', system-ui, sans-serif;
   }
@@ -10,6 +15,18 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', 'Lora', 'Mukta Malar', Georgia, serif;
   }
+}
+
+/* Hide scrollbars cleanly while keeping native scroll interaction */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Custom scrollbars with botanical green accents */

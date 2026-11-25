@@ -9,11 +9,15 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Public read for all published audiobook files (MP3, OGG, cover artwork)
-    // Allows admin uploads for stories, books, cover artwork and chapter audio
+    // Public read for published audiobook files (MP3, OGG, cover artwork)
+    // Writes restricted to authenticated admins/creators with size and media MIME validation
     match /kathaisolli/{allPaths=**} {
       allow read: if true;
-      allow write: if true;
+      allow write: if request.auth != null
+        && (request.auth.token.admin == true || request.auth.token.role in ['ADMIN', 'SUPER_ADMIN', 'CREATOR'])
+        && request.resource != null
+        && request.resource.size < 500 * 1024 * 1024
+        && (request.resource.contentType.matches('audio/.*') || request.resource.contentType.matches('image/.*'));
     }
 
     match /{allPaths=**} {

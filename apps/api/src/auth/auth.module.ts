@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -13,19 +14,35 @@ import { RolesGuard } from './roles.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const secret =
+        const configuredSecret =
           config.get<string>('JWT_ACCESS_SECRET') ||
           config.get<string>('JWT_SECRET') ||
           process.env.JWT_ACCESS_SECRET ||
-          process.env.JWT_SECRET ||
-          'kathaisolli-production-jwt-access-secret-fallback-minimum-32-chars-long';
-        if (!config.get<string>('JWT_ACCESS_SECRET') && !config.get<string>('JWT_SECRET')) {
+          process.env.JWT_SECRET;
+        const isProduction =
+          (config.get<string>('NODE_ENV') || process.env.NODE_ENV) === 'production';
+
+        if (!configuredSecret) {
+          if (isProduction) {
+            throw new Error(
+              'JWT_ACCESS_SECRET environment variable must be configured in production (minimum 32 characters).',
+            );
+          }
           console.warn(
-            '[AuthModule] Neither JWT_ACCESS_SECRET nor JWT_SECRET is set in environment; using fallback secret.',
+            '[AuthModule] JWT_ACCESS_SECRET not set; using an ephemeral random secret for local development/testing.',
           );
+          return {
+            secret: randomBytes(32).toString('hex'),
+            signOptions: { expiresIn: 900 },
+          };
         }
+
+        if (configuredSecret.length < 32) {
+          throw new Error('JWT_ACCESS_SECRET must be at least 32 characters long.');
+        }
+
         return {
-          secret,
+          secret: configuredSecret,
           signOptions: { expiresIn: 900 },
         };
       },

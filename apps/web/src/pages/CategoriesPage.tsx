@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Search,
@@ -14,6 +14,8 @@ import {
   AlertCircle,
   X,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { StoryCard } from '../components/StoryCard';
@@ -84,6 +86,46 @@ export const CATALOG_CATEGORY_TABS: CategoryTab[] = [
   },
 ];
 
+/** Normalizes DOM wheel delta values across pixel, line, and page modes. */
+const normalizeWheelDelta = (delta: number, deltaMode: number, pageSize: number): number => {
+  if (deltaMode === 1) return delta * 32;
+  if (deltaMode === 2) return delta * pageSize;
+  return delta;
+};
+
+interface CategoryScrollButtonProps {
+  direction: 'left' | 'right';
+  disabled: boolean;
+  onClick: () => void;
+}
+
+/** Accessible circular arrow control for scrolling the horizontal category bar. */
+const CategoryScrollButton: React.FC<CategoryScrollButtonProps> = ({
+  direction,
+  disabled,
+  onClick,
+}) => {
+  const label = direction === 'left' ? 'Scroll categories left' : 'Scroll categories right';
+  const Icon = direction === 'left' ? ChevronLeft : ChevronRight;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`shrink-0 flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#064E3B] dark:focus-visible:ring-[#A7F3D0] ${
+        disabled
+          ? 'bg-white/60 dark:bg-[#073224]/40 border-[#E3DCBA]/70 dark:border-[#0F4738]/50 text-stone-300 dark:text-stone-600 cursor-not-allowed opacity-50 shadow-none'
+          : 'bg-white dark:bg-[#073224] border-[#DDD5C0] dark:border-[#0F4738] text-[#064E3B] dark:text-[#A7F3D0] hover:bg-[#064E3B] hover:text-white hover:border-[#064E3B] dark:hover:bg-[#10B981] dark:hover:text-[#03261C] dark:hover:border-[#10B981] shadow-sm hover:shadow-md hover:scale-105 active:scale-95 cursor-pointer'
+      }`}
+    >
+      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+    </button>
+  );
+};
+
 export const CategoriesPage: React.FC = () => {
   const { api } = useAuth();
   const { currentTrack } = usePlayer();
@@ -96,6 +138,14 @@ export const CategoriesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>(urlSearch);
   const [debouncedQuery, setDebouncedQuery] = useState<string>(urlSearch);
   const [visibleCount, setVisibleCount] = useState<number>(12);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const tabButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const wheelTargetRef = useRef<{ target: number; ts: number } | null>(null);
+  const arrowTargetRef = useRef<{ target: number; ts: number } | null>(null);
+
+  const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
+  const [canScrollRight, setCanScrollRight] = useState<boolean>(false);
 
   // Sync state when URL search params change (Back/Forward or direct navigation)
   useEffect(() => {
@@ -195,6 +245,168 @@ export const CategoriesPage: React.FC = () => {
     }
     return tabs;
   }, [apiCategories]);
+
+  const updateScrollButtons = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const tolerance = 2; // Tolerates subpixel fractional DPI scaling
+    const nextCanScrollLeft = scrollLeft > tolerance;
+    const nextCanScrollRight = scrollLeft + clientWidth < scrollWidth - tolerance;
+
+    setCanScrollLeft((prev) => (prev !== nextCanScrollLeft ? nextCanScrollLeft : prev));
+    setCanScrollRight((prev) => (prev !== nextCanScrollRight ? nextCanScrollRight : prev));
+  }, []);
+
+  // Single passive scroll + non-passive wheel + resize/font observation with proper cleanup
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    let isMounted = true;
+    updateScrollButtons();
+
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(() => {
+        if (isMounted) updateScrollButtons();
+      });
+    }
+
+    const handleWheel = (e: WheelEvent) => {
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (maxScroll <= 1) return;
+
+      const dx = normalizeWheelDelta(e.deltaX, e.deltaMode, el.clientWidth);
+      const dy = normalizeWheelDelta(e.deltaY, e.deltaMode, el.clientWidth);
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      // Horizontal trackpad swipe (or Shift + wheel): lock axis so slight vertical delta never scrolls the page
+      if (absX > 0 && absX >= absY) {
+        e.preventDefault();
+        arrowTargetRef.current = null;
+        wheelTargetRef.current = null;
+        el.scrollLeft += dx;
+        return;
+      }
+
+      // Mouse wheel over category bar: convert vertical wheel into horizontal scrolling while scrollable
+      if (absY > 0) {
+        const hasRight = el.scrollLeft < maxScroll - 2;
+        const hasLeft = el.scrollLeft > 2;
+        if (!((dy > 0 && hasRight) || (dy < 0 && hasLeft))) return;
+
+        e.preventDefault();
+        arrowTargetRef.current = null;
+
+        if (absY < 35) {
+          wheelTargetRef.current = null;
+          el.scrollLeft += dy;
+          return;
+        }
+
+        const now = Date.now();
+        const baseLeft =
+          wheelTargetRef.current && now - wheelTargetRef.current.ts < 200
+            ? wheelTargetRef.current.target
+            : el.scrollLeft;
+        let nextTarget = Math.max(0, Math.min(maxScroll, baseLeft + dy));
+        if (nextTarget <= 8) nextTarget = 0;
+        if (nextTarget >= maxScroll - 8) nextTarget = maxScroll;
+        wheelTargetRef.current = { target: nextTarget, ts: now };
+        el.scrollTo({ left: nextTarget, behavior: 'smooth' });
+      }
+    };
+
+    el.addEventListener('scroll', updateScrollButtons, { passive: true });
+    el.addEventListener('wheel', handleWheel, { passive: false });
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(updateScrollButtons);
+      resizeObserver.observe(el);
+    } else {
+      window.addEventListener('resize', updateScrollButtons);
+    }
+
+    return () => {
+      isMounted = false;
+      el.removeEventListener('scroll', updateScrollButtons);
+      el.removeEventListener('wheel', handleWheel);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      } else {
+        window.removeEventListener('resize', updateScrollButtons);
+      }
+    };
+  }, [updateScrollButtons]);
+
+  // Recalculate button states when merged category tabs change
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      updateScrollButtons();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [categoryTabs, updateScrollButtons]);
+
+  // Smoothly scroll the selected category pill horizontally into view without vertical page scrolling
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const activeTab = categoryTabs.find(
+      (tab) =>
+        selectedCategory.toLowerCase() === tab.id.toLowerCase() ||
+        selectedCategory.toLowerCase() === tab.name.toLowerCase() ||
+        (tab.id === 'all' && (!selectedCategory || selectedCategory === 'all'))
+    );
+    if (!activeTab) return;
+
+    const activeEl = tabButtonRefs.current.get(activeTab.id);
+    if (!activeEl) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeEl.getBoundingClientRect();
+    const edgePadding = 16;
+
+    if (buttonRect.left < containerRect.left + edgePadding) {
+      const nextLeft = Math.max(
+        0,
+        container.scrollLeft + (buttonRect.left - (containerRect.left + edgePadding))
+      );
+      arrowTargetRef.current = null;
+      container.scrollTo({ left: nextLeft, behavior: 'smooth' });
+    } else if (buttonRect.right > containerRect.right - edgePadding) {
+      const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+      const nextLeft = Math.min(
+        maxScroll,
+        container.scrollLeft + (buttonRect.right - (containerRect.right - edgePadding))
+      );
+      arrowTargetRef.current = null;
+      container.scrollTo({ left: nextLeft, behavior: 'smooth' });
+    }
+  }, [selectedCategory, categoryTabs]);
+
+  const scrollCategories = (direction: 'left' | 'right') => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const maxScroll = Math.max(0, el.scrollWidth - el.clientWidth);
+    const step = Math.max(180, Math.round(el.clientWidth * 0.7));
+    const now = Date.now();
+    const baseLeft =
+      arrowTargetRef.current && now - arrowTargetRef.current.ts < 450
+        ? arrowTargetRef.current.target
+        : el.scrollLeft;
+
+    let targetLeft = direction === 'left' ? baseLeft - step : baseLeft + step;
+    if (targetLeft <= 12) targetLeft = 0;
+    if (targetLeft >= maxScroll - 12) targetLeft = maxScroll;
+
+    wheelTargetRef.current = null;
+    arrowTargetRef.current = { target: targetLeft, ts: now };
+    el.scrollTo({ left: targetLeft, behavior: 'smooth' });
+  };
 
   // Fetch API stories if available (progressive enhancement)
   const {
@@ -387,7 +599,7 @@ export const CategoriesPage: React.FC = () => {
 
   return (
     <div
-      className={`py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors min-h-[80vh] ${
+      className={`w-full overflow-x-clip py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors min-h-[80vh] ${
         currentTrack ? 'pb-36 sm:pb-40' : 'pb-16 sm:pb-20'
       }`}
     >
@@ -433,38 +645,94 @@ export const CategoriesPage: React.FC = () => {
         )}
       </div>
 
-      {/* Category Pills Bar (Horizontal Scrollable) */}
-      <div className="relative -mx-4 px-4 sm:mx-0 sm:px-0">
-        <div
-          className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {categoryTabs.map((tab) => {
-            const isSelected =
-              selectedCategory.toLowerCase() === tab.id.toLowerCase() ||
-              (tab.id === 'all' && (!selectedCategory || selectedCategory === 'all'));
+      {/* Category Pills Bar (Horizontal Scrollable with Left/Right Arrows) */}
+      <div
+        role="region"
+        aria-label="Category filters navigation"
+        className="relative flex items-center gap-1.5 sm:gap-2.5 w-full min-w-0"
+      >
+        <CategoryScrollButton
+          direction="left"
+          disabled={!canScrollLeft}
+          onClick={() => scrollCategories('left')}
+        />
 
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleSelectCategory(tab.id)}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 shadow-sm ${
-                  isSelected
-                    ? 'bg-[#064E3B] text-white shadow-md shadow-emerald-950/20 scale-105'
-                    : 'bg-white dark:bg-[#073224] border border-[#E3DCBA] dark:border-[#0F4738] text-stone-700 dark:text-stone-300 hover:border-[#064E3B] hover:text-[#064E3B]'
-                }`}
-              >
-                <span className={isSelected ? 'text-[#A7F3D0]' : 'text-stone-500'}>
-                  {tab.icon}
-                </span>
-                <span>{tab.name}</span>
-                <span className={`text-[10px] font-tamil font-normal ${isSelected ? 'text-emerald-200' : 'text-stone-400'}`}>
-                  ({tab.tamilName})
-                </span>
-              </button>
-            );
-          })}
+        <div className="relative flex-1 min-w-0 overflow-hidden">
+          {/* Left scroll fade indicator */}
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-y-0 left-0 w-6 z-10 bg-gradient-to-r from-[#FAF7EE] dark:from-[#03261C] to-transparent transition-opacity duration-200 ${
+              canScrollLeft ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+
+          <div
+            ref={scrollContainerRef}
+            onPointerDown={() => {
+              arrowTargetRef.current = null;
+              wheelTargetRef.current = null;
+            }}
+            className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto py-2 px-1.5 scrollbar-none overscroll-x-contain scroll-px-4"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-x',
+            }}
+          >
+            {categoryTabs.map((tab) => {
+              const isSelected =
+                selectedCategory.toLowerCase() === tab.id.toLowerCase() ||
+                selectedCategory.toLowerCase() === tab.name.toLowerCase() ||
+                (tab.id === 'all' && (!selectedCategory || selectedCategory === 'all'));
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  ref={(node) => {
+                    if (node) {
+                      tabButtonRefs.current.set(tab.id, node);
+                    } else {
+                      tabButtonRefs.current.delete(tab.id);
+                    }
+                  }}
+                  aria-pressed={isSelected}
+                  onClick={() => handleSelectCategory(tab.id)}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition-all duration-200 flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#064E3B] dark:focus-visible:ring-[#A7F3D0] focus-visible:ring-offset-1 ${
+                    isSelected
+                      ? 'bg-[#064E3B] border-[#064E3B] dark:border-[#10B981] text-white shadow-md shadow-emerald-950/20 scale-[1.03]'
+                      : 'bg-white dark:bg-[#073224] border-[#E3DCBA] dark:border-[#0F4738] text-stone-700 dark:text-stone-300 shadow-sm hover:border-[#064E3B] hover:text-[#064E3B] dark:hover:border-[#A7F3D0] dark:hover:text-[#A7F3D0] hover:-translate-y-0.5 active:scale-95'
+                  }`}
+                >
+                  <span className={isSelected ? 'text-[#A7F3D0]' : 'text-stone-500 dark:text-stone-400'}>
+                    {tab.icon}
+                  </span>
+                  <span>{tab.name}</span>
+                  {tab.tamilName && tab.tamilName !== tab.name && (
+                    <span className={`text-[10px] font-tamil font-normal ${isSelected ? 'text-emerald-200' : 'text-stone-400 dark:text-stone-400'}`}>
+                      ({tab.tamilName})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right scroll fade indicator */}
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-y-0 right-0 w-6 z-10 bg-gradient-to-l from-[#FAF7EE] dark:from-[#03261C] to-transparent transition-opacity duration-200 ${
+              canScrollRight ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
         </div>
+
+        <CategoryScrollButton
+          direction="right"
+          disabled={!canScrollRight}
+          onClick={() => scrollCategories('right')}
+        />
       </div>
 
       {/* API Notice / Fallback Status if needed */}

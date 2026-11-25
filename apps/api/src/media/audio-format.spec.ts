@@ -8,6 +8,10 @@ describe('validateAudioUpload', () => {
     ['episode.m4a', 'audio/mp4'],
     ['episode.aac', 'audio/aac'],
     ['episode.flac', 'audio/flac'],
+    ['episode.ogg', 'audio/ogg'],
+    ['episode.wma', 'audio/x-ms-wma'],
+    ['episode.aif', 'audio/aiff'],
+    ['episode.aiff', 'audio/x-aiff'],
   ])('accepts supported format %s', (fileName, contentType) => {
     expect(
       validateAudioUpload(fileName, contentType, 1000, 10_000),

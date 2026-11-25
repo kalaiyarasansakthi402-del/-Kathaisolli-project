@@ -94,10 +94,10 @@ const AppContent: React.FC = () => {
   const hasActivePlayer = !isDedicatedPlayerPage && !isHomePage && !isAuthPage && !!currentTrack;
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
+    <div className="min-h-screen flex flex-col overflow-x-clip bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] font-sans antialiased selection:bg-[#E8F0E2] selection:text-[#064E3B] transition-colors duration-200">
       {!isDedicatedPlayerPage && <Navbar />}
 
-      <main className={`flex-1 ${isDedicatedPlayerPage || isHomePage || isAuthPage ? 'pb-0' : hasActivePlayer ? 'pb-28 sm:pb-32' : 'pb-8 sm:pb-12'}`}>
+      <main className={`flex-1 min-w-0 ${isDedicatedPlayerPage || isHomePage || isAuthPage ? 'pb-0' : hasActivePlayer ? 'pb-28 sm:pb-32' : 'pb-8 sm:pb-12'}`}>
         <ErrorBoundary>
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
