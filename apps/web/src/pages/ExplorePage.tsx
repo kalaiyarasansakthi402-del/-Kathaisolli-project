@@ -23,11 +23,6 @@ import {
   LIBRARY_CATEGORIES,
   type LibraryBook,
 } from '../data/libraryCatalog';
-import {
-  listAudioFiles,
-  type FirebaseAudioStory,
-} from '../services/firebaseStorage';
-import { isFirebaseConfigured, firebaseConfig } from '../services/firebase';
 
 export const ExplorePage: React.FC = () => {
   const { api } = useAuth();
@@ -128,22 +123,6 @@ export const ExplorePage: React.FC = () => {
     retry: false,
   });
 
-  // Fetch Firebase Storage Audio Stories safely (only when Firebase source requested)
-  const fbConfigured = isFirebaseConfigured();
-  const {
-    data: firebaseStories = [],
-    isLoading: isFbLoading,
-    isError: isFbError,
-    error: fbError,
-    refetch: refetchFirebase,
-  } = useQuery({
-    queryKey: ['firebase', 'stories', 'explore'],
-    queryFn: () => listAudioFiles('', 18),
-    enabled: fbConfigured && (sourceFilter === 'firebase' || sourceFilter === 'all'),
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-  });
-
   // Map complete 62-book library catalog to standard format
   const completeMappedCatalog = useMemo(() => {
     return COMPLETE_LIBRARY_CATALOG.map((book: LibraryBook) => ({
@@ -198,26 +177,6 @@ export const ExplorePage: React.FC = () => {
     }));
   }, [seriesData]);
 
-  // Map Firebase Audio Stories
-  const mappedFbStories = useMemo(() => {
-    return firebaseStories.map((item: FirebaseAudioStory) => ({
-      id: item.id,
-      slug: item.id,
-      title: item.title,
-      rawTamil: item.title,
-      rawEnglish: item.cleanName,
-      authorName: 'Firebase Audio · ' + item.folder,
-      coverImageUrl: item.coverImageUrl || '/images/covers/arthashastram.jpg',
-      categoryName: 'Cloud Audio',
-      language: 'தமிழ்',
-      totalEpisodes: 1,
-      totalDurationSeconds: item.durationSec || 300,
-      audioUrl: item.downloadUrl,
-      source: 'firebase',
-      isFirebase: true,
-    }));
-  }, [firebaseStories]);
-
   // Base combined stories (Prioritize API + Complete Catalog)
   const baseStories = useMemo(() => {
     if (apiMappedStories.length > 0) {
@@ -233,14 +192,7 @@ export const ExplorePage: React.FC = () => {
 
   // Filter stories based on category, language, source, and debounced search query
   const filteredStories = useMemo(() => {
-    let pool: any[] = [];
-    if (sourceFilter === 'firebase') {
-      pool = mappedFbStories;
-    } else if (sourceFilter === 'catalog') {
-      pool = baseStories;
-    } else {
-      pool = [...mappedFbStories, ...baseStories];
-    }
+    const pool: any[] = baseStories;
 
     return pool.filter((story) => {
       // Category filter
@@ -274,7 +226,7 @@ export const ExplorePage: React.FC = () => {
 
       return true;
     });
-  }, [baseStories, mappedFbStories, sourceFilter, selectedCategory, language, debouncedQuery]);
+  }, [baseStories, selectedCategory, language, debouncedQuery]);
 
   // Progressive visible items
   const visibleStories = useMemo(() => {
@@ -358,17 +310,6 @@ export const ExplorePage: React.FC = () => {
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>ஆடியோ நூலகம் ({baseStories.length})</span>
-          </button>
-          <button
-            onClick={() => handleSourceChange('firebase')}
-            className={`px-4 py-2 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
-              sourceFilter === 'firebase'
-                ? 'bg-[#064E3B] text-white shadow-emerald-950/20'
-                : 'bg-white dark:bg-[#083325] text-[#173D2E] dark:text-stone-200 border border-[#D5CEBA] dark:border-[#124835] hover:bg-[#E8F0E2]'
-            }`}
-          >
-            <Cloud className="w-3.5 h-3.5" />
-            <span>Firebase Cloud ({mappedFbStories.length})</span>
           </button>
         </div>
       </div>
@@ -454,36 +395,8 @@ export const ExplorePage: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Firebase Error Notice (Non-blocking banner) */}
-      {isFbError && sourceFilter === 'firebase' && (
-        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start justify-between gap-3 text-amber-800 dark:text-amber-200 text-xs">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <span className="font-bold">Firebase Storage அறிவிப்பு:</span>
-              <p>
-                {(fbError as any)?.message ||
-                  'Firebase Storage இல் கோப்புகளைப் பெறுவதில் தாமதம் ஏற்பட்டது. உள்ளூர் ஆடியோ நூலகம் பயன்படுத்தப்படுகிறது.'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => refetchFirebase()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-700 text-white font-bold hover:bg-amber-800 transition-colors shrink-0"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>மீண்டும் முயற்சி</span>
-          </button>
-        </div>
-      )}
-
-      {/* 4. Loading Skeleton (Only when source is Firebase and waiting) */}
-      {isFbLoading && sourceFilter === 'firebase' && filteredStories.length === 0 && (
-        <StoryGridSkeleton count={8} />
-      )}
-
-      {/* 5. Empty State */}
-      {filteredStories.length === 0 && !isFbLoading && (
+      {/* 3. Empty State */}
+      {filteredStories.length === 0 && !isApiLoading && (
         <EmptyState
           icon={FolderOpen}
           title="கதைகள் எதுவும் கிடைக்கவில்லை (No Stories Found)"

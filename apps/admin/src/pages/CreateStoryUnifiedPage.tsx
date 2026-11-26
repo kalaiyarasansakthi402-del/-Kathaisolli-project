@@ -20,6 +20,8 @@ import {
   Link as LinkIcon,
   ArrowRight,
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
   Volume2,
   Check,
   Clock,
@@ -28,10 +30,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import {
   uploadBookCoverImage,
-  uploadChapterAudioMp3,
+  uploadChapterAudio,
   formatFileSize,
   detectAudioDuration,
-} from '../services/firebaseAdminStorage';
+} from '../services/mediaUploadService';
 import { formatDuration } from '@kathaisolli/shared-utils';
 
 export interface StagedChapter {
@@ -229,22 +231,18 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   // ---------------------------------------------------------
   const handleAudioFileSelect = async (file: File) => {
     const isAudio =
-      file.type === 'audio/mpeg' ||
-      file.type === 'audio/mp3' ||
-      file.type === 'audio/x-m4a' ||
-      file.type === 'audio/m4a' ||
-      file.name.toLowerCase().endsWith('.mp3') ||
-      file.name.toLowerCase().endsWith('.m4a');
+      file.type.startsWith('audio/') ||
+      /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(file.name);
 
     if (!isAudio) {
       setGlobalError(
-        'தயவுசெய்து MP3 அல்லது M4A ஆடியோ கோப்பை மட்டும் தேர்ந்தெடுக்கவும் (Only MP3/M4A allowed).'
+        'தயவுசெய்து MP3, WAV, M4A, OGG அல்லது AAC ஆடியோ கோப்பைத் தேர்ந்தெடுக்கவும்.'
       );
       return;
     }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setGlobalError('ஆடியோ கோப்பின் அளவு 500MB-க்கு மிகாமல் இருக்க வேண்டும்.');
+    if (file.size > 200 * 1024 * 1024) {
+      setGlobalError('ஆடியோ கோப்பின் அளவு 200MB-க்கு மிகாமல் இருக்க வேண்டும்.');
       return;
     }
 
@@ -357,6 +355,38 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     }
   };
 
+  const handleMoveStagedChapter = async (index: number, direction: -1 | 1) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= stagedChapters.length) return;
+
+    const reordered = [...stagedChapters];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    const renumbered = reordered.map((ch, idx) => ({
+      ...ch,
+      episodeNumber: idx + 1,
+    }));
+    setStagedChapters(renumbered);
+
+    if (
+      persistedStoryId &&
+      renumbered.every((ch) => Boolean(ch.createdChapterId))
+    ) {
+      try {
+        await api.admin.reorderChapters(
+          persistedStoryId,
+          renumbered.map((ch) => ch.createdChapterId!),
+        );
+        queryClient.invalidateQueries({ queryKey: ['admin', 'story', persistedStoryId] });
+      } catch (err: any) {
+        setGlobalError(
+          err?.response?.data?.message || 'அத்தியாய வரிசையை மாற்ற முடியவில்லை.',
+        );
+      }
+    }
+  };
+
   // ---------------------------------------------------------
   // INLINE AUDIO PLAYBACK HELPER
   // ---------------------------------------------------------
@@ -455,11 +485,12 @@ export const CreateStoryUnifiedPage: React.FC = () => {
 
       // STEP 1: CREATE OR UPDATE STORY
       if (!storyId || storyOptionIsNew()) {
-        let finalCoverUrl = coverUrlInput.trim() || coverPreview;
+        let finalCoverUrl = coverUrlInput.trim() || (coverPreview.startsWith('blob:') ? '' : coverPreview);
 
-        // Upload local cover file to Firebase Storage if provided
+        // Upload local cover file to Backend Persistent Storage if provided
         if (coverFile) {
           const coverUploadRes = await uploadBookCoverImage(
+            api,
             `story-${Date.now()}`,
             coverFile,
             (pct) => setCoverUploadProgress(pct)
@@ -496,9 +527,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         setSelectedStoryOption(storyId);
       } else {
         // Story already exists: update details
-        let finalCoverUrl = coverUrlInput.trim() || coverPreview;
+        let finalCoverUrl = coverUrlInput.trim() || (coverPreview.startsWith('blob:') ? '' : coverPreview);
         if (coverFile) {
-          const coverUploadRes = await uploadBookCoverImage(storyId, coverFile);
+          const coverUploadRes = await uploadBookCoverImage(api, storyId, coverFile, (pct) => setCoverUploadProgress(pct));
           finalCoverUrl = coverUploadRes.url;
         }
 
@@ -557,15 +588,17 @@ export const CreateStoryUnifiedPage: React.FC = () => {
             throw new Error(`அத்தியாயம் ${chapter.episodeNumber} உருவாக்க முடியவில்லை.`);
           }
 
-          // 2b. Upload Audio File to Firebase Storage
-          let audioUrl = chapter.audioUrl || '';
+          // 2b. Upload Audio File to Backend Persistent Storage
+          let audioUrl = chapter.audioUrl && !chapter.audioUrl.startsWith('blob:') ? chapter.audioUrl : '';
           let storagePath = '';
           let durationSec = chapter.durationSec || 0;
           let fileSizeBytes = chapter.fileSizeBytes || 0;
           let fileName = chapter.fileName;
+          let contentType = 'audio/mpeg';
 
           if (chapter.audioFile) {
-            const uploadRes = await uploadChapterAudioMp3(
+            const uploadRes = await uploadChapterAudio(
+              api,
               storyId,
               chapterId,
               chapter.audioFile,
@@ -580,6 +613,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
             durationSec = uploadRes.durationSec || durationSec;
             fileSizeBytes = uploadRes.fileSizeBytes || fileSizeBytes;
             fileName = uploadRes.fileName || fileName;
+            contentType = uploadRes.contentType || contentType;
           }
 
           // 2c. Save Chapter Audio Metadata in DB
@@ -590,6 +624,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
               durationSec,
               fileSizeBytes,
               fileName,
+              contentType,
             });
           }
 
@@ -690,14 +725,16 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         throw new Error('அத்தியாயம் ஐடி பெற முடியவில்லை.');
       }
 
-      let audioUrl = chapter.audioUrl || '';
+      let audioUrl = chapter.audioUrl && !chapter.audioUrl.startsWith('blob:') ? chapter.audioUrl : '';
       let storagePath = '';
       let durationSec = chapter.durationSec || 0;
       let fileSizeBytes = chapter.fileSizeBytes || 0;
       let fileName = chapter.fileName;
+      let contentType = 'audio/mpeg';
 
       if (chapter.audioFile) {
-        const uploadRes = await uploadChapterAudioMp3(
+        const uploadRes = await uploadChapterAudio(
+          api,
           storyId,
           chapterId,
           chapter.audioFile,
@@ -710,6 +747,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         durationSec = uploadRes.durationSec || durationSec;
         fileSizeBytes = uploadRes.fileSizeBytes || fileSizeBytes;
         fileName = uploadRes.fileName || fileName;
+        contentType = uploadRes.contentType || contentType;
       }
 
       if (audioUrl) {
@@ -719,6 +757,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           durationSec,
           fileSizeBytes,
           fileName,
+          contentType,
         });
       }
 
@@ -1233,7 +1272,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
               <span className="font-tamil">MP3 தேர்வு (Choose MP3)</span>
               <input
                 type="file"
-                accept="audio/mp3,audio/mpeg,audio/x-m4a,audio/m4a"
+                accept=".mp3,.wav,.m4a,.aac,.ogg,.flac,audio/*"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -1458,7 +1497,25 @@ export const CreateStoryUnifiedPage: React.FC = () => {
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <div className="inline-flex items-center gap-1.5">
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveStagedChapter(idx, -1)}
+                            disabled={idx === 0}
+                            title="Move Up"
+                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 disabled:opacity-30 transition-colors"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveStagedChapter(idx, 1)}
+                            disabled={idx === stagedChapters.length - 1}
+                            title="Move Down"
+                            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 disabled:opacity-30 transition-colors"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
                           {ch.audioUrl && (
                             <button
                               type="button"

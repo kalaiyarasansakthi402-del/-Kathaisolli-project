@@ -27,7 +27,6 @@ import {
   COMPLETE_LIBRARY_CATALOG,
   LibraryBook,
 } from '../data/libraryCatalog';
-import { isFirebaseConfigured, firebaseConfig } from '../services/firebase';
 
 export const AdminDashboardPage: React.FC = () => {
   const [books, setBooks] = useState<LibraryBook[]>(COMPLETE_LIBRARY_CATALOG);
@@ -240,12 +239,12 @@ export const AdminDashboardPage: React.FC = () => {
 
         <div className="p-5 rounded-2xl bg-white dark:bg-[#063828] border border-stone-200 dark:border-[#084D37] shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase font-bold text-stone-400">Firebase Storage</p>
-            <h3 className="text-sm font-bold text-[#064E3B] dark:text-[#A7F3D0] mt-1 truncate max-w-[160px]" title={firebaseConfig.storageBucket}>
-              {firebaseConfig.storageBucket}
+            <p className="text-xs uppercase font-bold text-stone-400">Object Storage</p>
+            <h3 className="text-sm font-bold text-[#064E3B] dark:text-[#A7F3D0] mt-1 truncate max-w-[160px]" title="S3 / Backend Storage">
+              kathaisolli-audio
             </h3>
             <p className="text-[11px] text-stone-500 mt-1">
-              Status: {isFirebaseConfigured() ? 'Active (Connected)' : 'Fallback Mock'}
+              Status: Active (Backend Managed)
             </p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center">
@@ -397,10 +396,10 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-[#063828] p-8 rounded-2xl border border-stone-200 dark:border-[#084D37] space-y-6">
           <div>
             <h3 className="text-lg font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9]">
-              Upload Audio to Firebase Storage
+              Upload Audio to Persistent Storage
             </h3>
             <p className="text-xs text-stone-500 mt-1">
-              Target bucket: <code className="bg-stone-100 dark:bg-black/30 px-2 py-0.5 rounded">{firebaseConfig.storageBucket}</code>
+              Target bucket: <code className="bg-stone-100 dark:bg-black/30 px-2 py-0.5 rounded">kathaisolli-audio</code>
             </p>
           </div>
 
@@ -446,32 +445,18 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="bg-white dark:bg-[#063828] p-8 rounded-2xl border border-stone-200 dark:border-[#084D37] space-y-6">
           <div>
             <h3 className="text-lg font-bold font-serif text-[#064E3B] dark:text-[#F8F5E9]">
-              Firebase Storage Security Rules
+              Storage Access & Security Policy
             </h3>
             <p className="text-xs text-stone-500 mt-1">
-              Public read enabled for all verified story audio; Admin write authorization enforced.
+              Published story audio is authorized by the backend API; Admin &amp; Creator write access enforced via JWT RBAC.
             </p>
           </div>
 
           <pre className="p-5 rounded-2xl bg-stone-900 text-stone-200 font-mono text-xs overflow-x-auto leading-relaxed border border-stone-800">
-{`rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    // Stories and audio files are publicly readable for streaming
-    match /stories/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.token.admin == true;
-    }
-    match /audio/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.token.admin == true;
-    }
-    // Default deny for all other private paths
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-  }
-}`}
+{`Storage Provider: S3-Compatible / Backend Persistent Storage
+- Admin/Creator uploads: JWT + RolesGuard (ADMIN, SUPER_ADMIN, MODERATOR, CREATOR)
+- Draft/Private audio: Blocked from public streaming (403 Forbidden)
+- Published audio: Streamed with Range support & signed URLs`}
           </pre>
         </div>
       )}

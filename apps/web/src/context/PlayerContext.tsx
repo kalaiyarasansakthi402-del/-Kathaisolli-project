@@ -334,8 +334,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   /**
-   * Normalize and resolve Firebase Storage URLs for seamless MP3/OGG streaming.
-   * Encodes object paths with %2F to prevent 400/403/connection resets from Firebase Storage.
+   * Normalize and resolve audio playback URLs for seamless MP3/OGG/M4A/WAV streaming.
    */
   const resolveAudioPlaybackUrl = useCallback((
     url?: string | null,
@@ -346,33 +345,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return '/audio/arthashastram_01.mp3';
     }
 
-    // 1. If it's a legacy storage.googleapis.com XML URL, convert it to a valid Firebase Storage download URL
-    if (url.includes('storage.googleapis.com/vaagai-audio-books-36a4e.appspot.com')) {
-      const cleanPath = url
-        .replace(/^https?:\/\/storage\.googleapis\.com\/vaagai-audio-books-36a4e\.appspot\.com\/?/, '')
-        .replace(/^stories\//, '');
-      const decoded = decodeURIComponent(cleanPath);
-      return `https://firebasestorage.googleapis.com/v0/b/vaagai-audio-books-36a4e.appspot.com/o/${encodeURIComponent(
-        decoded,
-      )}?alt=media`;
-    }
-
-    // 2. Ensure Firebase Storage URLs encode path slashes after /o/ as %2F
-    if (url.includes('/o/')) {
-      const parts = url.split('/o/');
-      const base = parts[0] + '/o/';
-      const rest = parts[1];
-      const queryIdx = rest.indexOf('?');
-      const rawPath = queryIdx !== -1 ? rest.substring(0, queryIdx) : rest;
-      const queryParams = queryIdx !== -1 ? rest.substring(queryIdx) : '?alt=media';
-
-      // Always decode first then cleanly encode
-      const decoded = decodeURIComponent(rawPath);
-      const encoded = encodeURIComponent(decoded);
-      return `${base}${encoded}${queryParams}`;
-    }
-
-    // 3. Check browser OGG capability. If Safari/iOS doesn't support OGG, provide local fallback
+    // Check browser OGG capability. If Safari/iOS doesn't support OGG, provide local fallback
     if (url.endsWith('.ogg') || url.includes('.ogg?')) {
       const formatInfo = detectAudioFormat(url);
       if (!formatInfo.isSupportedByBrowser) {

@@ -2,16 +2,22 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class SaveChapterAudioDto {
-  @ApiProperty({ example: 'https://firebasestorage.googleapis.com/.../01.mp3' })
+  @ApiProperty({ example: '/api/v1/media/file?key=audio%2Fstory-1%2Fch-1.mp3' })
   @IsString()
   @MaxLength(2048)
   audioUrl!: string;
 
-  @ApiPropertyOptional({ example: 'kathaisolli/books/kb-1/chapters/ch-1.mp3' })
+  @ApiPropertyOptional({ example: 'audio/story-1/ch-1/01.mp3' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
   storagePath?: string;
+
+  @ApiPropertyOptional({ example: 'audio/mpeg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  contentType?: string;
 
   @ApiPropertyOptional({ example: 360, default: 0 })
   @IsOptional()

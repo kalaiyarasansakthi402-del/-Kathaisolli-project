@@ -340,6 +340,70 @@ export class KathaisolliApiClient {
     unpublishStory: (id: string) =>
       this.client.post<any>(`/admin/stories/${id}/unpublish`).then((r) => r.data),
 
+    uploadCover: (
+      file: File,
+      storyId?: string,
+      onProgress?: (percent: number) => void,
+    ) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return this.client
+        .post<{
+          objectKey: string;
+          url: string;
+          contentType: string;
+          sizeBytes: number;
+          fileName: string;
+        }>('/admin/uploads/cover', formData, {
+          params: storyId ? { storyId } : undefined,
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (evt) => {
+            if (onProgress && evt.total) {
+              onProgress(Math.round((evt.loaded / evt.total) * 100));
+            }
+          },
+        })
+        .then((r) => r.data);
+    },
+
+    uploadAudio: (
+      file: File,
+      options?: {
+        storyId?: string;
+        chapterId?: string;
+        onProgress?: (percent: number) => void;
+      },
+    ) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return this.client
+        .post<{
+          objectKey: string;
+          url: string;
+          contentType: string;
+          sizeBytes: number;
+          fileName: string;
+        }>('/admin/uploads/audio', formData, {
+          params: {
+            ...(options?.storyId ? { storyId: options.storyId } : {}),
+            ...(options?.chapterId ? { chapterId: options.chapterId } : {}),
+          },
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 300_000,
+          onUploadProgress: (evt) => {
+            if (options?.onProgress && evt.total) {
+              options.onProgress(Math.round((evt.loaded / evt.total) * 100));
+            }
+          },
+        })
+        .then((r) => r.data);
+    },
+
+    reorderChapters: (storyId: string, chapterIds: string[]) =>
+      this.client
+        .patch<any>(`/admin/stories/${storyId}/chapters/reorder`, { chapterIds })
+        .then((r) => r.data),
+
     // Chapters & Audio
     createChapter: (storyId: string, data: any) =>
       this.client.post<any>(`/admin/stories/${storyId}/chapters`, data).then((r) => r.data),
@@ -350,7 +414,7 @@ export class KathaisolliApiClient {
     deleteChapter: (storyId: string, chapterId: string) =>
       this.client.delete<any>(`/admin/stories/${storyId}/chapters/${chapterId}`).then((r) => r.data),
 
-    saveChapterAudio: (storyId: string, chapterId: string, data: { audioUrl: string; storagePath?: string; durationSec?: number; fileSizeBytes?: number; fileName?: string }) =>
+    saveChapterAudio: (storyId: string, chapterId: string, data: { audioUrl: string; storagePath?: string; durationSec?: number; fileSizeBytes?: number; fileName?: string; contentType?: string }) =>
       this.client.post<any>(`/admin/stories/${storyId}/chapters/${chapterId}/audio`, data).then((r) => r.data),
 
     deleteChapterAudio: (storyId: string, chapterId: string) =>

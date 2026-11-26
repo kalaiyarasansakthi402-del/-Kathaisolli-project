@@ -21,10 +21,10 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import {
-  uploadChapterAudioMp3,
+  uploadChapterAudio,
   formatFileSize,
   detectAudioDuration,
-} from '../services/firebaseAdminStorage';
+} from '../services/mediaUploadService';
 import { formatDuration } from '@kathaisolli/shared-utils';
 import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
 
@@ -190,9 +190,10 @@ export const AdminBookChaptersPage: React.FC = () => {
         });
       }
 
-      // If an audio file was selected, upload it to Firebase Storage and save URL to DB
+      // If an audio file was selected, upload it to Backend Persistent Storage and save URL to DB
       if (selectedFile && chapterId) {
-        const uploadRes = await uploadChapterAudioMp3(
+        const uploadRes = await uploadChapterAudio(
+          api,
           bookId,
           chapterId,
           selectedFile,
@@ -205,6 +206,7 @@ export const AdminBookChaptersPage: React.FC = () => {
           durationSec: uploadRes.durationSec,
           fileSizeBytes: uploadRes.fileSizeBytes,
           fileName: uploadRes.fileName,
+          contentType: uploadRes.contentType,
         });
       }
 
@@ -321,8 +323,9 @@ export const AdminBookChaptersPage: React.FC = () => {
           status: 'PUBLISHED',
         });
 
-        // 2. Upload MP3 to Firebase
-        const uploadRes = await uploadChapterAudioMp3(
+        // 2. Upload Audio to Backend Persistent Storage
+        const uploadRes = await uploadChapterAudio(
+          api,
           bookId,
           chapter.id,
           item.file,
@@ -340,6 +343,7 @@ export const AdminBookChaptersPage: React.FC = () => {
           durationSec: uploadRes.durationSec,
           fileSizeBytes: uploadRes.fileSizeBytes,
           fileName: uploadRes.fileName,
+          contentType: uploadRes.contentType,
         });
 
         setBulkFiles((prev) =>

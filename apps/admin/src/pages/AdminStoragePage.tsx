@@ -97,7 +97,7 @@ export const AdminStoragePage: React.FC = () => {
   const totalBytes = overview?.totalStorageBytes || 0;
   const audioCount = overview?.audioFilesCount || 0;
   const imageCount = overview?.imageFilesCount || 0;
-  const bucketName = overview?.bucket || 'vaagai-audio-books-36a4e.appspot.com';
+  const bucketName = overview?.bucket || 'kathaisolli-audio';
 
   const mb = (totalBytes / (1024 * 1024)).toFixed(1);
   const gb = (totalBytes / (1024 * 1024 * 1024)).toFixed(2);

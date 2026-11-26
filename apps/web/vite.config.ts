@@ -20,9 +20,6 @@ export default defineConfig({
             if (id.includes('lucide-react')) {
               return 'icons';
             }
-            if (id.includes('firebase')) {
-              return 'firebase';
-            }
             if (id.includes('axios')) {
               return 'axios-vendor';
             }

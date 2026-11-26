@@ -12,8 +12,6 @@ import { CatalogService } from './catalog/catalog.service';
 import { CatalogCacheService } from './catalog/catalog-cache.service';
 import { CreatorController } from './creator/creator.controller';
 import { CreatorService } from './creator/creator.service';
-import { FirebaseAdminModule } from './firebase/firebase-admin.module';
-import { FirebaseAuthModule } from './firebase/firebase-auth.module';
 import { LibraryModule } from './library/library.module';
 import { MediaModule } from './media/media.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -36,8 +34,6 @@ import { PrismaModule } from './prisma/prisma.module';
     PlaylistsModule,
     NotificationsModule,
     AiAssistantModule,
-    FirebaseAdminModule,
-    FirebaseAuthModule,
   ],
   controllers: [
     AppController,

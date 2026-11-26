@@ -1,6 +1,5 @@
 // Kathaisolli Complete 62-Book Catalog
 // Developer branding: By Anzles
-// Synchronized with Firebase Storage bucket: gs://vaagai-audio-books-36a4e.appspot.com
 
 export interface LibraryChapter {
   id: string;

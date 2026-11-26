@@ -9,6 +9,7 @@ import {
 import { ContentStatus, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CatalogCacheService } from './catalog-cache.service';
+import { formatPublicMediaUrl } from '../media/media-url';
 import type { AuthPrincipal } from '../auth/auth.types';
 import { CatalogQueryDto } from './dto/catalog-query.dto';
 import { CreateEpisodeDto } from './dto/create-episode.dto';
@@ -41,7 +42,6 @@ const seriesSelection = {
       },
     },
     orderBy: { number: 'asc' },
-    take: 1,
     select: {
       episodes: {
         where: {
@@ -49,7 +49,6 @@ const seriesSelection = {
           mediaAsset: { is: { isProcessed: true } },
         },
         orderBy: { episodeNumber: 'asc' },
-        take: 1,
         select: {
           id: true,
           durationSec: true,
@@ -75,13 +74,7 @@ const publiclyAccessibleSeries: Prisma.SeriesWhereInput = {
 };
 
 function formatMediaUrl(objectKey?: string | null): string {
-  if (!objectKey) return '';
-  if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) return objectKey;
-  const bucket =
-    process.env.FIREBASE_STORAGE_BUCKET ||
-    process.env.VITE_FIREBASE_STORAGE_BUCKET ||
-    'vaagai-audio-books-36a4e.appspot.com';
-  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
+  return formatPublicMediaUrl(objectKey);
 }
 
 @Injectable()
@@ -92,14 +85,22 @@ export class CatalogService {
   ) {}
 
   private formatSeriesSummary(s: any) {
-    const firstEp = s.seasons?.[0]?.episodes?.[0];
+    const allEpisodes = (s.seasons || []).flatMap((sn: any) => sn.episodes || []);
+    const firstEp = allEpisodes[0];
+    const totalDurationSeconds = allEpisodes.reduce(
+      (sum: number, ep: any) => sum + (ep.durationSec || 0),
+      0,
+    );
     return {
       ...s,
+      coverImage: formatMediaUrl(s.coverImage) || null,
       firstEpisodeId: firstEp?.id || null,
       audioUrl: firstEp?.mediaAsset?.objectKey
         ? formatMediaUrl(firstEp.mediaAsset.objectKey)
         : null,
       durationSec: firstEp?.durationSec || null,
+      totalEpisodes: allEpisodes.length || 1,
+      totalDurationSeconds,
     };
   }
 
@@ -180,6 +181,8 @@ export class CatalogService {
     const firstEp = series.seasons?.[0]?.episodes?.[0];
     const formattedSeries = {
       ...series,
+      coverImage: formatMediaUrl(series.coverImage) || null,
+      bannerImage: formatMediaUrl(series.bannerImage) || null,
       firstEpisodeId: firstEp?.id || null,
       audioUrl: firstEp?.mediaAsset?.objectKey
         ? formatMediaUrl(firstEp.mediaAsset.objectKey)

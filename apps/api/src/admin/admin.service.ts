@@ -12,8 +12,17 @@ import {
   UserRole,
 } from '@prisma/client';
 import * as argon2 from 'argon2';
+import { randomUUID } from 'node:crypto';
+import { extname } from 'node:path';
 import { PrismaService } from '../prisma/prisma.service';
 import { CatalogCacheService } from '../catalog/catalog-cache.service';
+import { S3ObjectStorageService } from '../media/s3-object-storage.service';
+import {
+  extractManagedObjectKey,
+  formatPublicMediaUrl,
+  inferAudioContentType,
+} from '../media/media-url';
+import { validateAudioUpload } from '../media/audio-format';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateStoryDto } from './dto/create-story.dto';
@@ -33,10 +42,7 @@ function isUuid(val?: string | null): boolean {
 }
 
 function formatMediaUrl(objectKey?: string | null): string {
-  if (!objectKey) return '';
-  if (objectKey.startsWith('http://') || objectKey.startsWith('https://')) return objectKey;
-  const bucket = process.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com';
-  return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectKey)}?alt=media`;
+  return formatPublicMediaUrl(objectKey);
 }
 
 @Injectable()
@@ -44,6 +50,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly cache?: CatalogCacheService,
+    @Optional() private readonly objectStorage?: S3ObjectStorageService,
   ) {}
 
   // ==========================================
@@ -596,6 +603,17 @@ export class AdminService {
       data,
     });
 
+    if (
+      input.coverImage !== undefined &&
+      existing.coverImage &&
+      existing.coverImage !== input.coverImage
+    ) {
+      const oldKey = extractManagedObjectKey(existing.coverImage);
+      if (oldKey) {
+        await this.safeDeleteObject(oldKey);
+      }
+    }
+
     await this.logActivity(
       actorId,
       'UPDATE_STORY',
@@ -615,15 +633,42 @@ export class AdminService {
 
     const story = await this.prisma.series.findFirst({
       where: storyWhere,
-      select: { id: true, title: true },
+      select: {
+        id: true,
+        title: true,
+        coverImage: true,
+        seasons: {
+          select: {
+            episodes: {
+              select: {
+                mediaAsset: { select: { id: true, objectKey: true } },
+              },
+            },
+          },
+        },
+      },
     });
     if (!story) {
       throw new NotFoundException(`Story "${id}" not found.`);
     }
 
+    const mediaAssetsToDelete = story.seasons
+      .flatMap((s) => s.episodes)
+      .map((e) => e.mediaAsset)
+      .filter((m): m is { id: string; objectKey: string } => Boolean(m));
+
     await this.prisma.series.delete({
       where: { id: story.id },
     });
+
+    const coverKey = extractManagedObjectKey(story.coverImage);
+    if (coverKey) {
+      await this.safeDeleteObject(coverKey);
+    }
+    for (const asset of mediaAssetsToDelete) {
+      await this.safeDeleteObject(asset.objectKey);
+      await this.prisma.mediaAsset.deleteMany({ where: { id: asset.id } });
+    }
 
     await this.logActivity(actorId, 'DELETE_STORY', 'Series', story.id, {
       title: story.title,
@@ -792,6 +837,9 @@ export class AdminService {
 
     if (episode.mediaAssetId) {
       try {
+        if (episode.mediaAsset?.objectKey) {
+          await this.safeDeleteObject(episode.mediaAsset.objectKey);
+        }
         await this.prisma.mediaAsset.delete({
           where: { id: episode.mediaAssetId },
         });
@@ -822,22 +870,28 @@ export class AdminService {
       throw new NotFoundException(`Chapter "${chapterId}" not found.`);
     }
 
-    const defaultStoragePath = `kathaisolli/books/${storyId}/chapters/${chapterId}.mp3`;
+    const defaultStoragePath = `audio/${storyId}/${chapterId}/${randomUUID()}.mp3`;
     const rawKey = input.storagePath?.trim() || defaultStoragePath;
     // Bound objectKey length to maximum 500 characters so it never exceeds DB column limit
     const objectKey = rawKey.length > 500 ? rawKey.slice(0, 500) : rawKey;
     const sizeBytes = BigInt(input.fileSizeBytes || 0);
     const durationSec = input.durationSec || 0;
+    const contentType =
+      input.contentType?.trim() ||
+      inferAudioContentType(input.fileName || objectKey, 'audio/mpeg');
 
     let mediaAssetId = episode.mediaAssetId;
 
     if (mediaAssetId) {
+      if (episode.mediaAsset?.objectKey && episode.mediaAsset.objectKey !== objectKey) {
+        await this.safeDeleteObject(episode.mediaAsset.objectKey);
+      }
       // Update existing media asset linked to this episode
       await this.prisma.mediaAsset.update({
         where: { id: mediaAssetId },
         data: {
           objectKey,
-          contentType: 'audio/mpeg',
+          contentType,
           sizeBytes,
           durationSec,
           isProcessed: true,
@@ -854,18 +908,18 @@ export class AdminService {
         mediaAssetId = existingAsset.id;
         await this.prisma.mediaAsset.update({
           where: { id: mediaAssetId },
-          data: { sizeBytes, durationSec, isProcessed: true },
+          data: { contentType, sizeBytes, durationSec, isProcessed: true },
         });
       } else {
         // Scoped unique key if previous key belonged to another episode
         const uniqueKey = existingAsset
-          ? `${objectKey.replace(/\.mp3$/i, '')}-${chapterId.slice(0, 8)}.mp3`
+          ? `${objectKey.replace(/(\.[a-z0-9]+)$/i, '')}-${chapterId.slice(0, 8)}${extname(objectKey) || '.mp3'}`
           : objectKey;
 
         const created = await this.prisma.mediaAsset.create({
           data: {
             objectKey: uniqueKey,
-            contentType: 'audio/mpeg',
+            contentType,
             sizeBytes,
             durationSec,
             isProcessed: true,
@@ -1084,8 +1138,13 @@ export class AdminService {
       totalFilesCount: audioCount + storiesWithCover,
       audioStorageBytes: audioBytes,
       imageStorageBytes: imageBytes,
-      bucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com',
-      provider: 'Firebase Storage',
+      bucket:
+        this.objectStorage?.getStorageInfo().bucket ||
+        process.env.S3_BUCKET ||
+        'kathaisolli-audio',
+      provider:
+        this.objectStorage?.getStorageInfo().provider ||
+        'S3-Compatible Object Storage',
     };
   }
 
@@ -1140,9 +1199,7 @@ export class AdminService {
         id: asset.id,
         name: fileName,
         path: asset.objectKey,
-        url: asset.objectKey.startsWith('http')
-          ? asset.objectKey
-          : `https://firebasestorage.googleapis.com/v0/b/${process.env.VITE_FIREBASE_STORAGE_BUCKET || 'vaagai-audio-books-36a4e.appspot.com'}/o/${encodeURIComponent(asset.objectKey)}?alt=media`,
+        url: formatMediaUrl(asset.objectKey),
         contentType: asset.contentType,
         sizeBytes: Number(asset.sizeBytes),
         durationSec: asset.durationSec || 0,
@@ -1728,10 +1785,11 @@ export class AdminService {
       database = 'offline';
     }
 
-    const firebaseBucket =
-      process.env.VITE_FIREBASE_STORAGE_BUCKET ||
-      'vaagai-audio-books-36a4e.appspot.com';
-    const isFirebaseConfigured = Boolean(firebaseBucket);
+    const storageInfo = this.objectStorage?.getStorageInfo() || {
+      provider: 'S3-Compatible Object Storage',
+      bucket: process.env.S3_BUCKET || 'kathaisolli-audio',
+      mode: 's3' as const,
+    };
 
     return {
       status: database === 'ok' ? 'ok' : 'degraded',
@@ -1740,9 +1798,9 @@ export class AdminService {
         latencyMs: dbLatencyMs,
       },
       storage: {
-        provider: 'Firebase Storage',
-        bucket: firebaseBucket,
-        status: isFirebaseConfigured ? 'healthy' : 'missing_config',
+        provider: storageInfo.provider,
+        bucket: storageInfo.bucket,
+        status: 'healthy',
       },
       system: {
         nodeVersion: process.version,
@@ -1753,6 +1811,144 @@ export class AdminService {
       },
       timestamp: new Date().toISOString(),
     };
+  }
+
+  async uploadCoverImage(
+    file: { originalname: string; mimetype: string; size: number; buffer: Buffer },
+    storyId?: string,
+  ) {
+    if (!this.objectStorage) {
+      throw new BadRequestException('Object storage service is not available.');
+    }
+
+    const allowedImageMimes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+    };
+    const ext = extname(file.originalname || '').toLowerCase();
+    const expectedMime = allowedImageMimes[ext];
+    const normalizedMime = (file.mimetype || '').toLowerCase();
+
+    if (
+      !expectedMime ||
+      (normalizedMime &&
+        !normalizedMime.startsWith('image/') &&
+        normalizedMime !== 'application/octet-stream')
+    ) {
+      throw new BadRequestException(
+        'Supported cover image formats are JPG, JPEG, PNG, and WebP.',
+      );
+    }
+
+    if (file.size < 1 || file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('Cover image size must be between 1 byte and 10 MB.');
+    }
+
+    const safeStorySegment = (storyId || 'general').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const objectKey = `covers/${safeStorySegment}/${randomUUID()}${ext}`;
+    const contentType =
+      normalizedMime && normalizedMime.startsWith('image/')
+        ? normalizedMime
+        : expectedMime;
+
+    await this.objectStorage.putBuffer(objectKey, file.buffer, contentType);
+
+    return {
+      objectKey,
+      url: formatPublicMediaUrl(objectKey),
+      contentType,
+      sizeBytes: file.size,
+      fileName: file.originalname,
+    };
+  }
+
+  async uploadAudioFile(
+    file: { originalname: string; mimetype: string; size: number; buffer: Buffer },
+    storyId?: string,
+    chapterId?: string,
+  ) {
+    if (!this.objectStorage) {
+      throw new BadRequestException('Object storage service is not available.');
+    }
+
+    const maxBytes = Number(process.env.MAX_AUDIO_UPLOAD_BYTES || 200 * 1024 * 1024);
+    const inferredMime = inferAudioContentType(file.originalname || '', file.mimetype || 'audio/mpeg');
+    const effectiveMime =
+      !file.mimetype || file.mimetype === 'application/octet-stream'
+        ? inferredMime
+        : file.mimetype;
+
+    const validated = validateAudioUpload(
+      file.originalname || 'chapter.mp3',
+      effectiveMime,
+      file.size,
+      maxBytes,
+    );
+
+    const safeStorySegment = (storyId || 'general').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeChapterSegment = (chapterId || 'chapter').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const objectKey = `audio/${safeStorySegment}/${safeChapterSegment}/${randomUUID()}${validated.extension}`;
+
+    await this.objectStorage.putBuffer(objectKey, file.buffer, validated.contentType);
+
+    return {
+      objectKey,
+      url: formatPublicMediaUrl(objectKey),
+      contentType: validated.contentType,
+      sizeBytes: file.size,
+      fileName: file.originalname,
+    };
+  }
+
+  async reorderChapters(storyId: string, chapterIds: string[], actorId?: string) {
+    if (!Array.isArray(chapterIds) || chapterIds.length === 0) {
+      throw new BadRequestException('chapterIds array is required.');
+    }
+
+    const storyWhere: Prisma.SeriesWhereInput = isUuid(storyId)
+      ? { OR: [{ id: storyId }, { slug: storyId }] }
+      : { slug: storyId };
+
+    const story = await this.prisma.series.findFirst({
+      where: storyWhere,
+      select: { id: true },
+    });
+    if (!story) {
+      throw new NotFoundException(`Story "${storyId}" not found.`);
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      // Two-pass update avoids unique constraint (seasonId, episodeNumber) collisions
+      for (let i = 0; i < chapterIds.length; i++) {
+        await tx.episode.updateMany({
+          where: { id: chapterIds[i], season: { seriesId: story.id } },
+          data: { episodeNumber: 100000 + i + 1 },
+        });
+      }
+      for (let i = 0; i < chapterIds.length; i++) {
+        await tx.episode.updateMany({
+          where: { id: chapterIds[i], season: { seriesId: story.id } },
+          data: { episodeNumber: i + 1 },
+        });
+      }
+    });
+
+    await this.logActivity(actorId, 'REORDER_CHAPTERS', 'Series', story.id, {
+      chapterIds,
+    });
+    await this.cache?.invalidateCatalog();
+    return this.getStory(story.id);
+  }
+
+  private async safeDeleteObject(objectKey?: string | null): Promise<void> {
+    if (!objectKey || !this.objectStorage) return;
+    try {
+      await this.objectStorage.deleteObject(objectKey);
+    } catch {
+      // Non-blocking cleanup if object was already deleted
+    }
   }
 
   async getHealthStatus() {

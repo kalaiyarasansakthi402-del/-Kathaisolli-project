@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,9 +9,12 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthPrincipal } from '../auth/auth.types';
@@ -151,6 +155,57 @@ export class AdminController {
   // ==========================================
   // CHAPTER & AUDIO MANAGEMENT
   // ==========================================
+  @ApiOperation({ summary: 'Upload story cover image to persistent storage' })
+  @ApiConsumes('multipart/form-data')
+  @Post('uploads/cover')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MODERATOR, UserRole.CREATOR)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  uploadCover(
+    @UploadedFile()
+    file: { originalname: string; mimetype: string; size: number; buffer: Buffer } | undefined,
+    @Query('storyId') storyId?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Cover image file is required.');
+    }
+    return this.adminService.uploadCoverImage(file, storyId);
+  }
+
+  @ApiOperation({ summary: 'Upload chapter audio file to persistent storage' })
+  @ApiConsumes('multipart/form-data')
+  @Post('uploads/audio')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.MODERATOR, UserRole.CREATOR)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 200 * 1024 * 1024 },
+    }),
+  )
+  uploadAudio(
+    @UploadedFile()
+    file: { originalname: string; mimetype: string; size: number; buffer: Buffer } | undefined,
+    @Query('storyId') storyId?: string,
+    @Query('chapterId') chapterId?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Audio file is required.');
+    }
+    return this.adminService.uploadAudioFile(file, storyId, chapterId);
+  }
+
+  @ApiOperation({ summary: 'Reorder chapters in a story' })
+  @Patch('stories/:id/chapters/reorder')
+  reorderChapters(
+    @Param('id') id: string,
+    @Body() input: { chapterIds: string[] },
+    @CurrentUser() actor: AuthPrincipal,
+  ) {
+    return this.adminService.reorderChapters(id, input.chapterIds, actor.id);
+  }
+
   @ApiOperation({ summary: 'Create chapter in story' })
   @Post('stories/:id/chapters')
   createChapter(

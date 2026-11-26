@@ -471,9 +471,9 @@ export const CategoriesPage: React.FC = () => {
         audioUrl:
           s.audioUrl ||
           (s.seasons?.[0]?.episodes?.[0]?.mediaAsset?.objectKey
-            ? `https://firebasestorage.googleapis.com/v0/b/vaagai-audio-books-36a4e.appspot.com/o/${encodeURIComponent(
+            ? `/api/v1/media/file?key=${encodeURIComponent(
                 s.seasons[0].episodes[0].mediaAsset.objectKey,
-              )}?alt=media`
+              )}`
             : undefined),
         source: 'api',
         createdAt: s.createdAt || new Date().toISOString(),
@@ -599,7 +599,7 @@ export const CategoriesPage: React.FC = () => {
 
   return (
     <div
-      className={`w-full overflow-x-clip py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors min-h-[80vh] ${
+      className={`w-full overflow-x-clip py-8 px-4 sm:px-6 lg:px-8 xl:px-10 max-w-[1680px] 2xl:max-w-[1800px] mx-auto space-y-8 bg-[#FAF7EE] dark:bg-[#03261C] text-[#173D2E] dark:text-[#F8F5E9] transition-colors min-h-[80vh] ${
         currentTrack ? 'pb-36 sm:pb-40' : 'pb-16 sm:pb-20'
       }`}
     >
@@ -770,7 +770,7 @@ export const CategoriesPage: React.FC = () => {
         />
       ) : (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5 sm:gap-6">
             {visibleStories.map((story) => (
               <StoryCard
                 key={story.id}

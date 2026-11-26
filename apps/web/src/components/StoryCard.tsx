@@ -33,7 +33,13 @@ const getCategoryFallbackImage = (cat?: string): string => {
 const sanitizeCoverUrl = (url?: string | null, fallback?: string): string => {
   if (!url || typeof url !== 'string') return fallback || '/images/story-books-stack.jpg';
   const trimmed = url.trim();
-  if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') {
+  if (
+    trimmed === '' ||
+    trimmed === 'null' ||
+    trimmed === 'undefined' ||
+    trimmed.startsWith('blob:') ||
+    trimmed.includes('firebasestorage.googleapis.com')
+  ) {
     return fallback || '/images/story-books-stack.jpg';
   }
   return trimmed;
@@ -77,11 +83,13 @@ export const StoryCard: React.FC<StoryCardProps> = ({
   const fallbackSrc = getCategoryFallbackImage(categoryName);
   const initialCover = sanitizeCoverUrl(coverImage || coverImageUrl, fallbackSrc);
   const [imageSrc, setImageSrc] = useState<string>(initialCover);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
   const [hasImageError, setHasImageError] = useState<boolean>(false);
 
   useEffect(() => {
     const nextCover = sanitizeCoverUrl(coverImage || coverImageUrl, fallbackSrc);
     setImageSrc(nextCover);
+    setIsImageLoading(true);
     setHasImageError(false);
   }, [coverImage, coverImageUrl, fallbackSrc]);
 
@@ -89,6 +97,7 @@ export const StoryCard: React.FC<StoryCardProps> = ({
     if (imageSrc !== fallbackSrc) {
       setImageSrc(fallbackSrc);
     } else {
+      setIsImageLoading(false);
       setHasImageError(true);
     }
   };
@@ -149,21 +158,29 @@ export const StoryCard: React.FC<StoryCardProps> = ({
 
   return (
     <div className="group relative flex flex-col justify-between h-full w-full rounded-2xl bg-white dark:bg-[#083325] border-2 border-[#E3DCBA] dark:border-[#124835] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-      {/* Cover Image Banner with Graceful Category Fallback */}
-      <div className="relative h-44 sm:h-48 w-full bg-gradient-to-br from-[#064E3B] to-[#022419] overflow-hidden flex-shrink-0 flex items-center justify-center">
+      {/* Cover Image Banner with Loading State & Graceful Kathaisolli Fallback */}
+      <div className="relative h-44 sm:h-48 w-full bg-[#EFE9D5] dark:bg-[#052E21] overflow-hidden flex-shrink-0 flex items-center justify-center">
+        {isImageLoading && !hasImageError && (
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#E3DCBA]/60 to-[#D5CEBA]/40 dark:from-[#073829] dark:to-[#042419]" />
+        )}
         {!hasImageError ? (
           <img
             src={imageSrc}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
+              isImageLoading ? 'opacity-0' : 'opacity-100'
+            }`}
+            onLoad={() => setIsImageLoading(false)}
             onError={handleImageError}
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-[#063826] to-[#042419] text-[#A7F3D0]">
-            <BookOpen className="w-10 h-10 mb-2 text-[#A7F3D0]/70 stroke-[1.5]" />
-            <span className="text-xs font-serif font-bold line-clamp-1">{title}</span>
-            <span className="text-[10px] text-emerald-300/80 font-tamil mt-0.5">{categoryName || 'கதைசொல்லி'}</span>
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-[#063826] via-[#064E3B] to-[#042419] text-[#FAF7EE]">
+            <div className="w-12 h-12 rounded-2xl bg-[#A7F3D0]/15 border border-[#A7F3D0]/30 flex items-center justify-center mb-2">
+              <BookOpen className="w-6 h-6 text-[#A7F3D0] stroke-[1.75]" />
+            </div>
+            <span className="text-xs font-serif font-bold line-clamp-1 px-2">{title}</span>
+            <span className="text-[10px] text-[#A7F3D0]/85 font-tamil mt-0.5">{categoryName || 'கதைசொல்லி'}</span>
           </div>
         )}
 

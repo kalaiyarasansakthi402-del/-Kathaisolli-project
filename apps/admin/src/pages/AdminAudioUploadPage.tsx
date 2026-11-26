@@ -22,10 +22,10 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import {
-  uploadChapterAudioMp3,
+  uploadChapterAudio,
   formatFileSize,
   detectAudioDuration,
-} from '../services/firebaseAdminStorage';
+} from '../services/mediaUploadService';
 import { formatDuration } from '@kathaisolli/shared-utils';
 import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
 
@@ -147,8 +147,9 @@ export const AdminAudioUploadPage: React.FC = () => {
         status: 'PUBLISHED',
       });
 
-      // 2. Upload file to Firebase Storage
-      const uploadRes = await uploadChapterAudioMp3(
+      // 2. Upload file to Backend Persistent Storage
+      const uploadRes = await uploadChapterAudio(
+        api,
         selectedStoryId,
         chapter.id,
         audioFile,
@@ -162,6 +163,7 @@ export const AdminAudioUploadPage: React.FC = () => {
         durationSec: uploadRes.durationSec,
         fileSizeBytes: uploadRes.fileSizeBytes,
         fileName: uploadRes.fileName,
+        contentType: uploadRes.contentType,
       });
 
       queryClient.invalidateQueries({ queryKey: ['admin', 'story', selectedStoryId] });
