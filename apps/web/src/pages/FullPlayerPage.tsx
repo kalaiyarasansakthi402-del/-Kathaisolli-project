@@ -198,31 +198,31 @@ export const FullPlayerPage: React.FC = () => {
       {/* ============================================================== */}
       {/* 1. TOP HEADER (White / Cream cleanly aligned branding)        */}
       {/* ============================================================== */}
-      <header className="w-full bg-[#FAF7EE] text-[#063828] border-b border-[#E3DCBA] px-6 lg:px-12 py-3.5 flex items-center justify-between shadow-md z-30">
+      <header className="w-full bg-[#FAF7EE] text-[#063828] border-b border-[#E3DCBA] px-3 sm:px-6 lg:px-12 py-3 sm:py-3.5 flex items-center justify-between gap-2 shadow-md z-30">
         {/* Left: Kathaisolli concentric brand mark & typography */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-11 h-11 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-md relative group-hover:scale-105 transition-transform">
-            <div className="w-8 h-8 rounded-full border-2 border-[#A7F3D0]/60 flex items-center justify-center">
-              <Leaf className="w-4 h-4 text-[#A7F3D0] fill-current" />
+        <Link to="/" className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-1">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-md relative group-hover:scale-105 transition-transform shrink-0">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-[#A7F3D0]/60 flex items-center justify-center">
+              <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#A7F3D0] fill-current" />
             </div>
           </div>
-          <div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black font-serif tracking-tight text-[#064E3B]">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-1.5 sm:gap-2 min-w-0">
+              <span className="text-lg sm:text-2xl font-black font-serif tracking-tight text-[#064E3B] truncate">
                 Kathaisolli
               </span>
-              <span className="text-sm font-bold font-tamil text-[#0B6B52]">
+              <span className="text-xs sm:text-sm font-bold font-tamil text-[#0B6B52] truncate">
                 கதைசொல்லி
               </span>
             </div>
-            <p className="text-[10px] uppercase tracking-wider text-[#0B6B52]/75 font-semibold">
+            <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-[#0B6B52]/75 font-semibold truncate">
               Kathaisolli | Botanical Oasis · By Anzles
             </p>
           </div>
         </Link>
 
         {/* Right Action: Clean Navigation & Close controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
             to="/categories"
             className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
@@ -237,7 +237,7 @@ export const FullPlayerPage: React.FC = () => {
           </Link>
           <button
             onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-[#064E3B] text-white hover:bg-[#085a44] flex items-center justify-center transition-transform hover:scale-105 shadow-sm"
+            className="w-9 h-9 rounded-full bg-[#064E3B] text-white hover:bg-[#085a44] flex items-center justify-center transition-transform hover:scale-105 shadow-sm shrink-0"
             title="மூடு / பின்செல்க (Close / Back)"
             aria-label="Close Player"
           >
@@ -249,13 +249,13 @@ export const FullPlayerPage: React.FC = () => {
       {/* ============================================================== */}
       {/* 2. MAIN TWO-COLUMN STUDIO PLAYER INTERFACE                     */}
       {/* ============================================================== */}
-      <main className="flex-1 max-w-[1500px] w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 sm:py-8 pb-32 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <main className="flex-1 max-w-[1500px] w-full mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-8 pb-28 sm:pb-32 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
         {/* ------------------------------------------------------------ */}
         {/* LEFT COLUMN: TURNTABLE RECORD PLAYER CONSOLE (5/4 cols)       */}
         {/* ------------------------------------------------------------ */}
-        <section className="lg:col-span-5 xl:col-span-4 flex flex-col items-center justify-center p-5 sm:p-7 rounded-3xl bg-[#0F352C]/90 backdrop-blur-2xl border border-[#1C5749]/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-5 sm:space-y-6 w-full">
+        <section className="lg:col-span-5 xl:col-span-4 flex flex-col items-center justify-center p-4 sm:p-7 rounded-3xl bg-[#0F352C]/90 backdrop-blur-2xl border border-[#1C5749]/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-4 sm:space-y-6 w-full">
           {/* Vinyl Record Turntable Frame */}
-          <div className="relative w-56 h-56 sm:w-72 sm:h-72 md:w-80 md:h-80 max-w-full rounded-3xl bg-gradient-to-tr from-[#08221B] to-[#124237] p-4 sm:p-5 shadow-2xl border-2 border-[#1E5C4E] flex items-center justify-center">
+          <div className="relative w-44 h-44 min-[375px]:w-52 min-[375px]:h-52 sm:w-72 sm:h-72 md:w-80 md:h-80 max-w-full rounded-3xl bg-gradient-to-tr from-[#08221B] to-[#124237] p-3.5 sm:p-5 shadow-2xl border-2 border-[#1E5C4E] flex items-center justify-center">
             {/* Turntable Platter Outer Ring */}
             <div className="relative w-full h-full rounded-full bg-[#041410] border-4 border-[#1B5749] flex items-center justify-center shadow-inner overflow-hidden">
               {/* Subtle Vinyl Grooves Pattern */}
@@ -266,7 +266,7 @@ export const FullPlayerPage: React.FC = () => {
 
               {/* Rotating Center Vinyl Disc Label */}
               <div
-                className={`w-32 h-32 sm:w-40 sm:h-40 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-[#07241D] bg-gradient-to-br from-[#064E3B] via-[#0B3D2E] to-[#042419] shadow-2xl flex flex-col items-center justify-center p-3 text-center transition-transform duration-700 relative ${
+                className={`w-24 h-24 min-[375px]:w-28 min-[375px]:h-28 sm:w-40 sm:h-40 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-[#07241D] bg-gradient-to-br from-[#064E3B] via-[#0B3D2E] to-[#042419] shadow-2xl flex flex-col items-center justify-center p-3 text-center transition-transform duration-700 relative ${
                   isPlaying ? 'animate-[spin_12s_linear_infinite]' : ''
                 }`}
               >
@@ -324,11 +324,11 @@ export const FullPlayerPage: React.FC = () => {
           </div>
 
           {/* Interactive Playback Controls Bar */}
-          <div className="flex items-center justify-between w-full max-w-sm px-2 sm:px-4 pt-1">
+          <div className="flex flex-wrap items-center justify-center sm:justify-between w-full max-w-sm gap-1.5 sm:gap-2 px-1 sm:px-4 pt-1">
             {/* Script / Lyrics toggle button */}
             <button
               onClick={() => setShowTranscript(!showTranscript)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold border whitespace-nowrap transition-all ${
                 showTranscript
                   ? 'bg-[#10B981] text-[#07241D] border-[#10B981]'
                   : 'bg-white/5 hover:bg-white/10 text-stone-300 border-white/10'
@@ -342,7 +342,7 @@ export const FullPlayerPage: React.FC = () => {
             <button
               onClick={playPrevious}
               disabled={!hasPrevious}
-              className={`p-2.5 sm:p-3 rounded-full active:scale-95 transition-all ${
+              className={`p-2 sm:p-3 rounded-full active:scale-95 transition-all ${
                 hasPrevious
                   ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
                   : 'text-stone-600 opacity-40 cursor-not-allowed'
@@ -356,7 +356,7 @@ export const FullPlayerPage: React.FC = () => {
             {/* Rewind 10 Seconds */}
             <button
               onClick={() => skipBackward(10)}
-              className="p-2 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+              className="p-1.5 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
               title="10 விநாடிகள் பின்னே (Rewind 10s)"
               aria-label="Rewind 10 seconds"
             >
@@ -366,23 +366,23 @@ export const FullPlayerPage: React.FC = () => {
             {/* Large Glowing Circular Play / Pause Button */}
             <button
               onClick={togglePlay}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white text-[#07241D] flex items-center justify-center hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all shrink-0"
+              className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white text-[#07241D] flex items-center justify-center hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all shrink-0"
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isBuffering ? (
-                <div className="w-6 h-6 border-3 border-[#07241D] border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 border-[#07241D] border-t-transparent rounded-full animate-spin" />
               ) : isPlaying ? (
-                <Pause className="w-6 h-6 sm:w-7 sm:h-7 fill-current" />
+                <Pause className="w-5 h-5 sm:w-7 sm:h-7 fill-current" />
               ) : (
-                <Play className="w-6 h-6 sm:w-7 sm:h-7 fill-current ml-0.5 sm:ml-1" />
+                <Play className="w-5 h-5 sm:w-7 sm:h-7 fill-current ml-0.5 sm:ml-1" />
               )}
             </button>
 
             {/* Forward 10 Seconds */}
             <button
               onClick={() => skipForward(10)}
-              className="p-2 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+              className="p-1.5 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
               title="10 விநாடிகள் முன்னே (Forward 10s)"
               aria-label="Forward 10 seconds"
             >
@@ -393,7 +393,7 @@ export const FullPlayerPage: React.FC = () => {
             <button
               onClick={playNext}
               disabled={!hasNext}
-              className={`p-2.5 sm:p-3 rounded-full active:scale-95 transition-all ${
+              className={`p-2 sm:p-3 rounded-full active:scale-95 transition-all ${
                 hasNext
                   ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
                   : 'text-stone-600 opacity-40 cursor-not-allowed'
@@ -560,24 +560,24 @@ export const FullPlayerPage: React.FC = () => {
       {/* ============================================================== */}
       {/* 3. STICKY BOTTOM MINI-PLAYER DOCK                              */}
       {/* ============================================================== */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#0A261F]/95 backdrop-blur-2xl border-t border-[#16493B]/80 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 shadow-[0_-10px_35px_rgba(0,0,0,0.6)]">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#0A261F]/95 backdrop-blur-2xl border-t border-[#16493B]/80 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3 shadow-[0_-10px_35px_rgba(0,0,0,0.6)]">
         {/* Left: Green Circular Headphone Icon + Title */}
-        <div className="flex items-center gap-3 min-w-0 flex-1 sm:flex-initial max-w-xs sm:max-w-sm">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#059669] text-[#07241D] flex items-center justify-center shrink-0 shadow-lg">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial max-w-[140px] min-[375px]:max-w-[180px] sm:max-w-sm">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#059669] text-[#07241D] flex items-center justify-center shrink-0 shadow-lg">
             <Headphones className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs sm:text-sm font-bold font-serif text-[#F8F5E9] truncate font-tamil">
               {currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ'}
             </p>
-            <p className="text-[11px] text-[#A7F3D0]/70 truncate">
+            <p className="text-[10px] sm:text-[11px] text-[#A7F3D0]/70 truncate">
               {currentTrack?.narratorName || currentTrack?.seriesTitle || 'By Anzles Studio'}
             </p>
           </div>
         </div>
 
         {/* Center: Controls, Speed, and Sleep Timer Pills */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1 min-[375px]:gap-1.5 sm:gap-3 shrink-0">
           {/* Browse Stories Link */}
           <button
             onClick={() => navigate('/categories')}

@@ -100,29 +100,29 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#FAF7EE]/95 dark:bg-[#04281E]/95 border-b border-[#E8E1CE] dark:border-[#0F4738] transition-colors shadow-sm">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
+      <div className="max-w-7xl mx-auto px-2.5 min-[375px]:px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-1.5 min-[375px]:gap-2 sm:gap-4 lg:gap-6">
         
         {/* Brand Logo with Clean Mascot (No background square, natural proportions) */}
         <Link
           to="/"
           onClick={() => setMobileMenuOpen(false)}
-          className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-shrink-0"
+          className="flex items-center gap-1.5 min-[375px]:gap-2 sm:gap-3 group min-w-0"
         >
           <img
             src="/mascot.png"
             alt="Kathaisolli Mascot"
-            className="w-10 h-10 sm:w-12 sm:h-12 object-contain group-hover:scale-105 transition-transform flex-shrink-0 drop-shadow-sm"
+            className="w-9 h-9 min-[375px]:w-10 min-[375px]:h-10 sm:w-12 sm:h-12 object-contain group-hover:scale-105 transition-transform flex-shrink-0 drop-shadow-sm"
           />
           <div className="min-w-0">
             <div className="flex items-baseline gap-1 sm:gap-1.5">
-              <span className="text-lg sm:text-2xl font-black font-serif tracking-tight text-[#064E3B] dark:text-[#A7F3D0] truncate">
+              <span className="text-[15px] min-[375px]:text-lg sm:text-2xl font-black font-serif tracking-tight text-[#064E3B] dark:text-[#A7F3D0] truncate">
                 Kathaisolli
               </span>
-              <span className="text-xs sm:text-base font-bold font-tamil text-[#064E3B] dark:text-[#E8F0E2] truncate">
+              <span className="text-[11px] min-[375px]:text-xs sm:text-base font-bold font-tamil text-[#064E3B] dark:text-[#E8F0E2] truncate">
                 கதைசொல்லி
               </span>
             </div>
-            <span className="block text-[10px] sm:text-xs font-semibold font-tamil tracking-normal text-[#166534] dark:text-[#A7F3D0] truncate">
+            <span className="block text-[9.5px] min-[375px]:text-[10px] sm:text-xs font-semibold font-tamil tracking-normal text-[#166534] dark:text-[#A7F3D0] truncate">
               கற்றலின் கேட்டலே நன்று
             </span>
           </div>
@@ -227,7 +227,7 @@ export const Navbar: React.FC = () => {
         )}
 
         {/* Right Section: Theme Toggle & User Auth */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-1 min-[375px]:gap-2 sm:gap-3 flex-shrink-0">
           <button
             onClick={toggleTheme}
             aria-label="Toggle Theme"
@@ -317,17 +317,17 @@ export const Navbar: React.FC = () => {
               )}
             </div>
           ) : (
-            /* User NOT Logged In (Guest View): Clean [Sign Up] Outline and [Login] Filled Pill Buttons */
-            <div className="flex items-center gap-2 sm:gap-3">
+            /* User NOT Logged In (Guest View): Desktop [Sign Up] Outline and [Login] Filled Pill Buttons (hidden on mobile/tablet where Hero CTA & drawer serve auth) */
+            <div className="hidden lg:flex items-center gap-3">
               <Link
                 to="/signup"
-                className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B] dark:border-[#A7F3D0] hover:bg-[#064E3B]/10 dark:hover:bg-[#A7F3D0]/10 transition-all"
+                className="px-4 py-2 rounded-full text-sm font-semibold text-[#064E3B] dark:text-[#A7F3D0] border border-[#064E3B] dark:border-[#A7F3D0] hover:bg-[#064E3B]/10 dark:hover:bg-[#A7F3D0]/10 transition-all"
               >
                 Sign Up
               </Link>
               <Link
                 to="/login"
-                className="px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm font-bold bg-[#064E3B] text-white hover:bg-[#166534] shadow-md shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="px-5 py-2 rounded-full text-sm font-bold bg-[#064E3B] text-white hover:bg-[#166534] shadow-md shadow-emerald-950/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 Login
               </Link>

@@ -154,13 +154,13 @@ export const HomePage: React.FC = () => {
                 <div className="pt-3 flex flex-wrap items-center gap-3 sm:gap-4">
                   <Link
                     to="/signup"
-                    className="px-6 sm:px-8 py-3 rounded-full bg-white text-[#064E3B] font-bold text-sm sm:text-base shadow-xl shadow-black/20 hover:bg-[#FAF7EE] hover:scale-[1.02] active:scale-95 transition-all text-center"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full bg-white text-[#064E3B] font-bold text-sm sm:text-base shadow-xl shadow-black/20 hover:bg-[#FAF7EE] hover:scale-[1.02] active:scale-95 transition-all text-center"
                   >
                     Sign Up — Create Free Account
                   </Link>
                   <Link
                     to="/login"
-                    className="px-6 sm:px-8 py-3 rounded-full bg-transparent text-white border-2 border-white/80 hover:bg-white/10 font-bold text-sm sm:text-base hover:scale-[1.02] active:scale-95 transition-all text-center"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full bg-transparent text-white border-2 border-white/80 hover:bg-white/10 font-bold text-sm sm:text-base hover:scale-[1.02] active:scale-95 transition-all text-center"
                   >
                     Login — Existing User
                   </Link>

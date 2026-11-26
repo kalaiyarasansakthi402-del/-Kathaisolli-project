@@ -45,7 +45,7 @@ export const NotificationsPage: React.FC = () => {
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 font-serif">
             அறிவிப்புகள் (Notifications)
@@ -86,7 +86,7 @@ export const NotificationsPage: React.FC = () => {
               </div>
 
               <div className="flex-1 space-y-1">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
                     {n.title}
                   </h4>

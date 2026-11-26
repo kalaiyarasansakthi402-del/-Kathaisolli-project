@@ -105,10 +105,10 @@ export const MyLibraryPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-3 border-b border-[#E3DCBA] dark:border-[#124835] pb-3 overflow-x-auto">
+      <div className="flex items-center gap-2 sm:gap-3 border-b border-[#E3DCBA] dark:border-[#124835] pb-3 overflow-x-auto scrollbar-none">
         <button
           onClick={() => handleTabChange('saved')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all ${
             activeTab === 'saved'
               ? 'bg-[#064E3B] text-white shadow-md'
               : 'text-[#173D2E] dark:text-stone-300 hover:bg-[#E8F0E2] dark:hover:bg-[#083325]'
@@ -120,7 +120,7 @@ export const MyLibraryPage: React.FC = () => {
 
         <button
           onClick={() => handleTabChange('favorites')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all ${
             activeTab === 'favorites'
               ? 'bg-[#064E3B] text-white shadow-md'
               : 'text-[#173D2E] dark:text-stone-300 hover:bg-[#E8F0E2] dark:hover:bg-[#083325]'
@@ -132,7 +132,7 @@ export const MyLibraryPage: React.FC = () => {
 
         <button
           onClick={() => handleTabChange('history')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all ${
             activeTab === 'history'
               ? 'bg-[#064E3B] text-white shadow-md'
               : 'text-[#173D2E] dark:text-stone-300 hover:bg-[#E8F0E2] dark:hover:bg-[#083325]'
@@ -144,7 +144,7 @@ export const MyLibraryPage: React.FC = () => {
 
         <button
           onClick={() => handleTabChange('playlists')}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all ${
+          className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 transition-all ${
             activeTab === 'playlists'
               ? 'bg-[#064E3B] text-white shadow-md'
               : 'text-[#173D2E] dark:text-stone-300 hover:bg-[#E8F0E2] dark:hover:bg-[#083325]'

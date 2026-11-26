@@ -397,14 +397,15 @@ export const ExplorePage: React.FC = () => {
 
         {/* Filter Controls Row */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 border-t border-[#E3DCBA]/60 dark:border-[#124835]">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3 w-full min-w-0">
             {/* Category Filter */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
               <SlidersHorizontal className="h-4 w-4 text-[#064E3B] dark:text-[#A7F3D0] shrink-0" />
               <select
                 value={selectedCategory}
                 onChange={(e) => handleCategoryChange(e.target.value)}
-                className="text-xs sm:text-sm font-semibold rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#032419] px-4 py-2 text-[#173D2E] dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
+                aria-label="Filter stories by category"
+                className="w-full sm:w-auto max-w-full min-w-0 text-xs sm:text-sm font-semibold rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#032419] px-3 sm:px-4 py-2 text-[#173D2E] dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#064E3B] truncate"
               >
                 <option value="all">அனைத்து வகைகள் (All Categories)</option>
                 {LIBRARY_CATEGORIES.filter((c) => c !== 'All').map((cat) => (
@@ -422,12 +423,13 @@ export const ExplorePage: React.FC = () => {
             </div>
 
             {/* Language Filter */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
               <Globe className="h-4 w-4 text-[#064E3B] dark:text-[#A7F3D0] shrink-0" />
               <select
                 value={language}
                 onChange={(e) => handleLanguageChange(e.target.value)}
-                className="text-xs sm:text-sm font-semibold rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#032419] px-4 py-2 text-[#173D2E] dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#064E3B]"
+                aria-label="Filter stories by language"
+                className="w-full sm:w-auto max-w-full min-w-0 text-xs sm:text-sm font-semibold rounded-full border border-[#D5CEBA] dark:border-[#124835] bg-[#F8F5E9] dark:bg-[#032419] px-3 sm:px-4 py-2 text-[#173D2E] dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#064E3B] truncate"
               >
                 <option value="all">அனைத்து மொழிகள் (All Languages)</option>
                 <option value="ta">தமிழ் (Tamil)</option>

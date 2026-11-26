@@ -197,10 +197,10 @@ export const AudioPlayer: React.FC = () => {
             </div>
           )}
 
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="max-w-7xl mx-auto px-2.5 min-[375px]:px-3 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-1.5 min-[375px]:gap-2 sm:gap-4">
             {/* Left: Book Cover & Metadata (Scales gracefully on mobile) */}
             <div
-              className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer flex-shrink group max-w-[150px] xs:max-w-[190px] sm:max-w-[240px] lg:max-w-xs"
+              className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer flex-1 sm:flex-initial group sm:max-w-[240px] lg:max-w-xs"
               onClick={handleOpenPlayer}
               title="முழு பிளேயரைத் திறக்க கிளிக் செய்க (Click to open full player)"
             >
@@ -318,7 +318,7 @@ export const AudioPlayer: React.FC = () => {
             </div>
 
             {/* Mobile Controls Right: Compact, touch-friendly, no overflow */}
-            <div className="flex sm:hidden items-center gap-1.5 flex-shrink-0">
+            <div className="flex sm:hidden items-center gap-0.5 min-[375px]:gap-1.5 flex-shrink-0">
               <button
                 onClick={playPrevious}
                 disabled={!hasPrevious}

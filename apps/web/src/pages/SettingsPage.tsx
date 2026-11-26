@@ -59,8 +59,8 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Autoplay Next Episode */}
-        <div className="pt-4 border-t border-emerald-50 dark:border-emerald-900/30 flex items-center justify-between">
-          <div>
+        <div className="pt-4 border-t border-emerald-50 dark:border-emerald-900/30 flex items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
               அடுத்த அத்தியாயத்தை தானாக இயக்கு (Autoplay Next Episode)
             </h4>
@@ -70,7 +70,8 @@ export const SettingsPage: React.FC = () => {
           </div>
           <button
             onClick={() => setAutoplayNext(!autoplayNext)}
-            className={`w-12 h-6 rounded-full transition-colors relative ${
+            aria-label="Toggle autoplay next episode"
+            className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
               autoplayNext ? 'bg-emerald-700' : 'bg-zinc-300 dark:bg-zinc-700'
             }`}
           >

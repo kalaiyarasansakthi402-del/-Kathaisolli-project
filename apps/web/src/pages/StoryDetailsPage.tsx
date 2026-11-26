@@ -300,7 +300,7 @@ export const StoryDetailsPage: React.FC = () => {
                       );
                     }
                   }}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-6 py-3.5 text-base shadow-lg shadow-emerald-900/20 transition-all hover:scale-105"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-5 sm:px-6 py-3.5 text-sm sm:text-base shadow-lg shadow-emerald-900/20 transition-all hover:scale-[1.02]"
                 >
                   {isCurrentStoryPlaying ? (
                     <>
@@ -368,12 +368,12 @@ export const StoryDetailsPage: React.FC = () => {
       </div>
 
       {/* Episodes List */}
-      <div className="bg-white dark:bg-[#14231E] p-6 sm:p-8 rounded-3xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
+      <div className="bg-white dark:bg-[#14231E] p-5 sm:p-8 rounded-3xl border border-emerald-100 dark:border-emerald-900/40 shadow-sm space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-100 font-serif">
             அத்தியாயங்கள் ({allEpisodes.length} Episodes)
           </h2>
-          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full">
+          <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full shrink-0">
             அனைத்தும் இலவசம் (All Free)
           </span>
         </div>
@@ -385,9 +385,9 @@ export const StoryDetailsPage: React.FC = () => {
             return (
               <div
                 key={ep.id}
-                className="py-4 flex items-center justify-between gap-4 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 px-3 rounded-xl transition-colors"
+                className="py-4 flex items-center justify-between gap-3 sm:gap-4 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 px-2 sm:px-3 rounded-xl transition-colors"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                   <button
                     onClick={() => {
                       if (isThisEpisodePlaying) {
