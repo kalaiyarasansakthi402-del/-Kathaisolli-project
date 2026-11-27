@@ -6,9 +6,9 @@ export const Footer: React.FC = () => {
   return (
     <footer id="contact" className="border-t border-[#E3DCBA] dark:border-[#124835] bg-[#F3EFE0] dark:bg-[#022C22] mt-24 pt-16 pb-32 sm:pb-28 md:pb-28 text-[#173D2E] dark:text-[#E8F0E2]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10 mb-12">
           {/* Brand info */}
-          <div className="md:col-span-2 space-y-4">
+          <div className="space-y-4 max-w-lg">
             <Link to="/" className="inline-flex items-center gap-3 group">
               <img
                 src="/mascot.png"
@@ -33,42 +33,8 @@ export const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick links */}
-          <div id="about">
-            <h4 className="text-sm font-bold uppercase tracking-wider text-[#064E3B] dark:text-[#A7F3D0] mb-4 font-serif">
-              Explore Stories
-            </h4>
-            <ul className="space-y-2.5 text-sm font-medium">
-              <li>
-                <Link to="/categories" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  All Stories (அனைத்து கதைகள்)
-                </Link>
-              </li>
-              <li>
-                <Link to="/categories" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Categories (பகுப்புகள்)
-                </Link>
-              </li>
-              <li>
-                <Link to="/search?q=Panchatantra" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Panchatantra (பஞ்சதந்திர கதைகள்)
-                </Link>
-              </li>
-              <li>
-                <Link to="/search?q=Folk" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Tamil Folk Tales (நாடோடிக் கதைகள்)
-                </Link>
-              </li>
-              <li>
-                <Link to="/search?q=Historical" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Historical Epics (வரலாற்று காவியங்கள்)
-                </Link>
-              </li>
-            </ul>
-          </div>
-
           {/* Platform info */}
-          <div>
+          <div id="about" className="md:min-w-[220px]">
             <h4 className="text-sm font-bold uppercase tracking-wider text-[#064E3B] dark:text-[#A7F3D0] mb-4 font-serif">
               Support & Legal
             </h4>
