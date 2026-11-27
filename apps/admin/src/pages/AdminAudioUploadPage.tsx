@@ -22,9 +22,16 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import {
-  uploadChapterAudioMp3,
+  uploadChapterMedia,
+  validateSelectedMediaFile,
   formatFileSize,
   detectAudioDuration,
+  AUDIO_ACCEPT_ATTR,
+  VIDEO_ACCEPT_ATTR,
+  SUPPORTED_AUDIO_EXTENSIONS,
+  SUPPORTED_VIDEO_EXTENSIONS,
+  MAX_MEDIA_UPLOAD_BYTES,
+  type MediaKind,
 } from '../services/firebaseAdminStorage';
 import { formatDuration } from '@kathaisolli/shared-utils';
 import { AudioPreviewPlayer } from '../components/AudioPreviewPlayer';
@@ -42,6 +49,7 @@ export const AdminAudioUploadPage: React.FC = () => {
   const [chapterTitle, setChapterTitle] = useState('');
   const [audioDescription, setAudioDescription] = useState('');
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [mediaKind, setMediaKind] = useState<MediaKind>('audio');
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
   const [detectedDuration, setDetectedDuration] = useState<number>(0);
@@ -90,31 +98,19 @@ export const AdminAudioUploadPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate MP3
-    const isMp3 =
-      file.type === 'audio/mpeg' ||
-      file.type === 'audio/mp3' ||
-      file.name.toLowerCase().endsWith('.mp3');
-
-    if (!isMp3) {
-      setFormError('தயவுசெய்து MP3 ஆடியோ கோப்பை மட்டும் தேர்ந்தெடுக்கவும் (Only MP3 audio/mpeg allowed).');
-      return;
-    }
-
-    // Size limit check (max 100MB)
-    if (file.size > 100 * 1024 * 1024) {
-      setFormError('ஆடியோ கோப்பின் அளவு 100MB-க்கு மிகாமல் இருக்க வேண்டும்.');
-      return;
-    }
-
-    setAudioFile(file);
-    setFormError(null);
-
     try {
-      const dur = await detectAudioDuration(file);
-      setDetectedDuration(dur);
-    } catch {
-      setDetectedDuration(180);
+      const validated = validateSelectedMediaFile(file, mediaKind);
+      setAudioFile(file);
+      setFormError(null);
+
+      try {
+        const dur = await detectAudioDuration(file, validated.kind);
+        setDetectedDuration(dur);
+      } catch {
+        setDetectedDuration(180);
+      }
+    } catch (err: any) {
+      setFormError(err?.message || 'ஆதரிக்கப்படாத கோப்பு வடிவம்.');
     }
   };
 
@@ -148,20 +144,24 @@ export const AdminAudioUploadPage: React.FC = () => {
       });
 
       // 2. Upload file to Firebase Storage
-      const uploadRes = await uploadChapterAudioMp3(
+      const uploadRes = await uploadChapterMedia(
         selectedStoryId,
         chapter.id,
         audioFile,
+        mediaKind,
         (pct) => setUploadProgress(pct),
       );
 
-      // 3. Save Chapter Audio link in DB
+      // 3. Save Chapter Audio/Video metadata in DB
       await api.admin.saveChapterAudio(selectedStoryId, chapter.id, {
         audioUrl: uploadRes.url,
         storagePath: uploadRes.storagePath,
         durationSec: uploadRes.durationSec,
         fileSizeBytes: uploadRes.fileSizeBytes,
         fileName: uploadRes.fileName,
+        contentType: uploadRes.contentType,
+        mediaType: uploadRes.mediaType,
+        originalExtension: uploadRes.originalExtension,
       });
 
       queryClient.invalidateQueries({ queryKey: ['admin', 'story', selectedStoryId] });
@@ -346,24 +346,67 @@ export const AdminAudioUploadPage: React.FC = () => {
               />
             </div>
 
-            {/* MP3 File Input Box */}
+            {/* Audio / Video File Input Box */}
             <div className="p-5 rounded-2xl bg-[#FAF7EE] border-2 border-dashed border-emerald-300 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white border border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaKind('audio');
+                      setAudioFile(null);
+                      setFormError(null);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+                      mediaKind === 'audio' ? 'bg-[#064E3B] text-white' : 'text-gray-600'
+                    }`}
+                  >
+                    Audio (9 Formats)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaKind('video');
+                      setAudioFile(null);
+                      setFormError(null);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
+                      mediaKind === 'video' ? 'bg-[#064E3B] text-white' : 'text-gray-600'
+                    }`}
+                  >
+                    Video (13 Formats)
+                  </button>
+                </div>
+                <span className="text-[11px] font-semibold text-gray-500">
+                  Max {formatFileSize(MAX_MEDIA_UPLOAD_BYTES)}
+                </span>
+              </div>
+
               <div className="text-center space-y-2">
                 <div className="w-12 h-12 rounded-2xl bg-white text-[#064E3B] flex items-center justify-center mx-auto shadow-sm">
                   <Upload className="w-6 h-6" />
                 </div>
                 <div>
                   <label className="inline-block px-4 py-2 rounded-xl bg-[#064E3B] hover:bg-[#047857] text-white text-xs font-bold cursor-pointer transition-colors shadow-sm">
-                    <span>MP3 ஆடியோ கோப்பைத் தேர்ந்தெடு (Select MP3)</span>
+                    <span>
+                      {mediaKind === 'audio'
+                        ? 'ஆடியோ கோப்பைத் தேர்ந்தெடு (Select Audio)'
+                        : 'வீடியோ கோப்பைத் தேர்ந்தெடு (Select Video)'}
+                    </span>
                     <input
                       type="file"
-                      accept="audio/mpeg,audio/mp3,.mp3"
+                      accept={mediaKind === 'audio' ? AUDIO_ACCEPT_ATTR : VIDEO_ACCEPT_ATTR}
                       onChange={handleFileChange}
                       className="hidden"
                     />
                   </label>
-                  <p className="text-[11px] text-gray-500 mt-1">
-                    வடிவம்: MP3 (audio/mpeg) • அதிகபட்சம் 100MB
+                  <p className="text-[10px] text-gray-600 mt-2">
+                    <span className="font-bold text-[#064E3B]">Audio:</span>{' '}
+                    {SUPPORTED_AUDIO_EXTENSIONS.map((e) => e.toUpperCase()).join(', ')}
+                  </p>
+                  <p className="text-[10px] text-gray-600 mt-0.5">
+                    <span className="font-bold text-[#064E3B]">Video:</span>{' '}
+                    {SUPPORTED_VIDEO_EXTENSIONS.map((e) => e.toUpperCase()).join(', ')}
                   </p>
                 </div>
               </div>

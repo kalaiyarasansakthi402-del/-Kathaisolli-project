@@ -66,11 +66,11 @@ export class CatalogQueryDto {
   @Max(1000000)
   page = 1;
 
-  @ApiPropertyOptional({ minimum: 1, maximum: 50, default: 20 })
+  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(50)
+  @Max(100)
   pageSize = 20;
 }

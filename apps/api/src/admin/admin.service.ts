@@ -252,16 +252,19 @@ export class AdminService {
     const pageSize = Math.min(100, Math.max(1, query.pageSize || 20));
 
     const where: Prisma.SeriesWhereInput = {};
+    const andConditions: Prisma.SeriesWhereInput[] = [];
 
     if (query.status && query.status !== 'ALL') {
       where.status = query.status as ContentStatus;
     }
 
     if (query.categoryId && query.categoryId !== 'all') {
-      where.OR = [
-        { categoryId: query.categoryId },
-        { category: { slug: query.categoryId.toLowerCase() } },
-      ];
+      andConditions.push({
+        OR: [
+          { categoryId: query.categoryId },
+          { category: { slug: query.categoryId.toLowerCase() } },
+        ],
+      });
     }
 
     if (query.languageId && query.languageId !== 'all') {
@@ -270,11 +273,17 @@ export class AdminService {
 
     if (query.search && query.search.trim()) {
       const term = query.search.trim();
-      where.OR = [
-        { title: { contains: term, mode: 'insensitive' } },
-        { authorName: { contains: term, mode: 'insensitive' } },
-        { shortDescription: { contains: term, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { title: { contains: term, mode: 'insensitive' } },
+          { authorName: { contains: term, mode: 'insensitive' } },
+          { shortDescription: { contains: term, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     const [items, total] = await Promise.all([
@@ -822,7 +831,25 @@ export class AdminService {
       throw new NotFoundException(`Chapter "${chapterId}" not found.`);
     }
 
-    const defaultStoragePath = `kathaisolli/books/${storyId}/chapters/${chapterId}.mp3`;
+    const extFromName =
+      input.originalExtension ||
+      (input.fileName?.includes('.') ? `.${input.fileName.split('.').pop()?.toLowerCase()}` : '.mp3');
+    const resolvedContentType =
+      input.contentType?.trim() ||
+      (extFromName === '.mp4'
+        ? 'video/mp4'
+        : extFromName === '.webm'
+          ? 'video/webm'
+          : extFromName === '.wav'
+            ? 'audio/wav'
+            : extFromName === '.flac'
+              ? 'audio/flac'
+              : extFromName === '.ogg'
+                ? 'audio/ogg'
+                : extFromName === '.m4a'
+                  ? 'audio/mp4'
+                  : 'audio/mpeg');
+    const defaultStoragePath = `kathaisolli/books/${storyId}/chapters/${chapterId}${extFromName}`;
     const rawKey = input.storagePath?.trim() || defaultStoragePath;
     // Bound objectKey length to maximum 500 characters so it never exceeds DB column limit
     const objectKey = rawKey.length > 500 ? rawKey.slice(0, 500) : rawKey;
@@ -837,7 +864,7 @@ export class AdminService {
         where: { id: mediaAssetId },
         data: {
           objectKey,
-          contentType: 'audio/mpeg',
+          contentType: resolvedContentType,
           sizeBytes,
           durationSec,
           isProcessed: true,
@@ -854,18 +881,23 @@ export class AdminService {
         mediaAssetId = existingAsset.id;
         await this.prisma.mediaAsset.update({
           where: { id: mediaAssetId },
-          data: { sizeBytes, durationSec, isProcessed: true },
+          data: {
+            contentType: resolvedContentType,
+            sizeBytes,
+            durationSec,
+            isProcessed: true,
+          },
         });
       } else {
         // Scoped unique key if previous key belonged to another episode
         const uniqueKey = existingAsset
-          ? `${objectKey.replace(/\.mp3$/i, '')}-${chapterId.slice(0, 8)}.mp3`
+          ? `${objectKey.replace(/(\.[a-z0-9]+)$/i, '')}-${chapterId.slice(0, 8)}${extFromName}`
           : objectKey;
 
         const created = await this.prisma.mediaAsset.create({
           data: {
             objectKey: uniqueKey,
-            contentType: 'audio/mpeg',
+            contentType: resolvedContentType,
             sizeBytes,
             durationSec,
             isProcessed: true,

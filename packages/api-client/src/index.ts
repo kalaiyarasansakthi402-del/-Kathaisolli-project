@@ -350,7 +350,7 @@ export class KathaisolliApiClient {
     deleteChapter: (storyId: string, chapterId: string) =>
       this.client.delete<any>(`/admin/stories/${storyId}/chapters/${chapterId}`).then((r) => r.data),
 
-    saveChapterAudio: (storyId: string, chapterId: string, data: { audioUrl: string; storagePath?: string; durationSec?: number; fileSizeBytes?: number; fileName?: string }) =>
+    saveChapterAudio: (storyId: string, chapterId: string, data: { audioUrl: string; storagePath?: string; durationSec?: number; fileSizeBytes?: number; fileName?: string; contentType?: string; mediaType?: 'audio' | 'video'; originalExtension?: string; playbackUrl?: string }) =>
       this.client.post<any>(`/admin/stories/${storyId}/chapters/${chapterId}/audio`, data).then((r) => r.data),
 
     deleteChapterAudio: (storyId: string, chapterId: string) =>

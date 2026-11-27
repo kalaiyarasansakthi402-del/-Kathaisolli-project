@@ -425,10 +425,10 @@ export const CategoriesPage: React.FC = () => {
             : undefined;
         return await api.catalog.search({
           category: catFilter,
-          pageSize: 40,
+          pageSize: 100,
         });
       } catch {
-        return { items: [], total: 0, page: 1, pageSize: 40 };
+        return { items: [], total: 0, page: 1, pageSize: 100 };
       }
     },
     staleTime: 5 * 60 * 1000,

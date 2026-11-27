@@ -17,7 +17,7 @@ import { randomUUID } from 'node:crypto';
 import type { AuthPrincipal } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { AudioQueueService } from './audio-queue.service';
-import { validateAudioUpload } from './audio-format';
+import { validateMediaUpload } from './audio-format';
 import {
   OBJECT_STORAGE,
   type ObjectStorage,
@@ -48,7 +48,7 @@ export class UploadService implements OnModuleInit, OnModuleDestroy {
   ) {
     this.maxUploadBytes = this.readPositiveInteger(
       'MAX_AUDIO_UPLOAD_BYTES',
-      500 * 1024 * 1024,
+      2 * 1024 * 1024 * 1024,
     );
     this.uploadTtlSeconds = this.readPositiveInteger(
       'S3_UPLOAD_URL_TTL_SECONDS',
@@ -86,11 +86,12 @@ export class UploadService implements OnModuleInit, OnModuleDestroy {
       throw new ForbiddenException('Creator or administrator access is required.');
     }
 
-    const format = validateAudioUpload(
+    const format = validateMediaUpload(
       input.originalName,
       input.contentType,
       input.sizeBytes,
       this.maxUploadBytes,
+      'any',
     );
     const episode = await this.prisma.episode.findUnique({
       where: { id: input.episodeId },

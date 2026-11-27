@@ -182,3 +182,116 @@ describe('AdminService - User Management', () => {
     });
   });
 });
+
+describe('AdminService - Story & Media Operations', () => {
+  const prisma = {
+    series: {
+      findMany: jest.fn(),
+      count: jest.fn(),
+    },
+    episode: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    mediaAsset: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    auditLog: {
+      create: jest.fn().mockResolvedValue({ id: 'log-2' }),
+    },
+  };
+
+  let service: AdminService;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const module = await Test.createTestingModule({
+      providers: [
+        AdminService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
+    service = module.get(AdminService);
+  });
+
+  describe('listStories', () => {
+    it('preserves both categoryId and search filters inside where.AND alongside ARCHIVED status', async () => {
+      prisma.series.findMany.mockResolvedValue([]);
+      prisma.series.count.mockResolvedValue(0);
+
+      await service.listStories({
+        categoryId: 'cat-1',
+        search: 'ponniyin',
+        status: 'ARCHIVED',
+        page: 1,
+        pageSize: 20,
+      });
+
+      expect(prisma.series.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'ARCHIVED',
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                OR: expect.arrayContaining([{ categoryId: 'cat-1' }]),
+              }),
+              expect.objectContaining({
+                OR: expect.arrayContaining([
+                  { title: { contains: 'ponniyin', mode: 'insensitive' } },
+                ]),
+              }),
+            ]),
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('saveChapterAudio', () => {
+    it('preserves non-MP3 contentType and originalExtension for FLAC audio', async () => {
+      prisma.episode.findUnique.mockResolvedValue({
+        id: 'chap-1',
+        mediaAssetId: null,
+        mediaAsset: null,
+      });
+      prisma.mediaAsset.findUnique.mockResolvedValue(null);
+      prisma.mediaAsset.create.mockResolvedValue({ id: 'asset-flac-1' });
+      prisma.episode.update.mockResolvedValue({
+        id: 'chap-1',
+        title: 'Chapter 1',
+        episodeNumber: 1,
+        durationSec: 245,
+        status: 'PUBLISHED',
+        audioUrl: 'https://cdn.example.com/chapter-1.flac',
+      });
+
+      const result = await service.saveChapterAudio(
+        'story-1',
+        'chap-1',
+        {
+          audioUrl: 'https://cdn.example.com/chapter-1.flac',
+          fileName: 'chapter-1.flac',
+          contentType: 'audio/flac',
+          originalExtension: '.flac',
+          mediaType: 'audio',
+          durationSec: 245,
+          fileSizeBytes: 12345678,
+        },
+        'admin-1',
+      );
+
+      expect(prisma.mediaAsset.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          objectKey: 'kathaisolli/books/story-1/chapters/chap-1.flac',
+          contentType: 'audio/flac',
+          durationSec: 245,
+          isProcessed: true,
+        }),
+      });
+      expect(result.success).toBe(true);
+      expect(result.chapter.audioUrl).toBe('https://cdn.example.com/chapter-1.flac');
+    });
+  });
+});

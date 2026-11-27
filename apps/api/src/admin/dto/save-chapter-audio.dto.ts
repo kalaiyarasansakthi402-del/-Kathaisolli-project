@@ -30,4 +30,28 @@ export class SaveChapterAudioDto {
   @IsString()
   @MaxLength(255)
   fileName?: string;
+
+  @ApiPropertyOptional({ example: 'audio/mpeg' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  contentType?: string;
+
+  @ApiPropertyOptional({ example: 'audio' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  mediaType?: string;
+
+  @ApiPropertyOptional({ example: '.mp3' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(16)
+  originalExtension?: string;
+
+  @ApiPropertyOptional({ example: 'https://firebasestorage.googleapis.com/.../playback.m4a' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  playbackUrl?: string;
 }

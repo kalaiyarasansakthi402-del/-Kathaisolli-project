@@ -28,9 +28,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import {
   uploadBookCoverImage,
-  uploadChapterAudioMp3,
+  uploadChapterMedia,
+  validateSelectedMediaFile,
+  getFileExtension,
   formatFileSize,
   detectAudioDuration,
+  AUDIO_ACCEPT_ATTR,
+  VIDEO_ACCEPT_ATTR,
+  SUPPORTED_AUDIO_EXTENSIONS,
+  SUPPORTED_VIDEO_EXTENSIONS,
+  MAX_MEDIA_UPLOAD_BYTES,
+  type MediaKind,
 } from '../services/firebaseAdminStorage';
 import { formatDuration } from '@kathaisolli/shared-utils';
 
@@ -40,6 +48,10 @@ export interface StagedChapter {
   title: string;
   tamilTitle?: string;
   description: string;
+  mediaType?: MediaKind;
+  contentType?: string;
+  originalExtension?: string;
+  browserNativePlayable?: boolean;
   audioFile?: File | null;
   audioUrl?: string;
   durationSec: number;
@@ -93,9 +105,16 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   const [chapterNumber, setChapterNumber] = useState<number>(1);
   const [chapterTitle, setChapterTitle] = useState('அத்தியாயம் 1 – ஆரம்பம்');
   const [chapterDescription, setChapterDescription] = useState('');
+  const [chapterMediaKind, setChapterMediaKind] = useState<MediaKind>('audio');
   const [chapterFile, setChapterFile] = useState<File | null>(null);
   const [chapterDuration, setChapterDuration] = useState<number>(0);
   const [chapterPreviewUrl, setChapterPreviewUrl] = useState<string>('');
+  const [chapterValidatedMeta, setChapterValidatedMeta] = useState<{
+    extension: string;
+    contentType: string;
+    kind: MediaKind;
+    browserNativePlayable: boolean;
+  } | null>(null);
 
   // Staged chapters list
   const [stagedChapters, setStagedChapters] = useState<StagedChapter[]>([]);
@@ -225,40 +244,29 @@ export const CreateStoryUnifiedPage: React.FC = () => {
   };
 
   // ---------------------------------------------------------
-  // CHAPTER AUDIO SELECTION & METADATA DETECTION
+  // CHAPTER AUDIO / VIDEO SELECTION & METADATA DETECTION
   // ---------------------------------------------------------
-  const handleAudioFileSelect = async (file: File) => {
-    const isAudio =
-      file.type === 'audio/mpeg' ||
-      file.type === 'audio/mp3' ||
-      file.type === 'audio/x-m4a' ||
-      file.type === 'audio/m4a' ||
-      file.name.toLowerCase().endsWith('.mp3') ||
-      file.name.toLowerCase().endsWith('.m4a');
-
-    if (!isAudio) {
-      setGlobalError(
-        'தயவுசெய்து MP3 அல்லது M4A ஆடியோ கோப்பை மட்டும் தேர்ந்தெடுக்கவும் (Only MP3/M4A allowed).'
-      );
-      return;
-    }
-
-    if (file.size > 500 * 1024 * 1024) {
-      setGlobalError('ஆடியோ கோப்பின் அளவு 500MB-க்கு மிகாமல் இருக்க வேண்டும்.');
-      return;
-    }
-
-    setGlobalError(null);
-    setChapterFile(file);
-
-    const objectUrl = URL.createObjectURL(file);
-    setChapterPreviewUrl(objectUrl);
-
+  const handleAudioFileSelect = async (file: File, kind: MediaKind = chapterMediaKind) => {
     try {
-      const dur = await detectAudioDuration(file);
-      setChapterDuration(dur);
-    } catch {
-      setChapterDuration(180);
+      const validated = validateSelectedMediaFile(file, kind);
+      setGlobalError(null);
+      setChapterFile(file);
+      setChapterValidatedMeta(validated);
+
+      const objectUrl = URL.createObjectURL(file);
+      setChapterPreviewUrl(objectUrl);
+
+      try {
+        const dur = await detectAudioDuration(file, kind);
+        setChapterDuration(dur);
+      } catch {
+        setChapterDuration(180);
+      }
+    } catch (err: any) {
+      setGlobalError(
+        err?.message ||
+          'ஆதரிக்கப்படாத கோப்பு வடிவம் (Unsupported media format).'
+      );
     }
   };
 
@@ -266,6 +274,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     setChapterFile(null);
     setChapterPreviewUrl('');
     setChapterDuration(0);
+    setChapterValidatedMeta(null);
     if (playingAudioSrc === chapterPreviewUrl) {
       stopAudioPlayback();
     }
@@ -295,6 +304,10 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           episodeNumber: chapterNumber,
           title: chapterTitle.trim(),
           description: chapterDescription.trim(),
+          mediaType: chapterValidatedMeta?.kind || chapterMediaKind,
+          contentType: chapterValidatedMeta?.contentType || existing.contentType,
+          originalExtension: chapterValidatedMeta?.extension || existing.originalExtension,
+          browserNativePlayable: chapterValidatedMeta?.browserNativePlayable ?? existing.browserNativePlayable,
           audioFile: chapterFile || existing.audioFile,
           audioUrl: chapterPreviewUrl || existing.audioUrl,
           durationSec: chapterDuration || existing.durationSec,
@@ -316,6 +329,10 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         episodeNumber: assignedNumber,
         title: chapterTitle.trim(),
         description: chapterDescription.trim(),
+        mediaType: chapterValidatedMeta?.kind || chapterMediaKind,
+        contentType: chapterValidatedMeta?.contentType,
+        originalExtension: chapterValidatedMeta?.extension || getFileExtension(chapterFile?.name || '.mp3'),
+        browserNativePlayable: chapterValidatedMeta?.browserNativePlayable ?? true,
         audioFile: chapterFile,
         audioUrl: chapterPreviewUrl,
         durationSec: chapterDuration,
@@ -336,6 +353,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
     setChapterFile(null);
     setChapterPreviewUrl('');
     setChapterDuration(0);
+    setChapterValidatedMeta(null);
     setGlobalError(null);
   };
 
@@ -557,18 +575,22 @@ export const CreateStoryUnifiedPage: React.FC = () => {
             throw new Error(`அத்தியாயம் ${chapter.episodeNumber} உருவாக்க முடியவில்லை.`);
           }
 
-          // 2b. Upload Audio File to Firebase Storage
+          // 2b. Upload Audio/Video File to Firebase Storage
           let audioUrl = chapter.audioUrl || '';
           let storagePath = '';
           let durationSec = chapter.durationSec || 0;
           let fileSizeBytes = chapter.fileSizeBytes || 0;
           let fileName = chapter.fileName;
+          let contentType = chapter.contentType;
+          let originalExtension = chapter.originalExtension;
+          let mediaType = chapter.mediaType;
 
           if (chapter.audioFile) {
-            const uploadRes = await uploadChapterAudioMp3(
+            const uploadRes = await uploadChapterMedia(
               storyId,
               chapterId,
               chapter.audioFile,
+              chapter.mediaType || 'audio',
               (pct) => {
                 const chapterOverallProgress = 10 + Math.round(pct * 0.8);
                 updateChapterStatus(i, { progress: chapterOverallProgress });
@@ -580,9 +602,12 @@ export const CreateStoryUnifiedPage: React.FC = () => {
             durationSec = uploadRes.durationSec || durationSec;
             fileSizeBytes = uploadRes.fileSizeBytes || fileSizeBytes;
             fileName = uploadRes.fileName || fileName;
+            contentType = uploadRes.contentType;
+            originalExtension = uploadRes.originalExtension;
+            mediaType = uploadRes.mediaType;
           }
 
-          // 2c. Save Chapter Audio Metadata in DB
+          // 2c. Save Chapter Media Metadata in DB
           if (audioUrl) {
             await api.admin.saveChapterAudio(storyId, chapterId, {
               audioUrl,
@@ -590,6 +615,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
               durationSec,
               fileSizeBytes,
               fileName,
+              contentType,
+              mediaType,
+              originalExtension,
             });
           }
 
@@ -695,12 +723,16 @@ export const CreateStoryUnifiedPage: React.FC = () => {
       let durationSec = chapter.durationSec || 0;
       let fileSizeBytes = chapter.fileSizeBytes || 0;
       let fileName = chapter.fileName;
+      let contentType = chapter.contentType;
+      let originalExtension = chapter.originalExtension;
+      let mediaType = chapter.mediaType;
 
       if (chapter.audioFile) {
-        const uploadRes = await uploadChapterAudioMp3(
+        const uploadRes = await uploadChapterMedia(
           storyId,
           chapterId,
           chapter.audioFile,
+          chapter.mediaType || 'audio',
           (pct) => {
             updateChapterStatus(index, { progress: 10 + Math.round(pct * 0.8) });
           }
@@ -710,6 +742,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
         durationSec = uploadRes.durationSec || durationSec;
         fileSizeBytes = uploadRes.fileSizeBytes || fileSizeBytes;
         fileName = uploadRes.fileName || fileName;
+        contentType = uploadRes.contentType;
+        originalExtension = uploadRes.originalExtension;
+        mediaType = uploadRes.mediaType;
       }
 
       if (audioUrl) {
@@ -719,6 +754,9 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           durationSec,
           fileSizeBytes,
           fileName,
+          contentType,
+          mediaType,
+          originalExtension,
         });
       }
 
@@ -1210,72 +1248,138 @@ export const CreateStoryUnifiedPage: React.FC = () => {
           />
         </div>
 
-        {/* Audio Drag & Drop + Preview Player + Add Chapter Button */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-          {/* Audio Dropzone */}
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const file = e.dataTransfer.files?.[0];
-              if (file) handleAudioFileSelect(file);
-            }}
-            className="lg:col-span-5 border-2 border-dashed border-emerald-300 bg-emerald-50/40 rounded-2xl p-5 text-center hover:bg-emerald-50/70 transition-colors"
-          >
-            <FileAudio className="w-8 h-8 text-emerald-700 mx-auto mb-2 opacity-80" />
-            <p className="text-xs font-bold text-gray-800 font-tamil">
-              MP3 ஆடியோ கோப்பை இங்கே இழுத்து விடுங்கள்
-            </p>
-            <p className="text-[11px] text-gray-500 font-tamil mb-3">அல்லது தேர்வு செய்யவும்</p>
-
-            <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer shadow-sm transition-all hover:scale-105">
-              <Headphones className="w-4 h-4" />
-              <span className="font-tamil">MP3 தேர்வு (Choose MP3)</span>
-              <input
-                type="file"
-                accept="audio/mp3,audio/mpeg,audio/x-m4a,audio/m4a"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleAudioFileSelect(file);
+        {/* Audio / Video Media Type Selector & Drag & Drop + Preview Player */}
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-gray-100 border border-gray-200">
+              <button
+                type="button"
+                onClick={() => {
+                  if (chapterMediaKind !== 'audio') {
+                    setChapterMediaKind('audio');
+                    clearCurrentChapterAudio();
+                  }
                 }}
-              />
-            </label>
-
-            <p className="text-[10px] text-gray-400 mt-2 font-tamil">
-              ஆதரவு: MP3, M4A | அதிகபட்ச அளவு: 500 MB
-            </p>
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  chapterMediaKind === 'audio'
+                    ? 'bg-[#064E3B] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Audio Only (9 Formats)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (chapterMediaKind !== 'video') {
+                    setChapterMediaKind('video');
+                    clearCurrentChapterAudio();
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  chapterMediaKind === 'video'
+                    ? 'bg-[#064E3B] text-white shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Video (13 Formats)
+              </button>
+            </div>
+            <span className="text-[11px] font-semibold text-gray-500">
+              Max upload: {formatFileSize(MAX_MEDIA_UPLOAD_BYTES)}
+            </span>
           </div>
 
-          {/* Audio File Preview Player */}
-          <div className="lg:col-span-4">
-            {chapterFile || chapterPreviewUrl ? (
-              <div className="bg-[#FAF7EE] border border-amber-200/80 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="p-2 bg-emerald-100 rounded-xl text-emerald-800 shrink-0">
-                      <FileAudio className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-gray-900 truncate">
-                        {chapterFile?.name || 'Audio Preview'}
-                      </p>
-                      <p className="text-[11px] text-gray-500">
-                        {chapterFile ? formatFileSize(chapterFile.size) : ''}
-                        {chapterDuration > 0 && ` | நேரம்: ${formatDuration(chapterDuration)}`}
-                      </p>
-                    </div>
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+            {/* Media Dropzone */}
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleAudioFileSelect(file, chapterMediaKind);
+              }}
+              className="lg:col-span-5 border-2 border-dashed border-emerald-300 bg-emerald-50/40 rounded-2xl p-5 text-center hover:bg-emerald-50/70 transition-colors"
+            >
+              <FileAudio className="w-8 h-8 text-emerald-700 mx-auto mb-2 opacity-80" />
+              <p className="text-xs font-bold text-gray-800 font-tamil">
+                {chapterMediaKind === 'audio'
+                  ? 'ஆடியோ கோப்பை இங்கே இழுத்து விடுங்கள் (Drop Audio)'
+                  : 'வீடியோ கோப்பை இங்கே இழுத்து விடுங்கள் (Drop Video)'}
+              </p>
+              <p className="text-[11px] text-gray-500 font-tamil mb-3">அல்லது தேர்வு செய்யவும்</p>
 
-                  <button
-                    type="button"
-                    onClick={clearCurrentChapterAudio}
-                    className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-                    title="Remove audio"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+              <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs cursor-pointer shadow-sm transition-all hover:scale-105">
+                <Headphones className="w-4 h-4" />
+                <span className="font-tamil">
+                  {chapterMediaKind === 'audio'
+                    ? 'ஆடியோ தேர்வு (Choose Audio)'
+                    : 'வீடியோ தேர்வு (Choose Video)'}
+                </span>
+                <input
+                  type="file"
+                  accept={chapterMediaKind === 'audio' ? AUDIO_ACCEPT_ATTR : VIDEO_ACCEPT_ATTR}
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleAudioFileSelect(file, chapterMediaKind);
+                  }}
+                />
+              </label>
+
+              <div className="mt-3 space-y-1 text-[10px] text-gray-600 text-left bg-white/80 rounded-xl p-2.5 border border-emerald-100">
+                <p>
+                  <span className="font-bold text-[#064E3B]">Audio supported:</span>{' '}
+                  {SUPPORTED_AUDIO_EXTENSIONS.map((e) => e.toUpperCase()).join(', ')}
+                </p>
+                <p>
+                  <span className="font-bold text-[#064E3B]">Video supported:</span>{' '}
+                  {SUPPORTED_VIDEO_EXTENSIONS.map((e) => e.toUpperCase()).join(', ')}
+                </p>
+              </div>
+            </div>
+
+            {/* Media File Preview Player */}
+            <div className="lg:col-span-4">
+              {chapterFile || chapterPreviewUrl ? (
+                <div className="bg-[#FAF7EE] border border-amber-200/80 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2 bg-emerald-100 rounded-xl text-emerald-800 shrink-0">
+                        <FileAudio className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-xs font-bold text-gray-900 truncate">
+                            {chapterFile?.name || 'Media Preview'}
+                          </p>
+                          {chapterValidatedMeta && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-700 text-white text-[9px] font-bold uppercase shrink-0">
+                              {chapterValidatedMeta.extension.replace('.', '')}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500">
+                          {chapterFile ? formatFileSize(chapterFile.size) : ''}
+                          {chapterDuration > 0 && ` | நேரம்: ${formatDuration(chapterDuration)}`}
+                        </p>
+                        {chapterValidatedMeta && !chapterValidatedMeta.browserNativePlayable && (
+                          <p className="text-[10px] font-semibold text-amber-700 mt-0.5">
+                            FFmpeg compatible playback conversion ready
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={clearCurrentChapterAudio}
+                      className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                      title="Remove media"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
 
                 {/* Inline playback controls */}
                 <div className="flex items-center gap-3 pt-1">
@@ -1344,6 +1448,7 @@ export const CreateStoryUnifiedPage: React.FC = () => {
               )}
             </button>
           </div>
+        </div>
         </div>
 
         {/* ----------------------------------------------------------- */}

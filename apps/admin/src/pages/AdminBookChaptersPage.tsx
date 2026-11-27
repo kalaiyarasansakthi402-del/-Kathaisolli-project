@@ -21,7 +21,10 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import {
-  uploadChapterAudioMp3,
+  uploadChapterMedia,
+  validateSelectedMediaFile,
+  AUDIO_ACCEPT_ATTR,
+  SUPPORTED_AUDIO_EXTENSIONS,
   formatFileSize,
   detectAudioDuration,
 } from '../services/firebaseAdminStorage';
@@ -95,13 +98,13 @@ export const AdminBookChaptersPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isMp3 =
-      file.type === 'audio/mpeg' ||
-      file.type === 'audio/mp3' ||
-      file.name.toLowerCase().endsWith('.mp3');
-
-    if (!isMp3) {
-      setError('தயவுசெய்து MP3 ஆடியோ கோப்பை மட்டும் தேர்ந்தெடுக்கவும் (Only MP3 audio/mpeg allowed).');
+    try {
+      validateSelectedMediaFile(file, 'audio');
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          `Supported audio formats: ${SUPPORTED_AUDIO_EXTENSIONS.join(', ')}`,
+      );
       return;
     }
 
@@ -192,10 +195,11 @@ export const AdminBookChaptersPage: React.FC = () => {
 
       // If an audio file was selected, upload it to Firebase Storage and save URL to DB
       if (selectedFile && chapterId) {
-        const uploadRes = await uploadChapterAudioMp3(
+        const uploadRes = await uploadChapterMedia(
           bookId,
           chapterId,
           selectedFile,
+          'audio',
           (pct) => setUploadProgress(pct),
         );
 
@@ -205,6 +209,9 @@ export const AdminBookChaptersPage: React.FC = () => {
           durationSec: uploadRes.durationSec,
           fileSizeBytes: uploadRes.fileSizeBytes,
           fileName: uploadRes.fileName,
+          contentType: uploadRes.contentType,
+          mediaType: uploadRes.mediaType,
+          originalExtension: uploadRes.originalExtension,
         });
       }
 
@@ -261,26 +268,28 @@ export const AdminBookChaptersPage: React.FC = () => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Filter only MP3 files and sort alphabetically
-    const mp3Files = files.filter(
-      (f) =>
-        f.type === 'audio/mpeg' ||
-        f.type === 'audio/mp3' ||
-        f.name.toLowerCase().endsWith('.mp3'),
-    );
+    // Filter valid audio files (all 9 supported formats) and sort alphabetically
+    const validAudioFiles = files.filter((f) => {
+      try {
+        validateSelectedMediaFile(f, 'audio');
+        return true;
+      } catch {
+        return false;
+      }
+    });
 
-    mp3Files.sort((a, b) =>
+    validAudioFiles.sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
     );
 
     const startNum = chapters.length + 1;
     const initialList = await Promise.all(
-      mp3Files.map(async (file, idx) => {
+      validAudioFiles.map(async (file, idx) => {
         const num = startNum + idx;
-        const cleanName = file.name.replace(/\.mp3$/i, '').replace(/[_-]/g, ' ');
+        const cleanName = file.name.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ');
         let durationSec = 180;
         try {
-          durationSec = await detectAudioDuration(file);
+          durationSec = await detectAudioDuration(file, 'audio');
         } catch {
           // fallback
         }
@@ -321,11 +330,12 @@ export const AdminBookChaptersPage: React.FC = () => {
           status: 'PUBLISHED',
         });
 
-        // 2. Upload MP3 to Firebase
-        const uploadRes = await uploadChapterAudioMp3(
+        // 2. Upload audio to Firebase
+        const uploadRes = await uploadChapterMedia(
           bookId,
           chapter.id,
           item.file,
+          'audio',
           (pct) => {
             setBulkFiles((prev) =>
               prev.map((it, idx) => (idx === i ? { ...it, progress: pct } : it)),
@@ -340,6 +350,9 @@ export const AdminBookChaptersPage: React.FC = () => {
           durationSec: uploadRes.durationSec,
           fileSizeBytes: uploadRes.fileSizeBytes,
           fileName: uploadRes.fileName,
+          contentType: uploadRes.contentType,
+          mediaType: uploadRes.mediaType,
+          originalExtension: uploadRes.originalExtension,
         });
 
         setBulkFiles((prev) =>
@@ -418,11 +431,11 @@ export const AdminBookChaptersPage: React.FC = () => {
             {/* Bulk Upload Button */}
             <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs cursor-pointer transition-colors shadow-sm">
               <FolderOpen className="w-4 h-4 text-[#064E3B]" />
-              <span>மொத்த MP3 பதிவேற்றம் (Bulk Upload)</span>
+              <span>மொத்த ஆடியோ பதிவேற்றம் (Bulk Upload)</span>
               <input
                 type="file"
                 multiple
-                accept="audio/mpeg,audio/mp3,.mp3"
+                accept={AUDIO_ACCEPT_ATTR}
                 onChange={handleBulkFilesSelect}
                 className="hidden"
               />
@@ -686,16 +699,16 @@ export const AdminBookChaptersPage: React.FC = () => {
               {/* Audio File Selection & Progress */}
               <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 space-y-3">
                 <label className="block text-xs font-bold text-gray-700">
-                  MP3 ஆடியோ கோப்பு (Audio File - audio/mpeg)
+                  ஆடியோ கோப்பு ({SUPPORTED_AUDIO_EXTENSIONS.join(', ')})
                 </label>
 
                 <div className="flex items-center gap-3">
                   <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-300 hover:bg-gray-100 text-xs font-bold text-gray-800 cursor-pointer shadow-sm transition-colors">
                     <Upload className="w-4 h-4 text-[#064E3B]" />
-                    <span>MP3 கோப்பைத் தேர்ந்தெடு</span>
+                    <span>ஆடியோ கோப்பைத் தேர்ந்தெடு</span>
                     <input
                       type="file"
-                      accept="audio/mpeg,audio/mp3,.mp3"
+                      accept={AUDIO_ACCEPT_ATTR}
                       onChange={handleAudioSelect}
                       className="hidden"
                     />

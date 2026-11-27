@@ -1,12 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ContentStatus, UploadStatus } from '@prisma/client';
-import { Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FfmpegService } from './ffmpeg.service';
 import { OBJECT_STORAGE, type ObjectStorage } from './media.constants';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import {
+  ALL_MEDIA_FORMATS,
+  validateMediaMagicBytes,
+} from './audio-format';
+import { mkdtemp, open, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 @Injectable()
@@ -44,18 +47,30 @@ export class AudioProcessingService {
 
     let workDirectory: string | undefined;
     try {
-      workDirectory = await mkdtemp(join(tmpdir(), 'kathaisolli-audio-'));
-      const sourcePath = join(workDirectory, 'source.audio');
+      workDirectory = await mkdtemp(join(tmpdir(), 'kathaisolli-media-'));
+      const sourceExt =
+        extname(job.originalName || job.objectKey || '.mp3').toLowerCase() || '.mp3';
+      const sourcePath = join(workDirectory, `source${sourceExt}`);
       const hlsDirectory = join(workDirectory, 'hls');
       await this.storage.downloadToFile(job.objectKey, sourcePath);
-      const metadata = await this.ffmpeg.inspect(sourcePath);
-      await this.ffmpeg.createHls(sourcePath, hlsDirectory);
-      const files = await readdir(hlsDirectory);
-      const playlist = files.find((file) => file === 'playlist.m3u8');
-      const segments = files.filter((file) => /^segment_\d{5}\.ts$/u.test(file));
-      if (!playlist || segments.length === 0) {
-        throw new Error('FFmpeg completed without producing a playlist and segments.');
+
+      // Verify binary file signature (first 32 bytes only, avoids buffering large media)
+      const fh = await open(sourcePath, 'r');
+      try {
+        const headerBuf = Buffer.alloc(32);
+        const { bytesRead } = await fh.read(headerBuf, 0, 32, 0);
+        if (!validateMediaMagicBytes(headerBuf.subarray(0, bytesRead), sourceExt)) {
+          throw new Error(
+            `Uploaded file content does not match declared extension ${sourceExt}.`,
+          );
+        }
+      } finally {
+        await fh.close();
       }
+
+      const metadata = await this.ffmpeg.inspectMedia(sourcePath);
+      const descriptor = ALL_MEDIA_FORMATS[sourceExt];
+      const isVideo = descriptor?.kind === 'video' || (metadata.hasVideo && !descriptor);
 
       const assetId = randomUUID();
       const renditionPrefix = `renditions/${assetId}`;
@@ -64,17 +79,59 @@ export class AudioProcessingService {
         contentType: string;
         bitrate: number | null;
       }> = [];
-      for (const file of files) {
-        if (file !== playlist && !segments.includes(file)) continue;
-        const key = `${renditionPrefix}/${file}`;
-        const contentType =
-          file === playlist ? 'application/vnd.apple.mpegurl' : 'video/mp2t';
-        await this.storage.uploadFile(key, join(hlsDirectory, file), contentType);
+
+      if (isVideo) {
+        // Generate browser-compatible H.264/AAC MP4 rendition if non-native or always for uniform streaming
+        const compatMp4Path = join(workDirectory, 'playback.mp4');
+        await this.ffmpeg.transcodeToCompatibleVideo(sourcePath, compatMp4Path);
+        const mp4Key = `${renditionPrefix}/playback.mp4`;
+        await this.storage.uploadFile(mp4Key, compatMp4Path, 'video/mp4');
         renditionRecords.push({
-          objectKey: key,
-          contentType,
-          bitrate: file === playlist ? 128000 : null,
+          objectKey: mp4Key,
+          contentType: 'video/mp4',
+          bitrate: 1_500_000,
         });
+      }
+
+      if (metadata.hasAudio) {
+        // Generate HLS audio stream for adaptive playback
+        await this.ffmpeg.createHls(sourcePath, hlsDirectory);
+        const files = await readdir(hlsDirectory);
+        const playlist = files.find((file) => file === 'playlist.m3u8');
+        const segments = files.filter((file) => /^segment_\d{5}\.ts$/u.test(file));
+        if (!playlist || segments.length === 0) {
+          throw new Error('FFmpeg completed without producing a playlist and segments.');
+        }
+
+        for (const file of files) {
+          if (file !== playlist && !segments.includes(file)) continue;
+          const key = `${renditionPrefix}/${file}`;
+          const contentType =
+            file === playlist ? 'application/vnd.apple.mpegurl' : 'video/mp2t';
+          await this.storage.uploadFile(key, join(hlsDirectory, file), contentType);
+          renditionRecords.push({
+            objectKey: key,
+            contentType,
+            bitrate: file === playlist ? 128000 : null,
+          });
+        }
+
+        // For non-browser-native audio (e.g., WMA, AIFF), also produce a direct compatible M4A file
+        if (!isVideo && descriptor && !descriptor.browserNativePlayable) {
+          const compatAudioPath = join(workDirectory, 'playback.m4a');
+          await this.ffmpeg.transcodeToCompatibleAudio(sourcePath, compatAudioPath);
+          const m4aKey = `${renditionPrefix}/playback.m4a`;
+          await this.storage.uploadFile(m4aKey, compatAudioPath, 'audio/mp4');
+          renditionRecords.push({
+            objectKey: m4aKey,
+            contentType: 'audio/mp4',
+            bitrate: 192000,
+          });
+        }
+      }
+
+      if (renditionRecords.length === 0) {
+        throw new Error('Media processing produced no playable renditions.');
       }
 
       await this.prisma.$transaction(async (transaction) => {
@@ -118,7 +175,7 @@ export class AudioProcessingService {
       });
 
       this.logger.log(
-        `Processed upload ${job.id}: ${metadata.codec}, ${Math.ceil(metadata.durationSeconds)} seconds.`,
+        `Processed upload ${job.id}: ${metadata.audioCodec || metadata.videoCodec}, ${Math.ceil(metadata.durationSeconds)} seconds.`,
       );
     } catch (error) {
       await this.prisma.uploadJob.updateMany({
@@ -129,11 +186,13 @@ export class AudioProcessingService {
         data: {
           status: UploadStatus.FAILED,
           failureReason:
-            'Audio processing failed. Verify the source audio and configured FFmpeg runtime.',
+            error instanceof Error
+              ? error.message.slice(0, 500)
+              : 'Media processing failed. Verify the source media and configured FFmpeg runtime.',
         },
       });
       this.logger.error(
-        `Audio processing failed for upload ${job.id}.`,
+        `Media processing failed for upload ${job.id}.`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;

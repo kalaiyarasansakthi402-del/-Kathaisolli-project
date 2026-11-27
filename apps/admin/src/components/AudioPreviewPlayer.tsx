@@ -135,7 +135,7 @@ export const AudioPreviewPlayer: React.FC<AudioPreviewPlayerProps> = ({
               {title || 'ஆடியோ முன்னோட்டம் (Audio Preview)'}
             </p>
             <span className="text-[10px] text-emerald-400 font-mono">
-              MP3 / audio/mpeg • 128kbps+
+              {src ? src.split('?')[0].split('.').pop()?.toUpperCase() || 'MEDIA' : 'AUDIO'} • Preview
             </span>
           </div>
         </div>

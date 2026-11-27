@@ -18,14 +18,14 @@ export interface PlayingTrack {
 }
 
 export interface AudioFormatInfo {
-  format: 'mp3' | 'ogg' | 'aac' | 'unknown';
+  format: 'mp3' | 'ogg' | 'aac' | 'wav' | 'flac' | 'mp4' | 'webm' | 'unknown';
   mimeType: string;
   isSupportedByBrowser: boolean;
 }
 
 /**
- * Detects audio container format and verifies browser playback compatibility
- * Handles Chrome, Firefox, Edge, Android (native OGG + MP3) vs Safari/iOS (MP3 + AAC)
+ * Detects audio/media container format and verifies browser playback compatibility
+ * Handles Chrome, Firefox, Edge, Android (MP3, WAV, FLAC, AAC, M4A, OGG, MP4, WebM) vs Safari/iOS
  */
 export const detectAudioFormat = (url?: string | null): AudioFormatInfo => {
   if (!url) {
@@ -43,34 +43,34 @@ export const detectAudioFormat = (url?: string | null): AudioFormatInfo => {
       const genericOgg = a.canPlayType('audio/ogg');
       canPlay = Boolean(vorbis || opus || genericOgg);
     }
-    return {
-      format: 'ogg',
-      mimeType: 'audio/ogg',
-      isSupportedByBrowser: canPlay,
-    };
+    return { format: 'ogg', mimeType: 'audio/ogg', isSupportedByBrowser: canPlay };
   }
 
   if (cleanUrl.endsWith('.mp3')) {
-    return {
-      format: 'mp3',
-      mimeType: 'audio/mpeg',
-      isSupportedByBrowser: true,
-    };
+    return { format: 'mp3', mimeType: 'audio/mpeg', isSupportedByBrowser: true };
+  }
+
+  if (cleanUrl.endsWith('.wav')) {
+    return { format: 'wav', mimeType: 'audio/wav', isSupportedByBrowser: true };
+  }
+
+  if (cleanUrl.endsWith('.flac')) {
+    return { format: 'flac', mimeType: 'audio/flac', isSupportedByBrowser: true };
   }
 
   if (cleanUrl.endsWith('.aac') || cleanUrl.endsWith('.m4a')) {
-    return {
-      format: 'aac',
-      mimeType: 'audio/aac',
-      isSupportedByBrowser: true,
-    };
+    return { format: 'aac', mimeType: 'audio/mp4', isSupportedByBrowser: true };
   }
 
-  return {
-    format: 'unknown',
-    mimeType: 'audio/mpeg',
-    isSupportedByBrowser: true,
-  };
+  if (cleanUrl.endsWith('.mp4') || cleanUrl.endsWith('.mov')) {
+    return { format: 'mp4', mimeType: 'video/mp4', isSupportedByBrowser: true };
+  }
+
+  if (cleanUrl.endsWith('.webm')) {
+    return { format: 'webm', mimeType: 'video/webm', isSupportedByBrowser: true };
+  }
+
+  return { format: 'unknown', mimeType: 'audio/mpeg', isSupportedByBrowser: true };
 };
 
 /**
@@ -143,7 +143,7 @@ export interface PlayerContextType {
   isPlayerCollapsed: boolean;
   volume: number;
   isMuted: boolean;
-  audioFormat: 'mp3' | 'ogg' | 'aac' | 'unknown';
+  audioFormat: AudioFormatInfo['format'];
   isFormatSupported: boolean;
   // Queue & Playlist Controls
   queue: PlayingTrack[];
@@ -289,7 +289,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
   const [volume, setVolume] = useState(0.85);
   const [isMuted, setIsMuted] = useState(false);
-  const [audioFormat, setAudioFormat] = useState<'mp3' | 'ogg' | 'aac' | 'unknown'>('mp3');
+  const [audioFormat, setAudioFormat] = useState<AudioFormatInfo['format']>('mp3');
   const [isFormatSupported, setIsFormatSupported] = useState(true);
 
   // References for event listener handlers

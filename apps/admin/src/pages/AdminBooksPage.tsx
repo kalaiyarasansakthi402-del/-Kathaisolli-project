@@ -29,7 +29,7 @@ export const AdminBooksPage: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'PUBLISHED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const pageSize = 12;
@@ -163,13 +163,13 @@ export const AdminBooksPage: React.FC = () => {
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-full md:w-auto text-xs font-bold">
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-full md:w-auto text-xs font-bold overflow-x-auto">
           <button
             onClick={() => {
               setStatusFilter('ALL');
               setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors ${
               statusFilter === 'ALL'
                 ? 'bg-[#064E3B] text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -182,7 +182,7 @@ export const AdminBooksPage: React.FC = () => {
               setStatusFilter('PUBLISHED');
               setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors ${
               statusFilter === 'PUBLISHED'
                 ? 'bg-emerald-700 text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
@@ -195,13 +195,26 @@ export const AdminBooksPage: React.FC = () => {
               setStatusFilter('DRAFT');
               setPage(1);
             }}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors ${
               statusFilter === 'DRAFT'
                 ? 'bg-gray-800 text-white shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             வரைவு
+          </button>
+          <button
+            onClick={() => {
+              setStatusFilter('ARCHIVED');
+              setPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors ${
+              statusFilter === 'ARCHIVED'
+                ? 'bg-amber-700 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            காப்பகம்
           </button>
         </div>
       </div>
