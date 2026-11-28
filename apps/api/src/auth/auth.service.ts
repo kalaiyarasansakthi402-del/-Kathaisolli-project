@@ -15,7 +15,7 @@ import { AccessTokenPayload, AuthenticatedUser } from './auth.types';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, UpdateProfileDto } from './dto/update-profile.dto';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { ForgotPasswordDto, ForgotPasswordRequestDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { NeonSyncDto } from './dto/neon-sync.dto';
 
 export function formatUserId(id: string): string {
@@ -65,6 +65,12 @@ export class AuthService {
   ) {}
 
   async register(input: RegisterDto) {
+    if (input.acceptedTerms === false) {
+      throw new BadRequestException(
+        'You must accept the Terms & Conditions and User Agreement.',
+      );
+    }
+
     const rawUsername = (input.username || '').trim().toLowerCase();
     const rawEmail = (input.email || '').trim().toLowerCase();
 
@@ -118,6 +124,7 @@ export class AuthService {
           isActive: true,
           disabledAt: null,
           emailVerifiedAt: null,
+          ...(input.acceptedTerms === true ? { termsAcceptedAt: new Date() } : {}),
         },
         select: {
           id: true,
@@ -514,6 +521,59 @@ export class AuthService {
       success: true,
       message: 'If an account exists with this email, password reset instructions have been sent.',
       ...(process.env.NODE_ENV !== 'production' && { resetToken }),
+    };
+  }
+
+  async submitPasswordResetRequest(input: ForgotPasswordRequestDto) {
+    if (input.password !== input.confirmPassword) {
+      throw new BadRequestException('Password and Re-Password do not match.');
+    }
+    if (!input.acknowledgedNote) {
+      throw new BadRequestException(
+        'You must acknowledge the 20 working days processing period note.',
+      );
+    }
+
+    const normalizedUsername = input.username.trim().toLowerCase();
+    const normalizedEmail = input.email.trim().toLowerCase();
+
+    const requestedPasswordHash = await argon2.hash(input.password, {
+      type: argon2.argon2id,
+      memoryCost: 19456,
+      timeCost: 2,
+    });
+
+    let matchedUser: { id: string } | null = null;
+    try {
+      matchedUser = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ email: normalizedEmail }, { username: normalizedUsername }],
+        },
+        select: { id: true },
+      });
+    } catch (err) {
+      handleDbError(err);
+    }
+
+    try {
+      await this.prisma.passwordResetRequest.create({
+        data: {
+          userId: matchedUser?.id ?? null,
+          username: normalizedUsername,
+          email: normalizedEmail,
+          requestedPasswordHash,
+          reason: input.reason.trim(),
+          acknowledgedNote: true,
+        },
+      });
+    } catch (err) {
+      handleDbError(err);
+    }
+
+    return {
+      success: true,
+      message:
+        'Your password reset request has been submitted for review. Note: The maximum processing period is 20 working days, excluding weekends and officially declared public holidays.',
     };
   }
 

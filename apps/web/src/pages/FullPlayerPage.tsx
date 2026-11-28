@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Play,
   Pause,
@@ -7,34 +7,22 @@ import {
   SkipForward,
   RotateCcw,
   RotateCw,
-  Volume2,
-  VolumeX,
-  Sun,
-  Moon,
-  Bookmark,
   Heart,
-  Search,
-  Sparkles,
-  ChevronUp,
   ChevronDown,
   Headphones,
-  ShieldAlert,
-  FileText,
-  Check,
-  Share2,
-  Leaf,
+  Gauge,
+  ListMusic,
   X,
 } from 'lucide-react';
-import { usePlayer, type PlayingTrack } from '../context/PlayerContext';
+import { usePlayer } from '../context/PlayerContext';
+import { useAuth } from '../context/AuthContext';
 import { formatDuration } from '@kathaisolli/shared-utils';
-import {
-  COMPLETE_LIBRARY_CATALOG,
-  type LibraryBook,
-  type LibraryChapter,
-} from '../data/libraryCatalog';
+import { COMPLETE_LIBRARY_CATALOG } from '../data/libraryCatalog';
+import { isBookSaved, toggleSaveBook } from '../services/userLibrary';
 
 export const FullPlayerPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, api } = useAuth();
   const {
     currentTrack,
     isPlaying,
@@ -44,39 +32,33 @@ export const FullPlayerPage: React.FC = () => {
     duration,
     playbackRate,
     sleepTimerMinutes,
-    volume,
-    isMuted,
     playEpisode,
     playNext,
     playPrevious,
     queue,
     queueIndex,
-    pause,
-    resume,
     togglePlay,
     seek,
     skipForward,
     skipBackward,
     setRate,
     setSleepTimer,
-    setPlayerVolume,
-    toggleMute,
     clearError,
   } = usePlayer();
 
-  // Active category filter tab in right panel
-  const [activeTab, setActiveTab] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [showTranscript, setShowTranscript] = useState<boolean>(false);
-  const [isFavorited, setIsFavorited] = useState<boolean>(false);
+  const [showChaptersModal, setShowChaptersModal] = useState(false);
+  const [showTimerMenu, setShowTimerMenu] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   const hasPrevious = queueIndex > 0;
   const hasNext = queueIndex < queue.length - 1;
 
-  // If no track is playing on mount, start with Arthashastram Chapter 1 (Real verified MP3)
+  // If no track is playing on mount, start with Arthashastram Chapter 1
   useEffect(() => {
     if (!currentTrack) {
-      const defaultBook = COMPLETE_LIBRARY_CATALOG.find((b) => b.slug === 'arthashastram') || COMPLETE_LIBRARY_CATALOG[0];
+      const defaultBook =
+        COMPLETE_LIBRARY_CATALOG.find((b) => b.slug === 'arthashastram') ||
+        COMPLETE_LIBRARY_CATALOG[0];
       const defaultChapter = defaultBook.chapters[0];
       if (defaultChapter) {
         playEpisode({
@@ -85,7 +67,7 @@ export const FullPlayerPage: React.FC = () => {
           seriesId: defaultBook.id,
           seriesTitle: defaultBook.title,
           coverImageUrl: defaultBook.coverImageUrl,
-          narratorName: defaultBook.narratorName || 'By Anzles Studio',
+          narratorName: defaultBook.authorName || defaultBook.narratorName || 'By Anzles Studio',
           durationSec: defaultChapter.durationSeconds,
           audioUrl: defaultChapter.audioUrl,
         });
@@ -93,89 +75,29 @@ export const FullPlayerPage: React.FC = () => {
     }
   }, [currentTrack, playEpisode]);
 
-  // Flatten all chapters from catalog with book reference for the right grid
-  const allCatalogChapters = useMemo(() => {
-    const list: Array<{
-      book: LibraryBook;
-      chapter: LibraryChapter;
-      trackId: string;
-    }> = [];
-
-    for (const book of COMPLETE_LIBRARY_CATALOG) {
-      for (const chapter of book.chapters) {
-        list.push({
-          book,
-          chapter,
-          trackId: chapter.id,
-        });
-      }
+  // Sync favorite state for current book
+  useEffect(() => {
+    const bookId = currentTrack?.seriesId || currentTrack?.episodeId || '';
+    if (bookId) {
+      setIsFavorited(isBookSaved(bookId, user?.id));
     }
-    return list;
-  }, []);
+  }, [currentTrack?.seriesId, currentTrack?.episodeId, user?.id]);
 
-  // Filtered chapters for the right-side grid
-  const filteredChapters = useMemo(() => {
-    return allCatalogChapters.filter(({ book, chapter }) => {
-      // Tab category filter
-      if (activeTab === 'moral' && book.category !== 'Motivation' && book.category !== 'Self Help') {
-        return false;
-      }
-      if (activeTab === 'history' && book.category !== 'History') {
-        return false;
-      }
-      if (activeTab === 'philosophy' && book.category !== 'Mythology' && book.category !== 'Literature') {
-        return false;
-      }
-      if (activeTab === 'biography' && book.category !== 'Biography') {
-        return false;
-      }
-
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesBook = book.title.toLowerCase().includes(q) || book.tamilTitle.toLowerCase().includes(q);
-        const matchesChapter = chapter.title.toLowerCase().includes(q) || chapter.tamilTitle.toLowerCase().includes(q);
-        const matchesAuthor = book.authorName.toLowerCase().includes(q);
-        return matchesBook || matchesChapter || matchesAuthor;
-      }
-
-      return true;
-    });
-  }, [allCatalogChapters, activeTab, searchQuery]);
-
-  const handlePlayChapterItem = (book: LibraryBook, chapter: LibraryChapter) => {
-    const bookQueue: PlayingTrack[] = book.chapters.map((ch) => ({
-      id: ch.id,
-      episodeId: ch.id,
-      title: `${book.tamilTitle} - ${ch.title}`,
-      seriesId: book.id,
-      seriesTitle: book.title,
-      coverImageUrl: book.coverImageUrl,
-      narratorName: book.authorName || book.narratorName || 'By Anzles Studio',
-      durationSec: ch.durationSeconds,
-      audioUrl: ch.audioUrl,
-    }));
-    const chIdx = book.chapters.findIndex((c) => c.id === chapter.id);
-
-    playEpisode(
+  const handleToggleFavorite = () => {
+    if (!currentTrack) return;
+    const bookId = currentTrack.seriesId || currentTrack.episodeId;
+    const res = toggleSaveBook(
       {
-        episodeId: chapter.id,
-        title: `${book.tamilTitle} - ${chapter.title}`,
-        seriesId: book.id,
-        seriesTitle: book.title,
-        coverImageUrl: book.coverImageUrl,
-        narratorName: book.narratorName || 'By Anzles Studio',
-        durationSec: chapter.durationSeconds,
-        audioUrl: chapter.audioUrl,
+        id: bookId,
+        slug: bookId,
+        title: currentTrack.seriesTitle || currentTrack.title,
+        authorName: currentTrack.narratorName,
+        coverImageUrl: currentTrack.coverImageUrl || currentTrack.coverImage || undefined,
       },
-      book.id,
-      bookQueue,
-      chIdx >= 0 ? chIdx : 0,
+      user?.id,
+      api,
     );
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    seek(parseFloat(e.target.value));
+    setIsFavorited(res.isSaved);
   };
 
   const cycleRate = () => {
@@ -184,476 +106,353 @@ export const FullPlayerPage: React.FC = () => {
     setRate(rates[nextIdx]);
   };
 
-  const cycleSleepTimer = () => {
-    const timers = [null, 15, 20, 30, 45, 60];
-    const nextIdx = (timers.indexOf(sleepTimerMinutes) + 1) % timers.length;
-    setSleepTimer(timers[nextIdx]);
-  };
+  const effectiveDuration =
+    isFinite(duration) && duration > 0 ? duration : currentTrack?.durationSec || 180;
 
-  const effectiveDuration = duration > 0 ? duration : currentTrack?.durationSec || 180;
-  const progressPercent = effectiveDuration > 0 ? (currentTime / effectiveDuration) * 100 : 0;
+  // Extract clean chapter title & book title
+  const rawTitle = currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ';
+  const bookTitle = currentTrack?.seriesTitle || 'Kathaisolli';
+  const chapterTitle =
+    rawTitle.includes(' - ') ? rawTitle.split(' - ').slice(1).join(' - ') : rawTitle;
+  const authorName =
+    currentTrack?.narratorName || 'Kathaisolli Studio';
 
   return (
-    <div className="min-h-screen bg-[#07241D] text-[#E8F0E2] flex flex-col font-sans select-none overflow-x-hidden">
-      {/* ============================================================== */}
-      {/* 1. TOP HEADER (White / Cream cleanly aligned branding)        */}
-      {/* ============================================================== */}
-      <header className="w-full bg-[#FAF7EE] text-[#063828] border-b border-[#E3DCBA] px-3 sm:px-6 lg:px-12 py-3 sm:py-3.5 flex items-center justify-between gap-2 shadow-md z-30">
-        {/* Left: Kathaisolli concentric brand mark & typography */}
-        <Link to="/" className="flex items-center gap-2 sm:gap-3 group min-w-0 flex-1">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#064E3B] text-white flex items-center justify-center shadow-md relative group-hover:scale-105 transition-transform shrink-0">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-[#A7F3D0]/60 flex items-center justify-center">
-              <Leaf className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#A7F3D0] fill-current" />
-            </div>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-1.5 sm:gap-2 min-w-0">
-              <span className="text-lg sm:text-2xl font-black font-serif tracking-tight text-[#064E3B] truncate">
-                Kathaisolli
-              </span>
-              <span className="text-xs sm:text-sm font-bold font-tamil text-[#0B6B52] truncate">
-                கதைசொல்லி
-              </span>
-            </div>
-            <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-[#0B6B52]/75 font-semibold truncate">
-              Kathaisolli | Botanical Oasis · By Anzles
-            </p>
-          </div>
-        </Link>
+    <div className="min-h-screen bg-black text-white flex flex-col justify-between px-4 sm:px-8 py-6 select-none overflow-x-hidden">
+      {/* Top Bar: Collapse Chevron (Left) + Chapter Title & Book Title (Center) */}
+      <header className="w-full max-w-xl mx-auto flex items-start justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          aria-label="Collapse player"
+          title="பின்செல்க (Back)"
+          className="p-2 -ml-2 rounded-full text-stone-200 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+        >
+          <ChevronDown className="w-6 h-6" />
+        </button>
 
-        {/* Right Action: Clean Navigation & Close controls */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <Link
-            to="/categories"
-            className="hidden sm:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
-          >
-            <span>கதைகளை உலாவு (Explore)</span>
-          </Link>
-          <Link
-            to="/my-library"
-            className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#E5EFEA] hover:bg-[#D2E4DC] text-[#064E3B] text-xs font-bold transition-colors shadow-sm"
-          >
-            <span>எனது நூலகம் (Library)</span>
-          </Link>
-          <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 rounded-full bg-[#064E3B] text-white hover:bg-[#085a44] flex items-center justify-center transition-transform hover:scale-105 shadow-sm shrink-0"
-            title="மூடு / பின்செல்க (Close / Back)"
-            aria-label="Close Player"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        <div className="flex-1 text-center min-w-0 px-2">
+          <h1 className="text-base sm:text-lg font-bold font-serif text-white truncate">
+            {chapterTitle}
+          </h1>
+          <p className="text-xs sm:text-sm font-semibold font-tamil text-stone-300 truncate mt-0.5">
+            {bookTitle}
+          </p>
         </div>
+
+        {/* Spacer to keep title centered */}
+        <div className="w-10 shrink-0" />
       </header>
 
-      {/* ============================================================== */}
-      {/* 2. MAIN TWO-COLUMN STUDIO PLAYER INTERFACE                     */}
-      {/* ============================================================== */}
-      <main className="flex-1 max-w-[1500px] w-full mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-4 sm:py-8 pb-28 sm:pb-32 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-        {/* ------------------------------------------------------------ */}
-        {/* LEFT COLUMN: TURNTABLE RECORD PLAYER CONSOLE (5/4 cols)       */}
-        {/* ------------------------------------------------------------ */}
-        <section className="lg:col-span-5 xl:col-span-4 flex flex-col items-center justify-center p-4 sm:p-7 rounded-3xl bg-[#0F352C]/90 backdrop-blur-2xl border border-[#1C5749]/60 shadow-[0_20px_50px_rgba(0,0,0,0.5)] space-y-4 sm:space-y-6 w-full">
-          {/* Vinyl Record Turntable Frame */}
-          <div className="relative w-44 h-44 min-[375px]:w-52 min-[375px]:h-52 sm:w-72 sm:h-72 md:w-80 md:h-80 max-w-full rounded-3xl bg-gradient-to-tr from-[#08221B] to-[#124237] p-3.5 sm:p-5 shadow-2xl border-2 border-[#1E5C4E] flex items-center justify-center">
-            {/* Turntable Platter Outer Ring */}
-            <div className="relative w-full h-full rounded-full bg-[#041410] border-4 border-[#1B5749] flex items-center justify-center shadow-inner overflow-hidden">
-              {/* Subtle Vinyl Grooves Pattern */}
-              <div className="absolute inset-2 rounded-full border border-white/5 pointer-events-none" />
-              <div className="absolute inset-6 rounded-full border border-white/5 pointer-events-none" />
-              <div className="absolute inset-10 rounded-full border border-white/5 pointer-events-none" />
-              <div className="absolute inset-14 rounded-full border border-white/5 pointer-events-none" />
-
-              {/* Rotating Center Vinyl Disc Label */}
-              <div
-                className={`w-24 h-24 min-[375px]:w-28 min-[375px]:h-28 sm:w-40 sm:h-40 md:w-44 md:h-44 rounded-full overflow-hidden border-4 border-[#07241D] bg-gradient-to-br from-[#064E3B] via-[#0B3D2E] to-[#042419] shadow-2xl flex flex-col items-center justify-center p-3 text-center transition-transform duration-700 relative ${
-                  isPlaying ? 'animate-[spin_12s_linear_infinite]' : ''
-                }`}
-              >
-                {currentTrack?.coverImageUrl ? (
-                  <img
-                    src={currentTrack.coverImageUrl}
-                    alt={currentTrack.title}
-                    className="w-full h-full object-cover rounded-full opacity-80"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/story-books-stack.jpg';
-                    }}
-                  />
-                ) : (
-                  <>
-                    <div className="w-10 h-10 rounded-full bg-[#032419]/90 border border-[#A7F3D0]/40 flex items-center justify-center mb-1">
-                      <Headphones className="w-5 h-5 text-[#A7F3D0]" />
-                    </div>
-                    <span className="text-[10px] font-bold font-serif text-[#A7F3D0] uppercase tracking-wider">
-                      கதைசொல்லி
-                    </span>
-                    <span className="text-[8px] text-white/70 font-mono">
-                      Tamil Audio
-                    </span>
-                  </>
-                )}
-              </div>
-
-              {/* Center Spindle Hole */}
-              <div className="absolute w-5 h-5 rounded-full bg-[#1B5749] border-2 border-[#A7F3D0] shadow-md z-10 pointer-events-none" />
+      {/* Center: Large Vinyl Record Graphic with Tonearm & Circular Cover Image */}
+      <main className="flex-1 flex flex-col items-center justify-center w-full max-w-xl mx-auto my-6 space-y-6">
+        <div className="relative w-64 h-64 min-[375px]:w-72 min-[375px]:h-72 sm:w-80 sm:h-80 flex items-center justify-center">
+          {/* Tonearm (Turntable Needle) */}
+          <div
+            className={`absolute -top-3 right-6 sm:right-8 w-16 h-32 pointer-events-none transition-transform duration-700 origin-top-left z-20 ${
+              isPlaying ? 'rotate-[22deg]' : 'rotate-6'
+            }`}
+          >
+            {/* Pivot */}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-stone-200 to-stone-500 border-2 border-stone-700 shadow-xl flex items-center justify-center">
+              <div className="w-3 h-3 rounded-full bg-stone-800" />
             </div>
+            {/* Arm */}
+            <div className="w-1.5 h-24 bg-gradient-to-b from-stone-200 to-stone-400 rounded-full ml-3.5 -mt-1 shadow-md transform rotate-[-18deg] origin-top" />
+            {/* Head */}
+            <div className="w-3.5 h-6 rounded-sm bg-stone-200 border border-stone-500 shadow-lg ml-9 -mt-3 transform rotate-[-25deg]" />
+          </div>
 
-            {/* Stylized Tonearm (Turntable Needle) resting on record */}
+          {/* Vinyl Platter */}
+          <div className="relative w-full h-full rounded-full bg-gradient-to-br from-[#1f1f1f] via-[#0a0a0a] to-[#1a1a1a] border border-white/15 shadow-[0_0_50px_rgba(0,0,0,0.9)] flex items-center justify-center overflow-hidden">
+            {/* Vinyl Grooves */}
+            <div className="absolute inset-3 rounded-full border border-white/10 pointer-events-none" />
+            <div className="absolute inset-6 rounded-full border border-white/5 pointer-events-none" />
+            <div className="absolute inset-9 rounded-full border border-white/10 pointer-events-none" />
+            <div className="absolute inset-12 rounded-full border border-white/5 pointer-events-none" />
+            <div className="absolute inset-16 rounded-full border border-white/10 pointer-events-none" />
+
+            {/* Circular Cover Image */}
             <div
-              className={`absolute top-4 right-4 w-12 h-28 pointer-events-none transition-transform duration-700 origin-top-right ${
-                isPlaying ? 'rotate-12' : 'rotate-0'
+              className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-stone-800 bg-stone-900 shadow-2xl flex items-center justify-center ${
+                isPlaying ? 'animate-[spin_14s_linear_infinite]' : ''
               }`}
             >
-              {/* Tonearm Pivot Base */}
-              <div className="absolute top-0 right-0 w-6 h-6 rounded-full bg-[#1B5749] border border-[#A7F3D0]/60 shadow-lg" />
-              {/* Arm stem */}
-              <div className="absolute top-4 right-2.5 w-1 h-20 bg-gradient-to-b from-[#A7F3D0] to-[#10B981] rounded-full shadow" />
-              {/* Cartridge & Needle head */}
-              <div className="absolute bottom-0 right-1 w-4 h-6 rounded-sm bg-[#041410] border border-[#10B981] shadow-md" />
-            </div>
-          </div>
-
-          {/* Title & Narrator Metadata */}
-          <div className="text-center space-y-1.5 w-full px-2">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-black font-serif text-[#F8F5E9] tracking-tight line-clamp-2 leading-snug break-words drop-shadow">
-              {currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ'}
-            </h2>
-            <p className="text-xs sm:text-sm font-semibold text-[#A7F3D0]/80 truncate">
-              {currentTrack?.narratorName || currentTrack?.seriesTitle || 'Kathaisolli Original · By Anzles Studio'}
-            </p>
-          </div>
-
-          {/* Interactive Playback Controls Bar */}
-          <div className="flex flex-wrap items-center justify-center sm:justify-between w-full max-w-sm gap-1.5 sm:gap-2 px-1 sm:px-4 pt-1">
-            {/* Script / Lyrics toggle button */}
-            <button
-              onClick={() => setShowTranscript(!showTranscript)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-bold border whitespace-nowrap transition-all ${
-                showTranscript
-                  ? 'bg-[#10B981] text-[#07241D] border-[#10B981]'
-                  : 'bg-white/5 hover:bg-white/10 text-stone-300 border-white/10'
-              }`}
-              title="Toggle Story Script / Tamil Text"
-            >
-              தமிழ் உரை
-            </button>
-
-            {/* Previous Chapter */}
-            <button
-              onClick={playPrevious}
-              disabled={!hasPrevious}
-              className={`p-2 sm:p-3 rounded-full active:scale-95 transition-all ${
-                hasPrevious
-                  ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
-                  : 'text-stone-600 opacity-40 cursor-not-allowed'
-              }`}
-              title={hasPrevious ? 'முந்தைய அத்தியாயம் (Previous Chapter)' : 'முதல் அத்தியாயம் (First Chapter)'}
-              aria-label="Previous Chapter"
-            >
-              <SkipBack className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-            </button>
-
-            {/* Rewind 10 Seconds */}
-            <button
-              onClick={() => skipBackward(10)}
-              className="p-1.5 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
-              title="10 விநாடிகள் பின்னே (Rewind 10s)"
-              aria-label="Rewind 10 seconds"
-            >
-              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-
-            {/* Large Glowing Circular Play / Pause Button */}
-            <button
-              onClick={togglePlay}
-              className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white text-[#07241D] flex items-center justify-center hover:scale-105 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all shrink-0"
-              title={isPlaying ? 'Pause' : 'Play'}
-              aria-label={isPlaying ? 'Pause' : 'Play'}
-            >
-              {isBuffering ? (
-                <div className="w-5 h-5 sm:w-6 sm:h-6 border-3 border-[#07241D] border-t-transparent rounded-full animate-spin" />
-              ) : isPlaying ? (
-                <Pause className="w-5 h-5 sm:w-7 sm:h-7 fill-current" />
+              {currentTrack?.coverImageUrl || currentTrack?.coverImage ? (
+                <img
+                  src={(currentTrack.coverImageUrl || currentTrack.coverImage) ?? undefined}
+                  alt={bookTitle}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/story-books-stack.jpg';
+                  }}
+                />
               ) : (
-                <Play className="w-5 h-5 sm:w-7 sm:h-7 fill-current ml-0.5 sm:ml-1" />
-              )}
-            </button>
-
-            {/* Forward 10 Seconds */}
-            <button
-              onClick={() => skipForward(10)}
-              className="p-1.5 sm:p-2.5 rounded-full text-stone-300 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
-              title="10 விநாடிகள் முன்னே (Forward 10s)"
-              aria-label="Forward 10 seconds"
-            >
-              <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-
-            {/* Next Chapter */}
-            <button
-              onClick={playNext}
-              disabled={!hasNext}
-              className={`p-2 sm:p-3 rounded-full active:scale-95 transition-all ${
-                hasNext
-                  ? 'text-[#E8F0E2] hover:text-[#10B981] hover:bg-white/5'
-                  : 'text-stone-600 opacity-40 cursor-not-allowed'
-              }`}
-              title={hasNext ? 'அடுத்த அத்தியாயம் (Next Chapter)' : 'கடைசி அத்தியாயம் (Last Chapter)'}
-              aria-label="Next Chapter"
-            >
-              <SkipForward className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
-            </button>
-          </div>
-
-          {/* Glowing Cyan/Teal Progress Seekbar */}
-          <div className="w-full max-w-sm space-y-2">
-            <div
-              className="relative w-full h-2.5 bg-black/40 rounded-full cursor-pointer overflow-hidden group shadow-inner"
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const pct = (e.clientX - rect.left) / rect.width;
-                seek(pct * effectiveDuration);
-              }}
-            >
-              <div
-                className="h-full bg-gradient-to-r from-[#059669] via-[#10B981] to-[#34D399] relative transition-all rounded-full shadow-[0_0_12px_rgba(16,185,129,0.8)]"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-xs font-mono font-semibold text-stone-400">
-              <span>{formatDuration(currentTime)}</span>
-              <span>{formatDuration(effectiveDuration)}</span>
-            </div>
-          </div>
-
-          {/* Playback Error Banner if any */}
-          {playbackError && (
-            <div className="w-full max-w-sm p-3 rounded-2xl bg-amber-950/80 border border-amber-600/60 text-amber-200 text-xs flex items-center justify-between">
-              <span className="truncate">{playbackError}</span>
-              <button onClick={clearError} className="p-1 hover:bg-white/10 rounded">✕</button>
-            </div>
-          )}
-
-          {/* Transcript Panel (Collapsible) */}
-          {showTranscript && (
-            <div className="w-full max-w-sm p-4 rounded-2xl bg-black/50 border border-white/10 text-xs text-stone-200 leading-relaxed max-h-40 overflow-y-auto font-tamil">
-              <p className="font-bold text-[#A7F3D0] mb-1">தமிழ் உரை சுருக்கம்:</p>
-              <p>
-                {currentTrack?.title} — கதைசொல்லி வழங்கும் உயர்தர தமிழ் ஒலிநூல் வடிவம்.
-                அரசியல், தத்துவம், தன்னம்பிக்கை மற்றும் வாழ்க்கைப் பாடங்களை எங்கும் எப்போதும் கேட்டு மகிழுங்கள்.
-              </p>
-            </div>
-          )}
-        </section>
-
-        {/* ------------------------------------------------------------ */}
-        {/* RIGHT COLUMN: CHAPTER & AUDIOBOOK RESPONSIVE GRID (7/8 cols) */}
-        {/* ------------------------------------------------------------ */}
-        <section className="lg:col-span-7 xl:col-span-8 space-y-5 sm:space-y-6 w-full min-w-0">
-          {/* Top Filter Tabs & Search Pill */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-            {/* Category Tabs */}
-            <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto pb-1 text-xs sm:text-sm font-bold scrollbar-none">
-              {[
-                { id: 'all', label: 'அனைத்தும்' },
-                { id: 'moral', label: 'நீதிக்கதை' },
-                { id: 'history', label: 'வரலாறு' },
-                { id: 'philosophy', label: 'தத்துவம்' },
-                { id: 'biography', label: 'வாழ்க்கை' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative pb-2 whitespace-nowrap transition-colors ${
-                    activeTab === tab.id ? 'text-[#A7F3D0]' : 'text-stone-400 hover:text-stone-200'
-                  }`}
-                >
-                  {tab.label}
-                  {activeTab === tab.id && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#10B981] rounded-full shadow-[0_0_8px_#10B981]" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Rounded Search Pill Input */}
-            <div className="relative w-full sm:w-56 shrink-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="தேடுங்கள்..."
-                className="w-full pl-9 pr-8 py-2 rounded-full bg-[#0F352C]/80 border border-[#1C5749] text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#10B981] transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-white"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <Headphones className="w-12 h-12 text-stone-400" />
               )}
             </div>
-          </div>
-
-          {/* Responsive Chapter Card Grid (1 col on mobile, 2 on tablet/laptop, 3 on xl, 4 on 2xl) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3.5 sm:gap-4">
-            {filteredChapters.slice(0, 16).map(({ book, chapter }) => {
-              const isCardPlaying =
-                (currentTrack?.episodeId === chapter.id || currentTrack?.title?.includes(chapter.title)) &&
-                isPlaying;
-
-              return (
-                <div
-                  key={`${book.id}-${chapter.id}`}
-                  onClick={() => handlePlayChapterItem(book, chapter)}
-                  className={`p-3.5 sm:p-4 rounded-2xl cursor-pointer group shadow-sm border transition-all duration-200 flex flex-col justify-between min-h-[125px] sm:min-h-[135px] ${
-                    isCardPlaying
-                      ? 'border-[#10B981] bg-[#0E382C] ring-2 ring-[#10B981]/50 shadow-[0_0_20px_rgba(16,185,129,0.35)]'
-                      : 'border-white/10 bg-[#08221B] hover:border-[#10B981]/60 hover:bg-[#0B2C23] hover:shadow-md'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10 text-[#A7F3D0] truncate max-w-[110px]">
-                        {book.category || 'General'}
-                      </span>
-                      <span className="text-[10px] font-mono text-stone-400 shrink-0">
-                        {formatDuration(chapter.durationSeconds)}
-                      </span>
-                    </div>
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                        isCardPlaying
-                          ? 'bg-[#10B981] text-[#07241D] scale-105 shadow-[0_0_10px_#10B981]'
-                          : 'bg-white/10 text-white group-hover:bg-[#10B981] group-hover:text-[#07241D]'
-                      }`}
-                    >
-                      {isCardPlaying ? (
-                        <span className="flex items-end gap-0.5 h-3">
-                          <span className="w-0.5 bg-[#07241D] rounded-full animate-[pulse_0.6s_ease-in-out_infinite] h-2" />
-                          <span className="w-0.5 bg-[#07241D] rounded-full animate-[pulse_0.8s_ease-in-out_infinite] h-3" />
-                          <span className="w-0.5 bg-[#07241D] rounded-full animate-[pulse_0.5s_ease-in-out_infinite] h-2" />
-                        </span>
-                      ) : (
-                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-xs sm:text-sm text-[#F8F5E9] font-serif line-clamp-2 leading-snug break-words group-hover:text-[#A7F3D0] transition-colors">
-                      {chapter.tamilTitle || chapter.title}
-                    </h3>
-                    <p className="text-[11px] text-stone-300/80 truncate font-medium">
-                      {book.authorName}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      </main>
-
-      {/* ============================================================== */}
-      {/* 3. STICKY BOTTOM MINI-PLAYER DOCK                              */}
-      {/* ============================================================== */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-[#0A261F]/95 backdrop-blur-2xl border-t border-[#16493B]/80 px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-3 shadow-[0_-10px_35px_rgba(0,0,0,0.6)]">
-        {/* Left: Green Circular Headphone Icon + Title */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial max-w-[140px] min-[375px]:max-w-[180px] sm:max-w-sm">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#059669] text-[#07241D] flex items-center justify-center shrink-0 shadow-lg">
-            <Headphones className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs sm:text-sm font-bold font-serif text-[#F8F5E9] truncate font-tamil">
-              {currentTrack?.title || 'கதைசொல்லி தமிழ் ஆடியோ'}
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-[#A7F3D0]/70 truncate">
-              {currentTrack?.narratorName || currentTrack?.seriesTitle || 'By Anzles Studio'}
-            </p>
           </div>
         </div>
 
-        {/* Center: Controls, Speed, and Sleep Timer Pills */}
-        <div className="flex items-center gap-1 min-[375px]:gap-1.5 sm:gap-3 shrink-0">
-          {/* Browse Stories Link */}
+        {/* Author Name Below Vinyl */}
+        <p className="text-base sm:text-lg font-bold font-serif text-white text-center px-4">
+          {authorName}
+        </p>
+
+        {/* Playback Error Banner */}
+        {playbackError && (
+          <div className="w-full max-w-md p-3 rounded-2xl bg-amber-950/90 border border-amber-600/60 text-amber-200 text-xs flex items-center justify-between">
+            <span className="truncate">{playbackError}</span>
+            <button onClick={clearError} className="p-1 hover:bg-white/10 rounded">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </main>
+
+      {/* Bottom Section: Progress Bar + Main Controls + Utility Bar */}
+      <footer className="w-full max-w-xl mx-auto space-y-6 pb-4">
+        {/* Progress Bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs sm:text-sm font-mono text-stone-300">
+            <span>{formatDuration(currentTime)}</span>
+            <span>{formatDuration(effectiveDuration)}</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={effectiveDuration || 1}
+            value={Math.min(currentTime, effectiveDuration || 1)}
+            onChange={(e) => seek(parseFloat(e.target.value))}
+            aria-label="Audio playback progress"
+            className="w-full h-1.5 bg-stone-700 rounded-full appearance-none cursor-pointer accent-blue-500"
+          />
+        </div>
+
+        {/* Main Controls: Previous, Rewind 10s, Play/Pause, Forward 10s, Next */}
+        <div className="flex items-center justify-between px-2 sm:px-6">
           <button
-            onClick={() => navigate('/categories')}
-            className="p-1.5 sm:p-2 rounded-full text-stone-400 hover:text-white hover:bg-white/5 transition-colors"
-            title="கதைகளை உலாவவும் (Browse Stories)"
+            type="button"
+            onClick={playPrevious}
+            disabled={!hasPrevious}
+            aria-label="Previous Chapter"
+            title="முந்தைய அத்தியாயம் (Previous Chapter)"
+            className={`p-2.5 rounded-full transition-colors ${
+              hasPrevious
+                ? 'text-white hover:bg-white/10 active:scale-95'
+                : 'text-stone-600 cursor-not-allowed'
+            }`}
           >
-            <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
+            <SkipBack className="w-6 h-6 fill-current" />
           </button>
 
-          {/* Mini Play / Pause */}
           <button
-            onClick={togglePlay}
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shadow-sm"
+            type="button"
+            onClick={() => skipBackward(10)}
+            aria-label="Rewind 10 seconds"
+            title="10 விநாடிகள் பின்னே (Rewind 10s)"
+            className="p-2.5 rounded-full text-stone-200 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
           >
-            {isPlaying ? (
-              <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
+            <RotateCcw className="w-6 h-6" />
+          </button>
+
+          <button
+            type="button"
+            onClick={togglePlay}
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+            title={isPlaying ? 'Pause' : 'Play'}
+            className="w-16 h-16 sm:w-18 sm:h-18 rounded-full border-2 border-white bg-black hover:bg-white/10 text-white flex items-center justify-center shadow-xl active:scale-95 transition-all"
+          >
+            {isBuffering ? (
+              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : isPlaying ? (
+              <Pause className="w-7 h-7 fill-current" />
             ) : (
-              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ml-0.5" />
+              <Play className="w-7 h-7 fill-current ml-1" />
             )}
           </button>
 
-          {/* Speed Selector Pill */}
           <button
+            type="button"
+            onClick={() => skipForward(10)}
+            aria-label="Forward 10 seconds"
+            title="10 விநாடிகள் முன்னே (Forward 10s)"
+            className="p-2.5 rounded-full text-stone-200 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
+          >
+            <RotateCw className="w-6 h-6" />
+          </button>
+
+          <button
+            type="button"
+            onClick={playNext}
+            disabled={!hasNext}
+            aria-label="Next Chapter"
+            title="அடுத்த அத்தியாயம் (Next Chapter)"
+            className={`p-2.5 rounded-full transition-colors ${
+              hasNext
+                ? 'text-white hover:bg-white/10 active:scale-95'
+                : 'text-stone-600 cursor-not-allowed'
+            }`}
+          >
+            <SkipForward className="w-6 h-6 fill-current" />
+          </button>
+        </div>
+
+        {/* Bottom Utility Bar: Speed (1x), Timer/Speedometer, Favorite Heart, பிற அத்தியாயங்கள் */}
+        <div className="relative flex items-center justify-between pt-2 px-1 sm:px-4 border-t border-white/10">
+          {/* Speed */}
+          <button
+            type="button"
             onClick={cycleRate}
-            className="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-[#A7F3D0] border border-white/10 transition-colors"
-            title="Playback Speed"
+            aria-label="Playback speed"
+            title="இயக்க வேகம் (Playback Speed)"
+            className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-mono font-bold text-white transition-all"
           >
             {playbackRate}x
           </button>
 
-          {/* Sleep Timer Pill */}
-          <button
-            onClick={cycleSleepTimer}
-            className="px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold font-mono bg-white/10 hover:bg-white/20 text-stone-300 border border-white/10 transition-colors"
-            title="Sleep Timer"
-          >
-            {sleepTimerMinutes ? `${sleepTimerMinutes}m` : 'Timer'}
-          </button>
-        </div>
-
-        {/* Right: Bookmark and Volume Slider (hidden on small mobile to prevent overflow) */}
-        <div className="hidden sm:flex items-center gap-3 shrink-0">
-          {/* Favorite Toggle */}
-          <button
-            onClick={() => setIsFavorited(!isFavorited)}
-            className={`p-2 rounded-full transition-colors ${
-              isFavorited ? 'text-rose-500' : 'text-stone-400 hover:text-white'
-            }`}
-          >
-            <Bookmark className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
-          </button>
-
-          {/* Volume Control */}
-          <div className="flex items-center gap-2">
+          {/* Timer / Speedometer */}
+          <div className="relative">
             <button
-              onClick={toggleMute}
-              className="text-stone-400 hover:text-white transition-colors"
+              type="button"
+              onClick={() => setShowTimerMenu((prev) => !prev)}
+              aria-label="Sleep timer"
+              title="Sleep Timer"
+              className={`p-2 rounded-full transition-colors flex items-center gap-1 ${
+                sleepTimerMinutes
+                  ? 'text-emerald-400 bg-emerald-950/60'
+                  : 'text-stone-200 hover:text-white hover:bg-white/10'
+              }`}
             >
-              {isMuted || volume === 0 ? (
-                <VolumeX className="w-4 h-4 text-rose-400" />
-              ) : (
-                <Volume2 className="w-4 h-4" />
+              <Gauge className="w-5 h-5" />
+              {sleepTimerMinutes && (
+                <span className="text-[10px] font-mono font-bold">{sleepTimerMinutes}m</span>
               )}
             </button>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={isMuted ? 0 : volume}
-              onChange={(e) => setPlayerVolume(parseFloat(e.target.value))}
-              className="w-16 sm:w-20 h-1.5 bg-black/40 rounded-full appearance-none cursor-pointer accent-[#10B981]"
-            />
+
+            {showTimerMenu && (
+              <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-36 rounded-2xl bg-stone-900 border border-white/15 shadow-2xl p-1.5 z-50 space-y-1">
+                {[null, 15, 30, 45, 60].map((mins) => (
+                  <button
+                    key={String(mins)}
+                    type="button"
+                    onClick={() => {
+                      setSleepTimer(mins);
+                      setShowTimerMenu(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                      sleepTimerMinutes === mins
+                        ? 'bg-emerald-600 text-white'
+                        : 'text-stone-200 hover:bg-white/10'
+                    }`}
+                  >
+                    {mins === null ? 'Timer Off' : `${mins} minutes`}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
+
+          {/* Favorite Heart */}
+          <button
+            type="button"
+            onClick={handleToggleFavorite}
+            aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+            title="விருப்பம் (Favorite)"
+            className="p-2 rounded-full text-stone-200 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <Heart
+              className={`w-5 h-5 ${
+                isFavorited ? 'fill-rose-500 text-rose-500' : 'text-white'
+              }`}
+            />
+          </button>
+
+          {/* பிற அத்தியாயங்கள் (Other Chapters) */}
+          <button
+            type="button"
+            onClick={() => setShowChaptersModal(true)}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-white/10 text-xs sm:text-sm font-tamil font-semibold text-white transition-colors"
+          >
+            <ListMusic className="w-4 h-4" />
+            <span>பிற அத்தியாயங்கள்</span>
+          </button>
         </div>
       </footer>
+
+      {/* Other Chapters Modal */}
+      {showChaptersModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setShowChaptersModal(false)}
+        >
+          <div
+            className="w-full max-w-md bg-stone-950 border border-white/15 rounded-t-3xl sm:rounded-3xl p-5 space-y-4 max-h-[75vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h2 className="text-base font-bold font-tamil text-white">
+                  பிற அத்தியாயங்கள்
+                </h2>
+                <p className="text-xs text-stone-400 truncate">{bookTitle}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChaptersModal(false)}
+                className="p-1.5 rounded-full text-stone-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-2 pr-1">
+              {queue.length === 0 ? (
+                <p className="text-xs text-stone-400 text-center py-6">
+                  No other chapters available.
+                </p>
+              ) : (
+                queue.map((track, idx) => {
+                  const isCurrent = idx === queueIndex;
+                  return (
+                    <button
+                      key={`${track.episodeId}-${idx}`}
+                      type="button"
+                      onClick={() => {
+                        playEpisode(track, track.seriesId, queue, idx);
+                        setShowChaptersModal(false);
+                      }}
+                      className={`w-full text-left p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                        isCurrent
+                          ? 'bg-emerald-950/60 border-emerald-500 text-white'
+                          : 'bg-white/5 border-white/10 text-stone-200 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-semibold font-tamil truncate">
+                          {track.title}
+                        </p>
+                        {track.durationSec ? (
+                          <p className="text-[11px] font-mono text-stone-400 mt-0.5">
+                            {formatDuration(track.durationSec)}
+                          </p>
+                        ) : null}
+                      </div>
+                      {isCurrent && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-black shrink-0">
+                          Playing
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+export default FullPlayerPage;

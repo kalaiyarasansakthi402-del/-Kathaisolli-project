@@ -1,5 +1,6 @@
 import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsOptional,
   IsString,
   MaxLength,
@@ -50,4 +51,9 @@ export class RegisterDto {
   @IsString()
   @MaxLength(30)
   phoneNumber?: string;
+
+  @ApiProperty({ required: false, example: true })
+  @IsOptional()
+  @IsBoolean()
+  acceptedTerms?: boolean;
 }

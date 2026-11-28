@@ -26,6 +26,7 @@ export const RegisterPage: React.FC = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -88,6 +89,11 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
+    if (!acceptedTerms) {
+      setError('Please accept the Terms & Conditions, User Agreement to create your account.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -105,6 +111,7 @@ export const RegisterPage: React.FC = () => {
             email: trimmedUsername,
             password,
             phoneNumber: phoneNumber.trim() || undefined,
+            acceptedTerms: true,
             autoLogin: true,
           });
         }
@@ -114,6 +121,7 @@ export const RegisterPage: React.FC = () => {
           password,
           phoneNumber: phoneNumber.trim() || undefined,
           email: trimmedUsername.includes('@') ? trimmedUsername : undefined,
+          acceptedTerms: true,
           autoLogin: true,
         });
       }
@@ -175,7 +183,7 @@ export const RegisterPage: React.FC = () => {
               </span>
             </Link>
             <p className="text-[10px] sm:text-xs font-semibold font-tamil tracking-normal text-[#A7F3D0]">
-              கற்றலின் கேட்டலே நன்று
+              “கற்றலில் கேட்டலே நன்று”
             </p>
           </div>
 
@@ -377,10 +385,40 @@ export const RegisterPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Mandatory Terms & Conditions, User Agreement Checkbox */}
+              <div className="pt-1">
+                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-stone-700 dark:text-stone-300 select-none">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    required
+                    className="mt-0.5 w-4 h-4 rounded border-stone-300 text-[#064E3B] focus:ring-[#064E3B] accent-[#064E3B] shrink-0"
+                  />
+                  <span className="leading-relaxed">
+                    I agree to the{' '}
+                    <Link
+                      to="/terms"
+                      className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+                    >
+                      Terms &amp; Conditions
+                    </Link>
+                    ,{' '}
+                    <Link
+                      to="/terms"
+                      className="font-bold text-[#064E3B] dark:text-[#A7F3D0] hover:underline"
+                    >
+                      User Agreement
+                    </Link>
+                    <span className="text-rose-500 ml-0.5">*</span>
+                  </span>
+                </label>
+              </div>
+
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !acceptedTerms}
                 className="w-full mt-2 py-3 px-6 rounded-full bg-[#064E3B] hover:bg-[#166534] text-white font-bold text-sm shadow-md shadow-emerald-950/20 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (

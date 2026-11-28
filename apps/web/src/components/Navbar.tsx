@@ -15,6 +15,7 @@ import {
   LogOut,
   ChevronDown,
   Settings,
+  Upload,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { usePlayer } from '../context/PlayerContext';
@@ -97,6 +98,7 @@ export const Navbar: React.FC = () => {
   const isLibraryActive = location.pathname.startsWith('/my-library');
   const isAboutActive = location.pathname === '/about';
   const isContactActive = location.pathname === '/contact';
+  const isSubmissionsActive = location.pathname === '/story-submissions';
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-[#FAF7EE]/95 dark:bg-[#04281E]/95 border-b border-[#E8E1CE] dark:border-[#0F4738] transition-colors shadow-sm">
@@ -123,7 +125,7 @@ export const Navbar: React.FC = () => {
               </span>
             </div>
             <span className="block text-[9.5px] min-[375px]:text-[10px] sm:text-xs font-semibold font-tamil tracking-normal text-[#166534] dark:text-[#A7F3D0] truncate">
-              கற்றலின் கேட்டலே நன்று
+              “கற்றலில் கேட்டலே நன்று”
             </span>
           </div>
         </Link>
@@ -205,6 +207,18 @@ export const Navbar: React.FC = () => {
             >
               <Mail className="w-4 h-4" />
               <span>Contact</span>
+            </Link>
+
+            <Link
+              to="/story-submissions"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
+                isSubmissionsActive
+                  ? 'text-[#064E3B] dark:text-[#A7F3D0] font-bold border-b-2 border-[#064E3B] dark:border-[#A7F3D0] rounded-b-none pb-1'
+                  : 'text-stone-700 dark:text-stone-300 hover:text-[#064E3B] dark:hover:text-[#A7F3D0]'
+              }`}
+            >
+              <Upload className="w-4 h-4" />
+              <span>Submit Story</span>
             </Link>
           </nav>
         )}
@@ -406,6 +420,13 @@ export const Navbar: React.FC = () => {
                 >
                   Contact (தொடர்புக்கு)
                 </Link>
+                <Link
+                  to="/story-submissions"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  Story Submissions (கதை சமர்ப்பிப்பு)
+                </Link>
               </>
             ) : (
               <>
@@ -422,6 +443,13 @@ export const Navbar: React.FC = () => {
                   className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
                 >
                   Contact (தொடர்புக்கு)
+                </Link>
+                <Link
+                  to="/story-submissions"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-2.5 rounded-xl font-semibold text-[#173D2E] dark:text-[#F8F5E9] hover:bg-[#E8F0E2] dark:hover:bg-[#083325]"
+                >
+                  Story Submissions (கதை சமர்ப்பிப்பு)
                 </Link>
               </>
             )}

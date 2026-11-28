@@ -51,6 +51,9 @@ const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage').then((m) =
 const HelpSupportPage = lazyWithRetry(() => import('./pages/HelpSupportPage').then((m) => ({ default: m.HelpSupportPage })));
 const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/PrivacyPolicyPage').then((m) => ({ default: m.PrivacyPolicyPage })));
 const TermsConditionsPage = lazyWithRetry(() => import('./pages/TermsConditionsPage').then((m) => ({ default: m.TermsConditionsPage })));
+const DisclaimerPage = lazyWithRetry(() => import('./pages/DisclaimerPage').then((m) => ({ default: m.DisclaimerPage })));
+const CopyrightPolicyPage = lazyWithRetry(() => import('./pages/CopyrightPolicyPage').then((m) => ({ default: m.CopyrightPolicyPage })));
+const StorySubmissionsPage = lazyWithRetry(() => import('./pages/StorySubmissionsPage').then((m) => ({ default: m.StorySubmissionsPage })));
 const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 const RouteLoadingFallback = () => (
@@ -85,6 +88,8 @@ const AppContent: React.FC = () => {
   const { currentTrack } = usePlayer();
   const isDedicatedPlayerPage = location.pathname === '/player';
   const isHomePage = location.pathname === '/' || location.pathname === '/home';
+  const isContactPage = location.pathname === '/contact';
+  const showFooter = isHomePage || isContactPage;
   const isAuthPage =
     location.pathname === '/login' ||
     location.pathname === '/register' ||
@@ -127,6 +132,10 @@ const AppContent: React.FC = () => {
               <Route path="/help" element={<HelpSupportPage />} />
               <Route path="/privacy" element={<PrivacyPolicyPage />} />
               <Route path="/terms" element={<TermsConditionsPage />} />
+              <Route path="/disclaimer" element={<DisclaimerPage />} />
+              <Route path="/copyright" element={<CopyrightPolicyPage />} />
+              <Route path="/story-submissions" element={<StorySubmissionsPage />} />
+              <Route path="/submit-story" element={<Navigate to="/story-submissions" replace />} />
 
               {/* Personal Library & Settings (Protected) */}
               <Route
@@ -200,7 +209,7 @@ const AppContent: React.FC = () => {
       {/* Global Mini Player docked at the bottom (hidden on dedicated player page, home page, and auth pages) */}
       {!isDedicatedPlayerPage && !isHomePage && !isAuthPage && <AudioPlayer />}
 
-      {!isDedicatedPlayerPage && !isAuthPage && <Footer />}
+      {showFooter && <Footer />}
     </div>
   );
 };

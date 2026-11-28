@@ -91,6 +91,7 @@ export class KathaisolliApiClient {
       password: string;
       displayName?: string;
       phoneNumber?: string;
+      acceptedTerms?: boolean;
     }) =>
       this.client.post<AuthSessionResponse>('/auth/register', data).then((r) => r.data),
 
@@ -122,6 +123,18 @@ export class KathaisolliApiClient {
     forgotPassword: (email: string) =>
       this.client
         .post<{ success: boolean; message: string; resetToken?: string }>('/auth/forgot-password', { email })
+        .then((r) => r.data),
+
+    submitPasswordResetRequest: (data: {
+      username: string;
+      email: string;
+      password: string;
+      confirmPassword: string;
+      reason: string;
+      acknowledgedNote: boolean;
+    }) =>
+      this.client
+        .post<{ success: boolean; message: string }>('/auth/forgot-password-request', data)
         .then((r) => r.data),
 
     resetPassword: (data: { token: string; newPassword: string }) =>
@@ -226,6 +239,24 @@ export class KathaisolliApiClient {
     getContinueListening: () =>
       this.client
         .get<ContinueListeningItem[]>('/library/continue-listening')
+        .then((r) => r.data),
+  };
+
+  // --- Story Submissions ---
+  submissions = {
+    create: (data: {
+      username: string;
+      email: string;
+      bookTitle: string;
+      authorName: string;
+      narratorName?: string;
+      archiveUrl: string;
+      archiveFileName: string;
+      archiveSizeBytes?: number;
+      acknowledgedNote: boolean;
+    }) =>
+      this.client
+        .post<{ success: boolean; message: string; submission: any }>('/submissions', data)
         .then((r) => r.data),
   };
 

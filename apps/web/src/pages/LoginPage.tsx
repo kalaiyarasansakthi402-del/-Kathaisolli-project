@@ -157,7 +157,7 @@ export const LoginPage: React.FC = () => {
               </span>
             </Link>
             <p className="text-[10px] sm:text-xs font-semibold font-tamil tracking-normal text-[#A7F3D0]">
-              கற்றலின் கேட்டலே நன்று
+              “கற்றலில் கேட்டலே நன்று”
             </p>
           </div>
 

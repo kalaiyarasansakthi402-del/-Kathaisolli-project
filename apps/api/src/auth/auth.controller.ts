@@ -21,7 +21,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ChangePasswordDto, UpdateProfileDto } from './dto/update-profile.dto';
-import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
+import { ForgotPasswordDto, ForgotPasswordRequestDto, ResetPasswordDto } from './dto/password-reset.dto';
 import { NeonSyncDto } from './dto/neon-sync.dto';
 
 @Controller('auth')
@@ -101,6 +101,14 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   forgotPassword(@Body() input: ForgotPasswordDto) {
     return this.authService.forgotPassword(input);
+  }
+
+  @ApiOperation({ summary: 'Submit a password reset review request (up to 20 working days)' })
+  @Post('forgot-password-request')
+  @HttpCode(HttpStatus.CREATED)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  submitPasswordResetRequest(@Body() input: ForgotPasswordRequestDto) {
+    return this.authService.submitPasswordResetRequest(input);
   }
 
   @ApiOperation({ summary: 'Reset password with token' })

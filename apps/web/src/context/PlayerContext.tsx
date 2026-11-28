@@ -215,6 +215,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [currentTrack, setCurrentTrack] = useState<PlayingTrack | null>(() => {
     try {
+      if (localStorage.getItem('kathaisolli_player_closed') === 'true') {
+        return null;
+      }
       const saved = localStorage.getItem('kathaisolli_last_track');
       if (saved) return JSON.parse(saved);
     } catch {}
@@ -701,6 +704,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setCurrentTime(0);
 
         try {
+          localStorage.removeItem('kathaisolli_player_closed');
           localStorage.setItem('kathaisolli_last_track', JSON.stringify(track));
         } catch {}
 
@@ -745,7 +749,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         );
 
         // Check if user has saved progress for this episode
-        const savedProg = getProgress(episodeId);
+        const savedProg = getProgress(episodeId, userRef.current?.id);
         const startPosition = savedProg?.positionSec && savedProg.positionSec > 0 ? savedProg.positionSec : 0;
 
         if (audio) {
@@ -931,9 +935,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-    setQueue([]);
+    setQueueState([]);
     setQueueIndex(-1);
     setIsFullPlayerOpen(false);
+    try {
+      localStorage.setItem('kathaisolli_player_closed', 'true');
+      localStorage.removeItem('kathaisolli_last_track');
+      localStorage.removeItem('kathaisolli_queue');
+      localStorage.removeItem('kathaisolli_queue_index');
+    } catch {}
   }, []);
 
   const resume = () => audioRef.current?.play().catch(console.error);

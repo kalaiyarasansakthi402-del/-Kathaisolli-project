@@ -25,6 +25,17 @@ export interface SavedBookItem {
 
 const STORAGE_KEY_PREFIX = 'kathaisolli_saved_books_';
 const PROGRESS_KEY_PREFIX = 'kathaisolli_progress_';
+const HISTORY_KEY_PREFIX = 'kathaisolli_listening_history_';
+
+export interface ListeningHistoryEntry {
+  bookId: string;
+  episodeId: string;
+  episodeTitle?: string;
+  positionSec: number;
+  durationSec: number;
+  completed: boolean;
+  lastPlayedAt: number;
+}
 
 const getStorageKey = (userId?: string | null): string => {
   return `${STORAGE_KEY_PREFIX}${userId ? userId : 'local_user'}`;
@@ -167,16 +178,46 @@ export const updateListeningProgress = (
 ): void => {
   if (!bookId) return;
 
-  // 1. Store progress per episode
+  // 1. Store progress per episode (user-scoped when userId is provided)
   try {
-    const progressKey = `${PROGRESS_KEY_PREFIX}${episodeId || bookId}`;
+    const progressKey = userId
+      ? `${PROGRESS_KEY_PREFIX}${userId}_${episodeId || bookId}`
+      : `${PROGRESS_KEY_PREFIX}${episodeId || bookId}`;
     localStorage.setItem(
       progressKey,
       JSON.stringify({ positionSec, durationSec, timestamp: Date.now() }),
     );
   } catch {}
 
-  // 2. Update progress in saved books collection if present
+  // 2. Store user-specific listening history for "Last 5 Uncompleted Books"
+  if (userId) {
+    try {
+      const historyKey = `${HISTORY_KEY_PREFIX}${userId}`;
+      const raw = localStorage.getItem(historyKey);
+      const list: ListeningHistoryEntry[] = raw ? JSON.parse(raw) : [];
+      const isCompleted =
+        durationSec > 0 && positionSec >= durationSec * 0.95;
+      const filtered = Array.isArray(list)
+        ? list.filter((item) => item.bookId !== bookId)
+        : [];
+      const updatedHistory: ListeningHistoryEntry[] = [
+        {
+          bookId,
+          episodeId,
+          episodeTitle,
+          positionSec: Math.floor(positionSec),
+          durationSec: Math.floor(durationSec),
+          completed: isCompleted,
+          lastPlayedAt: Date.now(),
+        },
+        ...filtered,
+      ].slice(0, 30);
+      localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+      window.dispatchEvent(new CustomEvent('kathaisolli:history-updated'));
+    } catch {}
+  }
+
+  // 3. Update progress in saved books collection if present
   const books = getSavedBooks(userId);
   const target = books.find((b) => b.id === bookId || b.slug === bookId);
   if (target) {
@@ -205,9 +246,12 @@ export const updateListeningProgress = (
  */
 export const getProgress = (
   id: string,
+  userId?: string | null,
 ): { positionSec: number; durationSec: number; percent: number } | null => {
   try {
-    const raw = localStorage.getItem(`${PROGRESS_KEY_PREFIX}${id}`);
+    const raw =
+      (userId && localStorage.getItem(`${PROGRESS_KEY_PREFIX}${userId}_${id}`)) ||
+      localStorage.getItem(`${PROGRESS_KEY_PREFIX}${id}`);
     if (!raw) return null;
     const data = JSON.parse(raw);
     const pos = data.positionSec || 0;
@@ -216,5 +260,27 @@ export const getProgress = (
     return { positionSec: pos, durationSec: dur, percent };
   } catch {
     return null;
+  }
+};
+
+/**
+ * Retrieve the user's most recent uncompleted books (sorted by lastPlayedAt desc)
+ */
+export const getUncompletedListeningHistory = (
+  userId?: string | null,
+  limit = 5,
+): ListeningHistoryEntry[] => {
+  if (!userId) return [];
+  try {
+    const raw = localStorage.getItem(`${HISTORY_KEY_PREFIX}${userId}`);
+    if (!raw) return [];
+    const parsed: ListeningHistoryEntry[] = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((entry) => !entry.completed && entry.positionSec > 0)
+      .sort((a, b) => (b.lastPlayedAt || 0) - (a.lastPlayedAt || 0))
+      .slice(0, limit);
+  } catch {
+    return [];
   }
 };

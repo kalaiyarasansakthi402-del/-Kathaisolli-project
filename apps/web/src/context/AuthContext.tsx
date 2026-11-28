@@ -9,6 +9,7 @@ export interface RegisterParams {
   phoneNumber?: string;
   email?: string;
   displayName?: string;
+  acceptedTerms?: boolean;
   autoLogin?: boolean;
 }
 
@@ -165,6 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phoneNumber: params.phoneNumber ? params.phoneNumber.trim() : undefined,
         email: params.email ? params.email.trim().toLowerCase() : undefined,
         displayName: params.displayName ? params.displayName.trim() : params.username,
+        acceptedTerms: params.acceptedTerms,
       });
 
       if (params.autoLogin && res.accessToken && res.user) {

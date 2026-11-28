@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
@@ -26,6 +26,9 @@ describe('AuthService', () => {
     },
     authSession: {
       updateMany: jest.fn(),
+    },
+    passwordResetRequest: {
+      create: jest.fn(),
     },
   };
   const jwt = {
@@ -341,6 +344,61 @@ describe('AuthService', () => {
         tokenType: 'Bearer',
         user: { id: 'user-123' },
       });
+    });
+  });
+
+  describe('terms and password reset request', () => {
+    it('rejects registration when acceptedTerms is explicitly false', async () => {
+      await expect(
+        service.register({
+          username: 'sakthi',
+          password: 'securePassword123',
+          acceptedTerms: false,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    });
+
+    it('creates a pending password reset request without mutating user passwordHash', async () => {
+      prisma.user.findFirst.mockResolvedValue({ id: 'user-123' });
+      prisma.passwordResetRequest.create.mockResolvedValue({ id: 'req-1' });
+
+      const result = await service.submitPasswordResetRequest({
+        username: 'sakthi',
+        email: 'sakthi@example.com',
+        password: 'newPassword123',
+        confirmPassword: 'newPassword123',
+        reason: 'Forgot my password',
+        acknowledgedNote: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.passwordResetRequest.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'user-123',
+            username: 'sakthi',
+            email: 'sakthi@example.com',
+            acknowledgedNote: true,
+            requestedPasswordHash: expect.stringMatching(/^\$argon2id\$/),
+          }),
+        }),
+      );
+    });
+
+    it('rejects password reset request if acknowledgedNote is false', async () => {
+      await expect(
+        service.submitPasswordResetRequest({
+          username: 'sakthi',
+          email: 'sakthi@example.com',
+          password: 'newPassword123',
+          confirmPassword: 'newPassword123',
+          reason: 'Forgot my password',
+          acknowledgedNote: false,
+        }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.passwordResetRequest.create).not.toHaveBeenCalled();
     });
   });
 });

@@ -86,6 +86,52 @@ export const CATALOG_CATEGORY_TABS: CategoryTab[] = [
   },
 ];
 
+/** Matches a story against a category tab id/name consistently. */
+function doesStoryMatchCategory(
+  story: { categoryName?: string; language?: string },
+  categoryId: string,
+): boolean {
+  const normalizedCat = categoryId.trim().toLowerCase();
+  if (!normalizedCat || normalizedCat === 'all') return true;
+  if (normalizedCat === 'recently added' || normalizedCat === 'புதிய வரவுகள்') return true;
+
+  const catName = (story.categoryName || '').toLowerCase();
+  const lang = (story.language || '').toLowerCase();
+
+  if (normalizedCat === 'general') {
+    return (
+      catName === 'general' ||
+      catName === 'பொது' ||
+      catName === 'பொதுவானவை' ||
+      (!catName && lang !== 'english')
+    );
+  }
+  if (normalizedCat === 'english' || normalizedCat === 'english audiobooks') {
+    return lang === 'english' || catName.includes('english') || catName === 'ஆங்கிலம்';
+  }
+  if (normalizedCat === 'mythology' || normalizedCat === 'புராணங்கள்') {
+    return catName.includes('mythology') || catName.includes('புராண');
+  }
+  if (normalizedCat === 'biography' || normalizedCat === 'வாழ்க்கை வரலாறு') {
+    return catName.includes('biography') || catName.includes('வரலாறு');
+  }
+  if (normalizedCat === 'literature' || normalizedCat === 'இலக்கியம்') {
+    return catName.includes('literature') || catName.includes('இலக்கிய');
+  }
+  if (
+    normalizedCat === 'self help' ||
+    normalizedCat === 'சுயமுன்னேற்றம்' ||
+    normalizedCat === 'motivation'
+  ) {
+    return (
+      catName.includes('self help') ||
+      catName.includes('motivation') ||
+      catName.includes('சுயமுன்னேற்றம்')
+    );
+  }
+  return catName.includes(normalizedCat);
+}
+
 /** Normalizes DOM wheel delta values across pixel, line, and page modes. */
 const normalizeWheelDelta = (delta: number, deltaMode: number, pageSize: number): number => {
   if (deltaMode === 1) return delta * 32;
@@ -220,7 +266,7 @@ export const CategoriesPage: React.FC = () => {
   });
 
   // Merge static catalog tabs with dynamic categories from backend
-  const categoryTabs = useMemo(() => {
+  const rawCategoryTabs = useMemo(() => {
     const tabs = [...CATALOG_CATEGORY_TABS];
     if (Array.isArray(apiCategories) && apiCategories.length > 0) {
       for (const cat of apiCategories) {
@@ -340,52 +386,6 @@ export const CategoriesPage: React.FC = () => {
       }
     };
   }, [updateScrollButtons]);
-
-  // Recalculate button states when merged category tabs change
-  useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      updateScrollButtons();
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [categoryTabs, updateScrollButtons]);
-
-  // Smoothly scroll the selected category pill horizontally into view without vertical page scrolling
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const activeTab = categoryTabs.find(
-      (tab) =>
-        selectedCategory.toLowerCase() === tab.id.toLowerCase() ||
-        selectedCategory.toLowerCase() === tab.name.toLowerCase() ||
-        (tab.id === 'all' && (!selectedCategory || selectedCategory === 'all'))
-    );
-    if (!activeTab) return;
-
-    const activeEl = tabButtonRefs.current.get(activeTab.id);
-    if (!activeEl) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const buttonRect = activeEl.getBoundingClientRect();
-    const edgePadding = 16;
-
-    if (buttonRect.left < containerRect.left + edgePadding) {
-      const nextLeft = Math.max(
-        0,
-        container.scrollLeft + (buttonRect.left - (containerRect.left + edgePadding))
-      );
-      arrowTargetRef.current = null;
-      container.scrollTo({ left: nextLeft, behavior: 'smooth' });
-    } else if (buttonRect.right > containerRect.right - edgePadding) {
-      const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
-      const nextLeft = Math.min(
-        maxScroll,
-        container.scrollLeft + (buttonRect.right - (containerRect.right - edgePadding))
-      );
-      arrowTargetRef.current = null;
-      container.scrollTo({ left: nextLeft, behavior: 'smooth' });
-    }
-  }, [selectedCategory, categoryTabs]);
 
   const scrollCategories = (direction: 'left' | 'right') => {
     const el = scrollContainerRef.current;
@@ -515,6 +515,61 @@ export const CategoriesPage: React.FC = () => {
     return merged;
   }, [apiStoriesData]);
 
+  // Filter category tabs to show ONLY available categories that have >= 1 book
+  const categoryTabs = useMemo(() => {
+    if (mappedCatalog.length === 0) return [];
+    return rawCategoryTabs.filter((tab) => {
+      if (tab.id === 'all' || tab.id === 'Recently Added') return true;
+      return mappedCatalog.some((story) => doesStoryMatchCategory(story, tab.id));
+    });
+  }, [rawCategoryTabs, mappedCatalog]);
+
+  // Recalculate button states when merged category tabs change
+  useEffect(() => {
+    const rafId = requestAnimationFrame(() => {
+      updateScrollButtons();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [categoryTabs, updateScrollButtons]);
+
+  // Smoothly scroll the selected category pill horizontally into view without vertical page scrolling
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const activeTab = categoryTabs.find(
+      (tab) =>
+        selectedCategory.toLowerCase() === tab.id.toLowerCase() ||
+        selectedCategory.toLowerCase() === tab.name.toLowerCase() ||
+        (tab.id === 'all' && (!selectedCategory || selectedCategory === 'all'))
+    );
+    if (!activeTab) return;
+
+    const activeEl = tabButtonRefs.current.get(activeTab.id);
+    if (!activeEl) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const buttonRect = activeEl.getBoundingClientRect();
+    const edgePadding = 16;
+
+    if (buttonRect.left < containerRect.left + edgePadding) {
+      const nextLeft = Math.max(
+        0,
+        container.scrollLeft + (buttonRect.left - (containerRect.left + edgePadding))
+      );
+      arrowTargetRef.current = null;
+      container.scrollTo({ left: nextLeft, behavior: 'smooth' });
+    } else if (buttonRect.right > containerRect.right - edgePadding) {
+      const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+      const nextLeft = Math.min(
+        maxScroll,
+        container.scrollLeft + (buttonRect.right - (containerRect.right - edgePadding))
+      );
+      arrowTargetRef.current = null;
+      container.scrollTo({ left: nextLeft, behavior: 'smooth' });
+    }
+  }, [selectedCategory, categoryTabs]);
+
   // Filter and sort according to selected category and search query
   const filteredStories = useMemo(() => {
     const normalizedCat = selectedCategory.trim().toLowerCase();
@@ -527,48 +582,8 @@ export const CategoriesPage: React.FC = () => {
       }
 
       // Category filter matching
-      if (normalizedCat && normalizedCat !== 'all') {
-        const catName = (story.categoryName || '').toLowerCase();
-        const lang = (story.language || '').toLowerCase();
-
-        if (normalizedCat === 'general') {
-          const isGeneral =
-            catName === 'general' ||
-            catName === 'பொது' ||
-            catName === 'பொதுவானவை' ||
-            (!catName && lang !== 'english');
-          if (!isGeneral) return false;
-        } else if (normalizedCat === 'english' || normalizedCat === 'english audiobooks') {
-          const isEnglish =
-            lang === 'english' ||
-            catName.includes('english') ||
-            catName === 'ஆங்கிலம்';
-          if (!isEnglish) return false;
-        } else if (normalizedCat === 'mythology' || normalizedCat === 'புராணங்கள்') {
-          const isMythology = catName.includes('mythology') || catName.includes('புராண');
-          if (!isMythology) return false;
-        } else if (normalizedCat === 'biography' || normalizedCat === 'வாழ்க்கை வரலாறு') {
-          const isBio = catName.includes('biography') || catName.includes('வரலாறு');
-          if (!isBio) return false;
-        } else if (normalizedCat === 'literature' || normalizedCat === 'இலக்கியம்') {
-          const isLit = catName.includes('literature') || catName.includes('இலக்கிய');
-          if (!isLit) return false;
-        } else if (
-          normalizedCat === 'self help' ||
-          normalizedCat === 'சுயமுன்னேற்றம்' ||
-          normalizedCat === 'motivation'
-        ) {
-          const isSelfHelp =
-            catName.includes('self help') ||
-            catName.includes('motivation') ||
-            catName.includes('சுயமுன்னேற்றம்');
-          if (!isSelfHelp) return false;
-        } else if (normalizedCat === 'recently added' || normalizedCat === 'புதிய வரவுகள்') {
-          // Handled in sorting below
-        } else {
-          // Custom category match
-          if (!catName.includes(normalizedCat)) return false;
-        }
+      if (!doesStoryMatchCategory(story, normalizedCat)) {
+        return false;
       }
 
       // Search filter matching

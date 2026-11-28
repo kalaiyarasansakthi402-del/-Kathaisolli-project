@@ -20,6 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PlaybackModule } from './playback/playback.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SubmissionsModule } from './submissions/submissions.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PrismaModule } from './prisma/prisma.module';
     AiAssistantModule,
     FirebaseAdminModule,
     FirebaseAuthModule,
+    SubmissionsModule,
   ],
   controllers: [
     AppController,

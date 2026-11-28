@@ -20,7 +20,7 @@ export const Footer: React.FC = () => {
                   Kathaisolli
                 </span>
                 <span className="block text-xs font-semibold font-tamil text-[#166534] dark:text-[#E8F0E2] mt-0.5">
-                  கற்றலின் கேட்டலே நன்று
+                  “கற்றலில் கேட்டலே நன்று”
                 </span>
               </div>
             </Link>
@@ -34,34 +34,39 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Platform info */}
-          <div id="about" className="md:min-w-[220px]">
+          <div id="about" className="md:min-w-[260px]">
             <h4 className="text-sm font-bold uppercase tracking-wider text-[#064E3B] dark:text-[#A7F3D0] mb-4 font-serif">
-              Support & Legal
+              Support &amp; Legal
             </h4>
             <ul className="space-y-2.5 text-sm font-medium">
               <li>
                 <Link to="/about" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  About Us (எங்களை பற்றி)
+                  About Us (எங்களைப் பற்றி)
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Contact Us (தொடர்புக்கு)
-                </Link>
-              </li>
-              <li>
-                <Link to="/help" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Help & Support (உதவி மையம்)
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Privacy Policy (தனியுரிமை)
+                <Link to="/disclaimer" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
+                  Disclaimer (பொறுப்பு துறப்பு)
                 </Link>
               </li>
               <li>
                 <Link to="/terms" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
-                  Terms of Service (விதிமுறைகள்)
+                  Terms &amp; Conditions (விதிமுறைகள் மற்றும் நிபந்தனைகள்)
+                </Link>
+              </li>
+              <li>
+                <Link to="/copyright" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
+                  Copyright Policy (பதிப்புரிமைக் கொள்கை)
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
+                  Privacy Policy (தனியுரிமைக் கொள்கை)
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="hover:text-[#064E3B] dark:hover:text-[#A7F3D0] hover:underline transition-colors">
+                  Contact Us (எங்களைத் தொடர்புகொள்ள)
                 </Link>
               </li>
             </ul>

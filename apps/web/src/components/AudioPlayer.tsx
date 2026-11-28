@@ -15,6 +15,7 @@ import {
   Gauge,
   RotateCcw,
   RotateCw,
+  X,
 } from 'lucide-react';
 import { formatDuration } from '@kathaisolli/shared-utils';
 import { usePlayer } from '../context/PlayerContext';
@@ -43,6 +44,7 @@ export const AudioPlayer: React.FC = () => {
     setSleepTimerMinutes,
     closeFullPlayer,
     toggleCollapse,
+    stop,
     clearError,
     // Queue & Audio Navigation Controls
     playNext,
@@ -90,6 +92,19 @@ export const AudioPlayer: React.FC = () => {
           aria-label="Audio player mini bar"
           className="fixed bottom-0 left-0 right-0 z-40 bg-[#073224]/95 backdrop-blur-md text-white border-t border-[#0F4738] shadow-2xl transition-all"
         >
+          {/* Prominent Circular Red Close Button (Top-Right Corner) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              stop();
+            }}
+            aria-label="Close audio player"
+            title="பிளேயரை மூடு (Close Player)"
+            className="absolute -top-3.5 right-2.5 sm:right-4 z-50 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 hover:bg-red-700 text-white border-2 border-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
           {/* Progress bar line along top edge with click-to-seek */}
           <div
             className="w-full h-1 bg-[#144738] cursor-pointer group"
@@ -178,6 +193,19 @@ export const AudioPlayer: React.FC = () => {
           aria-label="Audio player dock"
           className="fixed bottom-0 left-0 right-0 z-40 bg-[#073224] text-white border-t border-[#0F4738] shadow-2xl transition-all"
         >
+          {/* Prominent Circular Red Close Button (Top-Right Corner) */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              stop();
+            }}
+            aria-label="Close audio player"
+            title="பிளேயரை மூடு (Close Player)"
+            className="absolute -top-3.5 right-2.5 sm:right-4 z-50 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-red-600 hover:bg-red-700 text-white border-2 border-white shadow-lg flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
           {/* Top edge scrubber progress bar - always interactive */}
           <div
             className="w-full h-1 bg-[#144738] cursor-pointer group"
